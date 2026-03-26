@@ -529,6 +529,7 @@ export function Settings({ isVisible, onClose, initialSettings }: SettingsProps)
   const [isThemeLibraryVisible, setIsThemeLibraryVisible] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [availableModels, setAvailableModels] = useState<ModelInfo[]>([]);
+  const [availableModelsError, setAvailableModelsError] = useState<string | null>(null);
   const [isLoadingModels, setIsLoadingModels] = useState(false);
   const [showModelSuggestions, setShowModelSuggestions] = useState(false);
   const [filteredModels, setFilteredModels] = useState<ModelInfo[]>([]);
@@ -1122,8 +1123,10 @@ export function Settings({ isVisible, onClose, initialSettings }: SettingsProps)
       const models = await ModelDiscoveryService.getAvailableModels(apiEndpoint, apiKey);
       setAvailableModels(models);
     } catch (error) {
-      console.error('Failed to fetch available models:', error);
+      const userMessage = error instanceof Error ? error.message : String(error);
+      console.warn('Failed to fetch available models:', userMessage);
       setAvailableModels([]);
+      setAvailableModelsError(userMessage);
     } finally {
       setIsLoadingModels(false);
     }
@@ -1301,10 +1304,16 @@ export function Settings({ isVisible, onClose, initialSettings }: SettingsProps)
       });
       
     } catch (error) {
-      console.error('Autocompletion connection test failed:', error);
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn(`Autocompletion connection test failed (endpoint: ${testEndpoint}):`, message);
+
+      const userMessage = message.includes('Unable to reach model endpoint')
+        ? `${message} Ensure Pointer backend or local AI adapter is running.`
+        : message;
+
       setAutocompletionConnectionStatus({
         connected: false,
-        error: error instanceof Error ? error.message : 'Unknown error occurred',
+        error: userMessage,
         testing: false,
         url: testEndpoint
       });
@@ -1785,6 +1794,12 @@ export function Settings({ isVisible, onClose, initialSettings }: SettingsProps)
                             <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
                               {autocompletionConnectionStatus.testing && modelAssignments.autocompletion === activeTab && (
                                 <span>Testing connection...</span>
+                              )}
+                              {autocompletionConnectionStatus.error && modelAssignments.autocompletion === activeTab && (
+                                <span style={{ color: '#ff4d4f' }}>Error: {autocompletionConnectionStatus.error}</span>
+                              )}
+                              {availableModelsError && modelAssignments.autocompletion === activeTab && (
+                                <span style={{ color: '#ffa500' }}>Model discovery warning: {availableModelsError}</span>
                               )}
                             </p>
                           </div>
