@@ -314,7 +314,7 @@ async function checkBackendConnection() {
   const retryDelay = 1000;
   let retries = 0;
 
-  updateSplashMessage('Connecting to backend...');
+  updateSplashMessage('Starting...');
   
   while (retries < maxRetries) {
     try {
