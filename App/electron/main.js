@@ -145,7 +145,12 @@ async function initDiscordRPC() {
   
   // Login with client ID
   rpc.login({ clientId: DISCORD_CLIENT_ID })
-    .catch(error => console.error('Discord RPC login failed:', error));
+    .then(() => console.log('Discord RPC login successful'))
+    .catch(error => {
+      console.error('Discord RPC login failed:', error);
+      // disable RPC to avoid repeated attempts
+      discordRpcSettings.enabled = false;
+    });
 }
 
 // Update Discord Rich Presence with current editor info
@@ -263,11 +268,20 @@ let splashWindow = null;
 
 // Update splash screen message
 function updateSplashMessage(message) {
-  if (splashWindow) {
-    splashWindow.webContents.executeJavaScript(`
-      document.querySelector('.message').textContent = "${message}";
-    `).catch(err => console.error('Error updating splash message:', err));
+  if (!splashWindow || splashWindow.isDestroyed()) {
+    return;
   }
+
+  const safeMessage = JSON.stringify(message);
+
+  splashWindow.webContents.executeJavaScript(`
+    const messageElement = document.querySelector('.message');
+    if (messageElement) {
+      messageElement.textContent = ${safeMessage};
+    } else {
+      console.warn('Splash message element not found yet');
+    }
+  `).catch(err => console.error('Error updating splash message:', err));
 }
 
 function createSplashScreen() {
