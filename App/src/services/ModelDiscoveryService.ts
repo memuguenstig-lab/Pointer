@@ -18,9 +18,9 @@ export class ModelDiscoveryService {
    * @returns Promise<ModelInfo[]> Array of available models
    */
   static async getAvailableModels(apiEndpoint: string, apiKey?: string): Promise<ModelInfo[]> {
+    let baseUrl = apiEndpoint;
     try {
       // Ensure the endpoint ends with /v1
-      let baseUrl = apiEndpoint;
       if (!baseUrl.endsWith('/v1')) {
         baseUrl = baseUrl.endsWith('/') 
           ? `${baseUrl}v1` 
