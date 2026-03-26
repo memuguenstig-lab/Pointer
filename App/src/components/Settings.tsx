@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import tinycolor from 'tinycolor2';
 import { FileSystemService } from '../services/FileSystemService';
 import { ModelConfig, EditorSettings, ThemeSettings, AppSettings, ModelAssignments, DiscordRpcSettings, PromptsSettings, CustomRule } from '../types';
 import * as monaco from 'monaco-editor';
@@ -999,6 +1000,37 @@ export function Settings({ isVisible, onClose, initialSettings }: SettingsProps)
       window.dispatchEvent(new Event('theme-changed'));
     }
   };
+
+  const applyAutoPaletteFromAccent = () => {
+    const accentColor = themeSettings.customColors.accentColor || '#0078d4';
+    const parsed = tinycolor(accentColor);
+    if (!parsed.isValid()) return;
+
+    const light = parsed.clone().lighten(20).toHexString();
+    const medium = parsed.clone().lighten(10).toHexString();
+    const dark = parsed.clone().darken(20).toHexString();
+
+    setThemeSettings(prev => ({
+      ...prev,
+      customColors: {
+        ...prev.customColors,
+        bgPrimary: parsed.clone().darken(15).toHexString(),
+        bgSecondary: parsed.clone().darken(10).toHexString(),
+        bgTertiary: light,
+        textPrimary: parsed.isLight() ? '#0d0d0d' : '#ffffff',
+        textSecondary: parsed.isLight() ? '#2e2e2e' : '#cccccc',
+        borderColor: medium,
+        accentHover: parsed.clone().desaturate(10).toHexString(),
+        titlebarBg: dark,
+        statusbarBg: dark,
+        statusbarFg: parsed.isLight() ? '#000000' : '#f5f5f5',
+      }
+    }));
+
+    setHasUnsavedChanges(true);
+    window.dispatchEvent(new Event('theme-changed'));
+  };
+
 
   const handleDiscordRpcSettingChange = (field: keyof DiscordRpcSettings, value: any) => {
     setDiscordRpcSettings((prev) => {
@@ -2998,6 +3030,27 @@ export function Settings({ isVisible, onClose, initialSettings }: SettingsProps)
                             variable="--activity-bar-fg"
                           />
                         </div>
+                      </div>
+
+                      <div style={{ marginTop: '12px', border: '1px dashed var(--border-primary)', padding: '12px', borderRadius: '8px' }}>
+                        <h5 style={{ fontSize: '13px', margin: '0 0 8px 0' }}>Smart Palette</h5>
+                        <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '0 0 8px 0' }}>
+                          Easily generate accessible text + border colors from your accent color.
+                        </p>
+                        <button
+                          onClick={applyAutoPaletteFromAccent}
+                          style={{
+                            padding: '8px 12px',
+                            borderRadius: '6px',
+                            border: '1px solid var(--border-primary)',
+                            background: 'var(--bg-accent)',
+                            color: 'white',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                          }}
+                        >
+                          Generate from Accent
+                        </button>
                       </div>
                         </div>
 
