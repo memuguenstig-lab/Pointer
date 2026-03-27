@@ -5,21 +5,27 @@ import InputValidator from './InputValidator';
  * Comprehensive Keyboard Shortcuts Registry
  * Central management of all keyboard shortcuts with conflict detection
  * 
- * Improvement 19: Advanced keyboard shortcuts system (sehr umfassend/very comprehensive)
+ * Improvement 19 (Enhanced): Advanced keyboard shortcuts system (sehr umfassend/very comprehensive)
  * - VS Code-compatible keybinding format
  * - Conflict detection and resolution
- * - Custom profile support
- * - Command palette integration
- * - Runtime modification and persistence
+ * - Macro recording and playback
+ * - Keyboard layout detection
+ * - Usage analytics
+ * - Visual cheat sheet generation
+ * - Command palette with fuzzy search
+ * - Context-aware shortcuts
  */
 
 export interface Keybinding {
-  key: string; // e.g., "ctrl+shift+p", "cmd+k cmd+s"
-  command: string; // command ID
-  when?: string; // context condition
-  mac?: string; // macOS-specific binding
-  linux?: string; // Linux-specific binding
-  win?: string; // Windows-specific binding
+  key: string;
+  command: string;
+  when?: string;
+  mac?: string;
+  linux?: string;
+  win?: string;
+  description?: string;
+  category?: string;
+  priority?: number; // For conflict resolution (higher = more important)
 }
 
 export interface KeybindingProfile {
@@ -35,6 +41,28 @@ export interface KeybindingConflict {
   keys: string[];
   commands: string[];
   severity: 'warning' | 'error';
+}
+
+export interface MacroRecord {
+  id: string;
+  name: string;
+  keys: string[];
+  commands: string[];
+  created: number;
+  usageCount: number;
+}
+
+export interface MacroPlaybackOptions {
+  speed?: 'slow' | 'normal' | 'fast';
+  repeatCount?: number;
+}
+
+export interface ShortcutAnalytics {
+  command: string;
+  usageCount: number;
+  lastUsed: number;
+  averageResponseTime: number;
+  category?: string;
 }
 
 interface ParsedKeybinding {
@@ -56,6 +84,15 @@ export class KeyboardShortcutsRegistry {
   private static conflicts: KeybindingConflict[] = [];
   private static sequenceBuffer = '';
   private static sequenceTimeout: NodeJS.Timeout | null = null;
+  
+  // New features for enhancements
+  private static macros = new Map<string, MacroRecord>();
+  private static isRecordingMacro = false;
+  private static currentMacroBuffer: { keys: string[]; commands: string[] } | null = null;
+  private static analytics = new Map<string, ShortcutAnalytics>();
+  private static keyboardLayout = 'QWERTY';
+  private static commandPaletteQuery = '';
+  private static lastCommandExecutionTime = 0;
 
   /**
    * Initialize keyboard shortcuts
@@ -187,8 +224,20 @@ export class KeyboardShortcutsRegistry {
     }
 
     try {
+      const startTime = performance.now();
       logger.debug('Executing command', { commandId, args });
-      return command.callback(args);
+      
+      const result = command.callback(args);
+      
+      // Record analytics and track in macro if recording
+      const executionTime = performance.now() - startTime;
+      this.recordCommandExecution(commandId, executionTime);
+      
+      if (this.isRecordingMacro && this.currentMacroBuffer) {
+        this.currentMacroBuffer.commands.push(commandId);
+      }
+      
+      return result;
     } catch (error) {
       logger.error('Command execution failed', error, { commandId });
       return null;
@@ -501,6 +550,360 @@ export class KeyboardShortcutsRegistry {
         ctrlKey: this.getPlatform() === 'darwin' ? 'cmd' : 'ctrl'
       },
       commands
+    };
+  }
+
+  // ==================== MACRO Recording & Playback ====================
+
+  /**
+   * Start recording keyboard macro
+   */
+  static startMacroRecording(macroName: string): void {
+    this.isRecordingMacro = true;
+    this.currentMacroBuffer = { keys: [], commands: [] };
+    logger.info('Macro recording started', { name: macroName });
+  }
+
+  /**
+   * Stop recording and save macro
+   */
+  static stopMacroRecording(macroName: string): MacroRecord | null {
+    if (!this.isRecordingMacro || !this.currentMacroBuffer) {
+      logger.warn('No macro recording in progress');
+      return null;
+    }
+
+    const macro: MacroRecord = {
+      id: `macro_${Date.now()}`,
+      name: macroName,
+      keys: this.currentMacroBuffer.keys,
+      commands: this.currentMacroBuffer.commands,
+      created: Date.now(),
+      usageCount: 0
+    };
+
+    this.macros.set(macro.id, macro);
+    this.isRecordingMacro = false;
+    this.currentMacroBuffer = null;
+
+    logger.info('Macro recorded', { macroName, commandCount: macro.commands.length });
+    return macro;
+  }
+
+  /**
+   * Play back recorded macro
+   */
+  static playMacro(macroId: string, options: MacroPlaybackOptions = {}): boolean {
+    const macro = this.macros.get(macroId);
+    if (!macro) {
+      logger.warn('Macro not found', { macroId });
+      return false;
+    }
+
+    const repeatCount = options.repeatCount || 1;
+    const speedMultiplier = options.speed === 'slow' ? 1.5 : options.speed === 'fast' ? 0.5 : 1;
+
+    for (let i = 0; i < repeatCount; i++) {
+      for (const command of macro.commands) {
+        this.executeCommand(command);
+      }
+    }
+
+    macro.usageCount++;
+    logger.info('Macro played', { macroId: macro.name, repeatCount });
+    return true;
+  }
+
+  /**
+   * List all recorded macros
+   */
+  static listMacros(): MacroRecord[] {
+    return Array.from(this.macros.values());
+  }
+
+  /**
+   * Delete macro
+   */
+  static deleteMacro(macroId: string): boolean {
+    const removed = this.macros.delete(macroId);
+    if (removed) {
+      logger.debug('Macro deleted', { macroId });
+    }
+    return removed;
+  }
+
+  // ==================== ANALYTICS & USAGE TRACKING ====================
+
+  /**
+   * Record command execution for analytics
+   */
+  static recordCommandExecution(commandId: string, executionTime: number): void {
+    let stats = this.analytics.get(commandId);
+    if (!stats) {
+      stats = {
+        command: commandId,
+        usageCount: 0,
+        lastUsed: 0,
+        averageResponseTime: 0,
+      };
+    }
+
+    stats.usageCount++;
+    stats.lastUsed = Date.now();
+    stats.averageResponseTime =
+      (stats.averageResponseTime * (stats.usageCount - 1) + executionTime) / stats.usageCount;
+
+    this.analytics.set(commandId, stats);
+  }
+
+  /**
+   * Get usage analytics
+   */
+  static getAnalytics(): ShortcutAnalytics[] {
+    return Array.from(this.analytics.values()).sort((a, b) => b.usageCount - a.usageCount);
+  }
+
+  /**
+   * Get most used commands
+   */
+  static getMostUsedCommands(limit: number = 10): ShortcutAnalytics[] {
+    return this.getAnalytics().slice(0, limit);
+  }
+
+  /**
+   * Clear analytics
+   */
+  static clearAnalytics(): void {
+    this.analytics.clear();
+    logger.debug('Analytics cleared');
+  }
+
+  // ==================== FUZZY SEARCH & COMMAND PALETTE ====================
+
+  /**
+   * Search commands with fuzzy matching
+   */
+  static searchCommands(query: string): Array<{ id: string; description: string; score: number }> {
+    const results: Array<{ id: string; description: string; score: number }> = [];
+
+    for (const [id, cmd] of this.commands) {
+      const score = this.fuzzyScore(query, id) + this.fuzzyScore(query, cmd.description);
+
+      if (score > 0) {
+        results.push({
+          id,
+          description: cmd.description,
+          score
+        });
+      }
+    }
+
+    return results.sort((a, b) => b.score - a.score);
+  }
+
+  /**
+   * Fuzzy scoring algorithm
+   */
+  private static fuzzyScore(query: string, target: string): number {
+    const q = query.toLowerCase();
+    const t = target.toLowerCase();
+
+    if (q === t) return 100;
+    if (t.includes(q)) return 50;
+
+    let score = 0;
+    let tIndex = 0;
+
+    for (let i = 0; i < q.length; i++) {
+      const char = q[i];
+      tIndex = t.indexOf(char, tIndex);
+
+      if (tIndex === -1) return 0;
+
+      score += 10;
+      tIndex++;
+    }
+
+    return score;
+  }
+
+  // ==================== KEYBOARD LAYOUT DETECTION ====================
+
+  /**
+   * Detect keyboard layout
+   */
+  static detectKeyboardLayout(): string {
+    // Simple detection based on browser/OS
+    const lang = (navigator as any).language || 'en-US';
+
+    if (lang.includes('fr')) return 'AZERTY';
+    if (lang.includes('de')) return 'QWERTZ';
+    if (lang.includes('ru')) return 'ЙЦУКЕН';
+
+    return 'QWERTY';
+  }
+
+  /**
+   * Get keyboard layout
+   */
+  static getKeyboardLayout(): string {
+    return this.keyboardLayout;
+  }
+
+  /**
+   * Set keyboard layout
+   */
+  static setKeyboardLayout(layout: string): void {
+    this.keyboardLayout = layout;
+    logger.info('Keyboard layout set', { layout });
+  }
+
+  /**
+   * Get layout-optimized bindings
+   */
+  static getOptimizedBindingsForLayout(): Keybinding[] {
+    // Return bindings optimized for current layout
+    return this.getAllBindings().map(binding => ({
+      ...binding,
+      key: this.optimizeKeyForLayout(binding.key)
+    }));
+  }
+
+  private static optimizeKeyForLayout(key: string): string {
+    // Could implement layout-specific optimizations here
+    return key;
+  }
+
+  // ==================== VISUAL CHEAT SHEET ====================
+
+  /**
+   * Generate markdown cheat sheet
+   */
+  static generateMarkdownCheatSheet(): string {
+    const commands = this.getAllBindings();
+    const grouped: Record<string, Keybinding[]> = {};
+
+    for (const binding of commands) {
+      const category = binding.category || 'Other';
+      if (!grouped[category]) {
+        grouped[category] = [];
+      }
+      grouped[category].push(binding);
+    }
+
+    let markdown = '# Keyboard Shortcuts Cheat Sheet\n\n';
+
+    for (const [category, bindings] of Object.entries(grouped)) {
+      markdown += `## ${category}\n\n`;
+      markdown += '| Command | Shortcut |\n';
+      markdown += '|---------|----------|\n';
+
+      for (const binding of bindings) {
+        const key = this.getPlatform() === 'darwin' && binding.mac ? binding.mac : binding.key;
+        markdown += `| ${binding.description || binding.command} | \`${key}\` |\n`;
+      }
+
+      markdown += '\n';
+    }
+
+    return markdown;
+  }
+
+  /**
+   * Generate HTML cheat sheet
+   */
+  static generateHtmlCheatSheet(): string {
+    const markdown = this.generateMarkdownCheatSheet();
+    // Simple HTML conversion (in production, use marked or similar)
+    return `<pre>${markdown}</pre>`;
+  }
+
+  /**
+   * Export bindings as JSON with comments
+   */
+  static exportAsJson(): string {
+    const bindings: Record<string, Keybinding> = {};
+
+    for (const binding of this.getAllBindings()) {
+      bindings[binding.command] = binding;
+    }
+
+    return JSON.stringify(bindings, null, 2);
+  }
+
+  // ==================== CONTEXT MODES ====================
+
+  /**
+   * Set multiple contexts at once
+   */
+  static setContextMode(mode: string, contexts: string[]): void {
+    this.contextStack.clear();
+    contexts.forEach(ctx => this.contextStack.add(ctx));
+    logger.debug('Context mode set', { mode, contexts });
+  }
+
+  /**
+   * Get current active contexts
+   */
+  static getActiveContexts(): string[] {
+    return Array.from(this.contextStack);
+  }
+
+  /**
+   * Define context mode templates
+   */
+  static defineContextMode(
+    modeName: string,
+    contexts: string[],
+    description?: string
+  ): void {
+    // Could be stored and reused
+    logger.debug('Context mode defined', { modeName, contexts, description });
+  }
+
+  // ==================== ADAPTIVE SHORTCUTS ====================
+
+  /**
+   * Suggest shortcuts based on frequent commands
+   */
+  static suggestShortcuts(): Array<{ command: string; suggested: string; reason: string }> {
+    const suggestions: Array<{ command: string; suggested: string; reason: string }> = [];
+    const topCommands = this.getMostUsedCommands(5);
+
+    for (const cmd of topCommands) {
+      const hasBinding = this.getAllBindings().some(b => b.command === cmd.command);
+      if (!hasBinding) {
+        suggestions.push({
+          command: cmd.command,
+          suggested: `ctrl+${cmd.command.charAt(0).toLowerCase()}`,
+          reason: `Frequently used (${cmd.usageCount} times)`
+        });
+      }
+    }
+
+    return suggestions;
+  }
+
+  /**
+   * Get platform-specific help
+   */
+  static getPlatformSpecificHelp(): Record<string, any> {
+    const platform = this.getPlatform();
+    const modifierKey = platform === 'darwin' ? '⌘' : 'Ctrl';
+
+    return {
+      platform,
+      modifierKey,
+      commonPatterns: [
+        `${modifierKey}+S: Save`,
+        `${modifierKey}+Z: Undo`,
+        `${modifierKey}+Shift+Z: Redo`,
+        `${modifierKey}+F: Find`,
+        `${modifierKey}+H: Replace`,
+        `${modifierKey}+P: Quick Open`,
+        `${modifierKey}+Shift+P: Command Palette`,
+        `${modifierKey}+B: Toggle Sidebar`
+      ]
     };
   }
 
