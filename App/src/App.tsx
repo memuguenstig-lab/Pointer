@@ -23,6 +23,9 @@ import CloneRepositoryModal from './components/CloneRepositoryModal';
 import { PathConfig } from './config/paths';
 import { isPreviewableFile, getPreviewType } from './utils/previewUtils';
 import PreviewPane from './components/PreviewPane';
+import ErrorBoundary from './components/ErrorBoundary';
+import { ServiceInitializer } from './services/ServiceInitializer';
+import { PerformanceMonitor } from './services/PerformanceMonitor';
 
 // Initialize language support
 initializeLanguageSupport();
@@ -216,6 +219,17 @@ const App: React.FC = () => {
     const loadedChats = await ChatService.listChats();
     setChats(loadedChats);
   };
+
+  // Initialize services on component mount (Improvement 13)
+  useEffect(() => {
+    PerformanceMonitor.mark('app:initialization');
+    ServiceInitializer.initializeAll().catch(error => {
+      console.error('Service initialization failed:', error);
+    });
+    return () => {
+      PerformanceMonitor.measure('app:initialization');
+    };
+  }, []);
 
   // Add this for Discord RPC settings
   const [discordRpcSettings, setDiscordRpcSettings] = useState({
@@ -1565,10 +1579,11 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="app-container">
-      {isConnecting && (
-        <LoadingScreen message={connectionMessage} />
-      )}
+    <ErrorBoundary>
+      <div className="app-container">
+        {isConnecting && (
+          <LoadingScreen message={connectionMessage} />
+        )}
       
       <div style={{ 
         display: 'flex', 
@@ -1919,6 +1934,7 @@ const App: React.FC = () => {
         />
       </div>
     </div>
+    </ErrorBoundary>
   );
 };
 
