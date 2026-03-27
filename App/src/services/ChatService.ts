@@ -1,11 +1,14 @@
 import { Message } from '../types';
 import { ChatSession, ExtendedMessage } from '../config/chatConfig';
+import { API_CONFIG } from '../config/apiConfig';
 
 // Re-export ChatSession for backward compatibility
 export type { ChatSession };
 
 export class ChatService {
-  private static API_URL = 'http://localhost:23816';
+  private static get API_URL(): string {
+    return API_CONFIG.API_URL;
+  }
 
   /**
    * Generate a simple chat name from the first user message
