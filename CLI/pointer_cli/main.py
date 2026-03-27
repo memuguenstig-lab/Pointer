@@ -8,12 +8,14 @@ import os
 from pathlib import Path
 import sys
 from typing import Optional
+from urllib import error, request
 
 import typer
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
+from .chat_manager import ChatManager
 from .codebase_context import CodebaseContext
 from .config import Config
 from .core import PointerCLI
@@ -28,8 +30,10 @@ app = typer.Typer(
 )
 config_app = typer.Typer(help="Inspect and update Pointer CLI configuration.")
 context_app = typer.Typer(help="Inspect and manage codebase context.")
+chats_app = typer.Typer(help="Manage saved chat sessions.")
 app.add_typer(config_app, name="config")
 app.add_typer(context_app, name="context")
+app.add_typer(chats_app, name="chats")
 
 console = Console()
 
@@ -150,6 +154,26 @@ def _get_codebase_context(config_path: Optional[str] = None) -> tuple[Config, Co
     """Create a validated codebase context helper."""
     config = _load_validated_config(config_path)
     return config, CodebaseContext(config)
+
+
+def _get_chat_manager(config_path: Optional[str] = None) -> ChatManager:
+    """Create a chat manager rooted at the active config directory."""
+    config_file = Path(config_path) if config_path else Config.get_default_config_path()
+    config_dir = config_file.parent
+    config_dir.mkdir(parents=True, exist_ok=True)
+    return ChatManager(config_dir)
+
+
+def _complete_chat_ids(ctx: typer.Context, incomplete: str) -> list[str]:
+    """Autocomplete saved chat ids."""
+    config_path = ctx.params.get("config_path")
+    try:
+        manager = _get_chat_manager(config_path)
+        chat_ids = [chat["id"] for chat in manager.list_chats()]
+    except Exception:
+        return []
+
+    return [chat_id for chat_id in chat_ids if chat_id.startswith(incomplete)]
 
 
 def _complete_config_keys(ctx: typer.Context, incomplete: str) -> list[str]:
@@ -505,6 +529,33 @@ def context_files_command(
     console.print(table)
 
 
+@context_app.command("inspect")
+def context_inspect_command(
+    file_path: str = typer.Argument(..., help="Relative path of the indexed file to inspect"),
+    config_path: Optional[str] = typer.Option(None, "--config", "-c", help="Path to config file"),
+) -> None:
+    """Inspect a single indexed file from codebase context."""
+    config, codebase_context = _get_codebase_context(config_path)
+    if not config.codebase.include_context:
+        console.print("[yellow]Codebase context is disabled.[/yellow]")
+        return
+
+    codebase_context.force_refresh()
+    file_info = codebase_context.get_file_context(file_path)
+    if file_info is None:
+        console.print(f"[yellow]No indexed file found for '{file_path}'.[/yellow]")
+        return
+
+    panel_body = (
+        f"Path: {file_info.relative_path}\n"
+        f"Extension: {file_info.extension}\n"
+        f"Lines: {file_info.lines}\n"
+        f"Size: {file_info.size_formatted}\n\n"
+        f"Preview:\n{file_info.content_preview or '[No preview available]'}"
+    )
+    console.print(Panel(panel_body, title="Context File", border_style="blue"))
+
+
 @context_app.command("config")
 def context_config_command(
     config_path: Optional[str] = typer.Option(None, "--config", "-c", help="Path to config file"),
@@ -545,6 +596,99 @@ def context_disable_command(
     config = _load_validated_config(config_path)
     config.set_value("codebase.include_context", "false", config_path=config_path)
     console.print("[yellow]Codebase context disabled.[/yellow]")
+
+
+@chats_app.command("export")
+def chats_export_command(
+    chat_id: str = typer.Argument(..., help="Chat ID to export", autocompletion=_complete_chat_ids),
+    export_format: str = typer.Option("markdown", "--format", help="Export format: markdown or json"),
+    output_path: Optional[str] = typer.Option(None, "--output", "-o", help="Optional file path to write the export to"),
+    config_path: Optional[str] = typer.Option(None, "--config", "-c", help="Path to config file"),
+) -> None:
+    """Export a saved chat as markdown or JSON."""
+    if export_format not in {"markdown", "json"}:
+        console.print("[red]Export format must be 'markdown' or 'json'.[/red]")
+        raise typer.Exit(code=EXIT_CONFIG_ERROR)
+
+    manager = _get_chat_manager(config_path)
+    exported = manager.export_chat(chat_id, export_format=export_format)
+    if exported is None:
+        console.print(f"[red]Chat not found: {chat_id}[/red]")
+        raise typer.Exit(code=EXIT_CONFIG_ERROR)
+
+    if output_path:
+        destination = Path(output_path)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_text(exported, encoding="utf-8")
+        console.print(f"[green]Exported chat to {destination}.[/green]")
+        return
+
+    console.print(exported)
+
+
+@chats_app.command("rename")
+def chats_rename_command(
+    chat_id: str = typer.Argument(..., help="Chat ID to rename", autocompletion=_complete_chat_ids),
+    title: str = typer.Argument(..., help="New title for the chat"),
+    config_path: Optional[str] = typer.Option(None, "--config", "-c", help="Path to config file"),
+) -> None:
+    """Rename a saved chat session."""
+    manager = _get_chat_manager(config_path)
+    if not manager.rename_chat(chat_id, title):
+        console.print(f"[red]Chat not found: {chat_id}[/red]")
+        raise typer.Exit(code=EXIT_CONFIG_ERROR)
+
+    console.print(f"[green]Renamed {chat_id} to {title!r}.[/green]")
+
+
+@app.command("models")
+def models_command(
+    config_path: Optional[str] = typer.Option(None, "--config", "-c", help="Path to config file"),
+) -> None:
+    """Show the configured model and try to discover remote models."""
+    config = _load_validated_config(config_path)
+    configured_model = config.api.model_name
+    discovered_models = []
+
+    try:
+        with request.urlopen(f"{config.api.base_url.rstrip('/')}/v1/models", timeout=config.api.timeout) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+            for item in payload.get("data", []):
+                model_id = item.get("id")
+                if model_id:
+                    discovered_models.append(model_id)
+    except Exception:
+        discovered_models = []
+
+    table = Table(title="Pointer CLI Models")
+    table.add_column("Type", style="bold")
+    table.add_column("Value", overflow="fold")
+    table.add_row("Configured", configured_model)
+    table.add_row("API Base URL", config.api.base_url)
+    table.add_row("Discovered", ", ".join(discovered_models) if discovered_models else "No remote model list available")
+    console.print(table)
+
+
+@app.command("ping")
+def ping_command(
+    config_path: Optional[str] = typer.Option(None, "--config", "-c", help="Path to config file"),
+) -> None:
+    """Check API reachability and print simple latency information."""
+    config = _load_validated_config(config_path)
+    health_url = f"{config.api.base_url.rstrip('/')}/health"
+    start = __import__("time").time()
+
+    try:
+        with request.urlopen(health_url, timeout=config.api.timeout) as response:
+            latency_ms = int((__import__("time").time() - start) * 1000)
+            status = getattr(response, "status", response.getcode())
+            console.print(f"[green]OK[/green] {health_url} responded with HTTP {status} in {latency_ms} ms.")
+    except error.HTTPError as exc:
+        latency_ms = int((__import__("time").time() - start) * 1000)
+        console.print(f"[yellow]WARN[/yellow] {health_url} responded with HTTP {exc.code} in {latency_ms} ms.")
+    except Exception as exc:
+        console.print(f"[red]Ping failed:[/red] {exc}")
+        raise typer.Exit(code=EXIT_DEPENDENCY_ERROR)
 
 
 @app.command("doctor")

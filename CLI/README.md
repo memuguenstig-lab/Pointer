@@ -60,7 +60,22 @@ pointer context show
 pointer context refresh
 pointer context search TODO
 pointer context files --ext .py
+pointer context inspect src/app.py
 pointer context config
+```
+
+Manage saved chats with:
+
+```bash
+pointer chats export chat_20260327_010000 --format markdown
+pointer chats rename chat_20260327_010000 "Bug triage"
+```
+
+Inspect API connectivity and model setup with:
+
+```bash
+pointer models
+pointer ping
 ```
 
 Initialize without prompts with:

@@ -164,6 +164,70 @@ class ChatManager:
             return True
         
         return False
+
+    def rename_chat(self, chat_id: str, title: str) -> bool:
+        """Rename an existing chat session."""
+        chat = self.load_chat(chat_id)
+        if chat is None:
+            return False
+
+        chat.title = title
+        self.save_chat(chat)
+        if self.current_chat and self.current_chat.id == chat_id:
+            self.current_chat = chat
+        return True
+
+    def export_chat(self, chat_id: str, export_format: str = "markdown") -> Optional[str]:
+        """Export a chat session in a portable format."""
+        chat = self.load_chat(chat_id)
+        if chat is None:
+            return None
+
+        if export_format == "json":
+            return json.dumps(
+                {
+                    "id": chat.id,
+                    "title": chat.title,
+                    "created_at": chat.created_at,
+                    "last_modified": chat.last_modified,
+                    "total_tokens": chat.total_tokens,
+                    "messages": [
+                        {
+                            "role": msg.role,
+                            "content": msg.content,
+                            "timestamp": msg.timestamp,
+                            "tokens_used": msg.tokens_used,
+                        }
+                        for msg in chat.messages
+                    ],
+                },
+                indent=2,
+                ensure_ascii=False,
+            )
+
+        lines = [
+            f"# {chat.title}",
+            "",
+            f"- Chat ID: {chat.id}",
+            f"- Created: {chat.created_at}",
+            f"- Last Modified: {chat.last_modified}",
+            f"- Total Tokens: {chat.total_tokens}",
+            "",
+        ]
+
+        for msg in chat.messages:
+            lines.extend(
+                [
+                    f"## {msg.role.title()}",
+                    "",
+                    msg.content,
+                    "",
+                    f"_Timestamp: {msg.timestamp} | Tokens: {msg.tokens_used}_",
+                    "",
+                ]
+            )
+
+        return "\n".join(lines)
     
     def add_message(self, role: str, content: str, tokens_used: int = 0) -> None:
         """Add a message to the current chat."""

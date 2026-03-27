@@ -557,6 +557,53 @@ class TestMainCommands:
         assert "module.py" in result.stdout
         assert "notes.md" not in result.stdout
 
+    def test_context_inspect_shows_preview(self, tmp_path, monkeypatch):
+        """`pointer context inspect` should show a detailed preview for one file."""
+        (tmp_path / ".git").mkdir()
+        (tmp_path / "module.py").write_text("special_keyword = True\nprint('hello')\n", encoding="utf-8")
+        config_path = tmp_path / "config.json"
+        config_path.write_text(
+            json.dumps(
+                {
+                    "api": {
+                        "base_url": "http://localhost:8000",
+                        "model_name": "context-model",
+                        "api_key": None,
+                        "timeout": 30,
+                        "max_retries": 3,
+                    },
+                    "ui": {
+                        "show_ai_responses": True,
+                        "show_thinking": True,
+                        "show_tool_outputs": True,
+                        "show_diffs": True,
+                        "render_markdown": True,
+                        "theme": "default",
+                        "max_output_lines": 100,
+                    },
+                    "mode": {"auto_run_mode": True},
+                    "codebase": {
+                        "include_context": True,
+                        "max_context_files": 20,
+                        "context_file_types": [".py"],
+                        "exclude_patterns": ["node_modules"],
+                        "context_depth": 3,
+                        "auto_refresh_context": False,
+                        "context_cache_duration": 0,
+                    },
+                    "initialized": True,
+                }
+            ),
+            encoding="utf-8",
+        )
+        monkeypatch.chdir(tmp_path)
+
+        result = runner.invoke(app, ["context", "inspect", "module.py", "--config", str(config_path)])
+
+        assert result.exit_code == 0
+        assert "Context File" in result.stdout
+        assert "special_keyword = True" in result.stdout
+
     def test_invalid_config_returns_config_exit_code_for_status(self, tmp_path):
         """Validated commands should stop with the config exit code."""
         config_path = tmp_path / "config.json"
@@ -598,6 +645,158 @@ class TestMainCommands:
         result = runner.invoke(app, ["status", "--config", str(config_path)])
 
         assert result.exit_code == EXIT_CONFIG_ERROR
+
+    def test_chats_export_writes_markdown_file(self, tmp_path):
+        """`pointer chats export` should write a markdown export."""
+        config_path = tmp_path / "config.json"
+        chats_dir = tmp_path / "chats"
+        chats_dir.mkdir()
+        chat_id = "chat_20260327_010000"
+        (chats_dir / f"{chat_id}.json").write_text(
+            json.dumps(
+                {
+                    "id": chat_id,
+                    "title": "Demo Chat",
+                    "created_at": "2026-03-27T01:00:00",
+                    "last_modified": "2026-03-27T01:05:00",
+                    "total_tokens": 42,
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": "Hello",
+                            "timestamp": "2026-03-27T01:00:00",
+                            "tokens_used": 10,
+                        }
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+        output_path = tmp_path / "export.md"
+
+        result = runner.invoke(
+            app,
+            ["chats", "export", chat_id, "--output", str(output_path), "--config", str(config_path)],
+        )
+
+        assert result.exit_code == 0
+        assert output_path.exists()
+        assert "Demo Chat" in output_path.read_text(encoding="utf-8")
+
+    def test_chats_rename_updates_saved_chat(self, tmp_path):
+        """`pointer chats rename` should update the saved chat title."""
+        config_path = tmp_path / "config.json"
+        chats_dir = tmp_path / "chats"
+        chats_dir.mkdir()
+        chat_id = "chat_20260327_010000"
+        chat_path = chats_dir / f"{chat_id}.json"
+        chat_path.write_text(
+            json.dumps(
+                {
+                    "id": chat_id,
+                    "title": "Old Title",
+                    "created_at": "2026-03-27T01:00:00",
+                    "last_modified": "2026-03-27T01:05:00",
+                    "total_tokens": 42,
+                    "messages": [],
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        result = runner.invoke(
+            app,
+            ["chats", "rename", chat_id, "New Title", "--config", str(config_path)],
+        )
+
+        assert result.exit_code == 0
+        saved = json.loads(chat_path.read_text(encoding="utf-8"))
+        assert saved["title"] == "New Title"
+
+    def test_models_command_lists_configured_model(self, tmp_path):
+        """`pointer models` should always show the configured model."""
+        config_path = tmp_path / "config.json"
+        config_path.write_text(
+            json.dumps(
+                {
+                    "api": {
+                        "base_url": "http://localhost:8000",
+                        "model_name": "demo-model",
+                        "api_key": None,
+                        "timeout": 30,
+                        "max_retries": 3,
+                    },
+                    "ui": {
+                        "show_ai_responses": True,
+                        "show_thinking": True,
+                        "show_tool_outputs": True,
+                        "show_diffs": True,
+                        "render_markdown": True,
+                        "theme": "default",
+                        "max_output_lines": 100,
+                    },
+                    "mode": {"auto_run_mode": True},
+                    "codebase": {
+                        "include_context": True,
+                        "max_context_files": 20,
+                        "context_file_types": [".py"],
+                        "exclude_patterns": [".git"],
+                        "context_depth": 3,
+                        "auto_refresh_context": False,
+                        "context_cache_duration": 3600,
+                    },
+                    "initialized": True,
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        result = runner.invoke(app, ["models", "--config", str(config_path)])
+
+        assert result.exit_code == 0
+        assert "demo-model" in result.stdout
+
+    def test_ping_command_returns_dependency_error_when_unreachable(self, tmp_path):
+        """`pointer ping` should use the dependency exit code on failure."""
+        config_path = tmp_path / "config.json"
+        config_path.write_text(
+            json.dumps(
+                {
+                    "api": {
+                        "base_url": "http://localhost:65530",
+                        "model_name": "demo-model",
+                        "api_key": None,
+                        "timeout": 1,
+                        "max_retries": 3,
+                    },
+                    "ui": {
+                        "show_ai_responses": True,
+                        "show_thinking": True,
+                        "show_tool_outputs": True,
+                        "show_diffs": True,
+                        "render_markdown": True,
+                        "theme": "default",
+                        "max_output_lines": 100,
+                    },
+                    "mode": {"auto_run_mode": True},
+                    "codebase": {
+                        "include_context": True,
+                        "max_context_files": 20,
+                        "context_file_types": [".py"],
+                        "exclude_patterns": [".git"],
+                        "context_depth": 3,
+                        "auto_refresh_context": False,
+                        "context_cache_duration": 3600,
+                    },
+                    "initialized": True,
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        result = runner.invoke(app, ["ping", "--config", str(config_path)])
+
+        assert result.exit_code == EXIT_DEPENDENCY_ERROR
 
     def test_complete_config_keys_suggests_matching_dotted_keys(self):
         """Config key completion should return matching dotted keys."""
