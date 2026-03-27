@@ -164,7 +164,8 @@ async function buildProject() {
     
     console.log(chalk.cyan(`   📁 Building in: ${buildDir}`));
     
-    const buildProcess = spawn('yarn.cmd', ['build'], {
+    // Use npm instead of yarn.cmd (more reliable)
+    const buildProcess = spawn('npm', ['run', 'build'], {
       stdio: 'inherit',
       shell: true,
       cwd: buildDir
@@ -360,7 +361,7 @@ async function main() {
     console.log(chalk.blue(`📍 Using port ${serverPort} for dev server`));
     
     // Start server with custom port
-    const serverProcess = startProcess('yarn.cmd', ['dev:server'], 'Server', 'blue', { VITE_PORT: serverPort.toString() });
+    const serverProcess = startProcess('npm', ['run', 'dev:server'], 'Server', 'blue', { VITE_PORT: serverPort.toString() });
     
     // Wait for server to start if not skipping checks
     if (!skipChecks) {
@@ -384,7 +385,7 @@ async function main() {
     }
     
     // Start electron with custom server port
-    const electronProcess = startProcess('yarn.cmd', ['dev:electron'], 'Electron', 'magenta', {
+    const electronProcess = startProcess('npm', ['run', 'dev:electron'], 'Electron', 'magenta', {
       VITE_DEV_SERVER_PORT: serverPort.toString(),
       SKIP_CONNECTION_CHECKS: skipChecks ? 'true' : 'false'
     });
