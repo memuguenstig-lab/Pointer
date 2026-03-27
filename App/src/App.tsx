@@ -26,6 +26,8 @@ import PreviewPane from './components/PreviewPane';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ServiceInitializer } from './services/ServiceInitializer';
 import { PerformanceMonitor } from './services/PerformanceMonitor';
+import { WorkspaceManager, Workspace } from './services/WorkspaceManager';
+import { KeyboardShortcutsRegistry } from './services/KeyboardShortcutsRegistry';
 
 // Initialize language support
 initializeLanguageSupport();
@@ -214,18 +216,55 @@ const App: React.FC = () => {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [settingsData, setSettingsData] = useState<Record<string, any>>({});
 
+  // Multi-workspace support (Improvement 23)
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [currentWorkspaceId, setCurrentWorkspaceId] = useState<string | null>(null);
+  const [showWorkspaceSwitcher, setShowWorkspaceSwitcher] = useState(false);
+
   // Add this inside the App component
   const loadChats = async () => {
     const loadedChats = await ChatService.listChats();
     setChats(loadedChats);
   };
 
-  // Initialize services on component mount (Improvement 13)
+  // Initialize services on component mount (Improvement 13, 19, 23)
   useEffect(() => {
     PerformanceMonitor.mark('app:initialization');
+    
+    // Initialize services
     ServiceInitializer.initializeAll().catch(error => {
       console.error('Service initialization failed:', error);
     });
+
+    // Initialize keyboard shortcuts (Improvement 19)
+    KeyboardShortcutsRegistry.initialize();
+    
+    // Register custom commands
+    KeyboardShortcutsRegistry.registerCommand(
+      'editor.action.newFile',
+      'ctrl+n',
+      () => console.log('New file'),
+      'Create new file',
+      { mac: 'cmd+n' }
+    );
+
+    KeyboardShortcutsRegistry.registerCommand(
+      'editor.action.openFile',
+      'ctrl+o',
+      () => console.log('Open file'),
+      'Open file',
+      { mac: 'cmd+o' }
+    );
+
+    // Initialize workspace manager (Improvement 23)
+    WorkspaceManager.initialize({ maxWorkspaces: 10, autoSave: true });
+    setWorkspaces(WorkspaceManager.listWorkspaces());
+
+    // Update workspace list when workspaces change
+    const updateWorkspaceList = () => {
+      setWorkspaces(WorkspaceManager.listWorkspaces());
+    };
+
     return () => {
       PerformanceMonitor.measure('app:initialization');
     };

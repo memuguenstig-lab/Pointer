@@ -4,6 +4,10 @@ import { ExplorerService } from './ExplorerService';
 import { AIFileService } from './AIFileService';
 import { ChatService } from './ChatService';
 import lmStudio from './LMStudioService';
+import { CacheRegistry } from './CacheManager';
+import { KeyboardShortcutsRegistry } from './KeyboardShortcutsRegistry';
+import { WorkspaceManager } from './WorkspaceManager';
+import { InputValidator } from './InputValidator';
 
 /**
  * Service Initializer & Dependency Manager
@@ -46,13 +50,36 @@ export class ServiceInitializer {
         return { initialized: true };
       });
 
-      // Phase 2: Foundation services
+      // Phase 2: Utility services
+      await this.initializeService('InputValidator', async () => {
+        logger.info('InputValidator initialized with default rules');
+        return { initialized: true };
+      });
+
+      await this.initializeService('CacheRegistry', async () => {
+        logger.info('CacheRegistry initialized');
+        return { initialized: true };
+      });
+
+      await this.initializeService('KeyboardShortcutsRegistry', async () => {
+        KeyboardShortcutsRegistry.initialize();
+        logger.info('KeyboardShortcutsRegistry initialized');
+        return { initialized: true };
+      });
+
+      await this.initializeService('WorkspaceManager', async () => {
+        WorkspaceManager.initialize();
+        logger.info('WorkspaceManager initialized');
+        return { initialized: true };
+      });
+
+      // Phase 3: Foundation services
       await this.initializeService('FileService', async () => {
         logger.info('FileService initialized');
         return { initialized: true };
       });
 
-      // Phase 3: Language model service
+      // Phase 4: Language model service
       await this.initializeService('LMStudioService', async () => {
         try {
           const status = await lmStudio.getStatus();
@@ -64,7 +91,7 @@ export class ServiceInitializer {
         }
       });
 
-      // Phase 4: Dependent services
+      // Phase 5: Dependent services
       await this.initializeService('ExplorerService', async () => {
         logger.info('ExplorerService initialized');
         return { initialized: true };
