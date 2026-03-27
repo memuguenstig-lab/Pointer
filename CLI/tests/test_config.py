@@ -102,3 +102,75 @@ class TestConfig:
             auto_run_mode=False
         )
         assert config.mode.auto_run_mode is False
+
+    def test_get_value(self):
+        """Test dotted configuration lookup."""
+        config = Config()
+
+        assert config.get_value("api.base_url") == "http://localhost:8000"
+        assert config.get_value("initialized") is False
+
+    def test_set_value(self):
+        """Test dotted configuration updates with type coercion."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            config_file = Path(temp_dir) / "test_config.json"
+            config = Config()
+
+            config.set_value("api.timeout", "45", config_path=str(config_file))
+            config.set_value("ui.show_diffs", "false", config_path=str(config_file))
+            config.set_value("codebase.exclude_patterns", "node_modules,.git,dist", config_path=str(config_file))
+
+            assert config.api.timeout == 45
+            assert config.ui.show_diffs is False
+            assert config.codebase.exclude_patterns == ["node_modules", ".git", "dist"]
+
+    def test_set_value_invalid_key(self):
+        """Unknown dotted keys should raise KeyError."""
+        config = Config()
+
+        with pytest.raises(KeyError):
+            config.set_value("api.missing_key", "value")
+
+    def test_validate_reports_invalid_values(self):
+        """Validation should report user-fixable config issues."""
+        config = Config()
+        config.api.base_url = "localhost:8000"
+        config.api.model_name = ""
+        config.api.timeout = 0
+        config.codebase.max_context_files = 0
+
+        issues = config.validate()
+
+        assert "api.base_url must start with http:// or https://" in issues
+        assert "api.model_name cannot be empty" in issues
+        assert "api.timeout must be greater than 0" in issues
+        assert "codebase.max_context_files must be greater than 0" in issues
+
+    def test_list_key_paths(self):
+        """Config should expose dotted keys for shell completion."""
+        config = Config()
+
+        keys = config.list_key_paths()
+
+        assert "api.base_url" in keys
+        assert "ui.show_diffs" in keys
+        assert "codebase.context_depth" in keys
+        assert "initialized" in keys
+
+    def test_suggest_values(self):
+        """Config should suggest sensible completion candidates for values."""
+        config = Config()
+
+        assert config.suggest_values("ui.show_diffs") == ["true", "false"]
+        assert config.suggest_values("api.timeout") == ["30"]
+        assert config.suggest_values("api.base_url") == ["http://localhost:8000"]
+
+    def test_unset_value_restores_default(self):
+        """Unset should restore a field to its default value."""
+        config = Config()
+        config.ui.show_diffs = False
+
+        restored = config.unset_value("ui.show_diffs")
+
+        assert restored is True
+        assert config.ui.show_diffs is True

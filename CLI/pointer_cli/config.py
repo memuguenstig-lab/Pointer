@@ -3,10 +3,9 @@ Configuration management for Pointer CLI.
 """
 
 import json
-import os
 from pathlib import Path
-from typing import Optional, Dict, Any, List
-from dataclasses import dataclass, asdict
+from typing import Any, List, Optional, get_args, get_origin
+
 from pydantic import BaseModel, Field
 
 class APIConfig(BaseModel):
@@ -103,6 +102,7 @@ class Config(BaseModel):
         model_name: str,
         auto_run_mode: bool = True,
         show_ai_responses: bool = True,
+        config_path: Optional[str] = None,
         **kwargs
     ) -> None:
         """Initialize configuration with provided values."""
@@ -113,28 +113,28 @@ class Config(BaseModel):
         self.initialized = True
         
         # Save the configuration
-        self.save()
+        self.save(config_path)
     
-    def update_api_config(self, **kwargs) -> None:
+    def update_api_config(self, config_path: Optional[str] = None, **kwargs) -> None:
         """Update API configuration."""
         for key, value in kwargs.items():
             if hasattr(self.api, key):
                 setattr(self.api, key, value)
-        self.save()
+        self.save(config_path)
     
-    def update_ui_config(self, **kwargs) -> None:
+    def update_ui_config(self, config_path: Optional[str] = None, **kwargs) -> None:
         """Update UI configuration."""
         for key, value in kwargs.items():
             if hasattr(self.ui, key):
                 setattr(self.ui, key, value)
-        self.save()
+        self.save(config_path)
     
-    def update_mode_config(self, **kwargs) -> None:
+    def update_mode_config(self, config_path: Optional[str] = None, **kwargs) -> None:
         """Update mode configuration."""
         for key, value in kwargs.items():
             if hasattr(self.mode, key):
                 setattr(self.mode, key, value)
-        self.save()
+        self.save(config_path)
     
     def toggle_auto_run_mode(self) -> bool:
         """Toggle auto-run mode."""
@@ -155,3 +155,172 @@ class Config(BaseModel):
         self.ui.show_thinking = not self.ui.show_thinking
         self.save()
         return self.ui.show_thinking
+
+    def validate(self) -> List[str]:
+        """Validate configuration values for CLI usage."""
+        issues: List[str] = []
+
+        if not self.api.base_url or not self.api.base_url.startswith(("http://", "https://")):
+            issues.append("api.base_url must start with http:// or https://")
+        if not self.api.model_name.strip():
+            issues.append("api.model_name cannot be empty")
+        if self.api.timeout <= 0:
+            issues.append("api.timeout must be greater than 0")
+        if self.api.max_retries < 0:
+            issues.append("api.max_retries cannot be negative")
+        if self.ui.max_output_lines <= 0:
+            issues.append("ui.max_output_lines must be greater than 0")
+        if self.codebase.max_context_files <= 0:
+            issues.append("codebase.max_context_files must be greater than 0")
+        if self.codebase.context_depth < 0:
+            issues.append("codebase.context_depth cannot be negative")
+        if self.codebase.context_cache_duration < 0:
+            issues.append("codebase.context_cache_duration cannot be negative")
+        if not self.codebase.context_file_types:
+            issues.append("codebase.context_file_types cannot be empty")
+
+        return issues
+
+    def get_value(self, key_path: str) -> Any:
+        """Get a configuration value by dotted path."""
+        target, field_name = self._resolve_key_path(key_path)
+        return getattr(target, field_name)
+
+    def list_key_paths(self) -> List[str]:
+        """List all supported dotted configuration keys."""
+        key_paths: List[str] = []
+
+        for field_name, field_info in self.__class__.model_fields.items():
+            value = getattr(self, field_name)
+            if isinstance(value, BaseModel):
+                for nested_name in value.__class__.model_fields:
+                    key_paths.append(f"{field_name}.{nested_name}")
+            else:
+                key_paths.append(field_name)
+
+        return sorted(key_paths)
+
+    def suggest_values(self, key_path: str) -> List[str]:
+        """Return suggested values for a given config key."""
+        target, field_name = self._resolve_key_path(key_path)
+        current_value = getattr(target, field_name)
+
+        if isinstance(current_value, bool):
+            return ["true", "false"]
+        if isinstance(current_value, int) and not isinstance(current_value, bool):
+            return [str(current_value)]
+        if isinstance(current_value, list):
+            return [json.dumps(current_value), ",".join(str(item) for item in current_value)]
+        if current_value is None:
+            return ["null"]
+
+        return [str(current_value)]
+
+    def set_value(self, key_path: str, raw_value: str, config_path: Optional[str] = None) -> Any:
+        """Set a configuration value by dotted path."""
+        target, field_name = self._resolve_key_path(key_path)
+        field_info = target.__class__.model_fields[field_name]
+        current_value = getattr(target, field_name)
+        coerced_value = self._coerce_value(raw_value, field_info.annotation, current_value)
+        setattr(target, field_name, coerced_value)
+        self.save(config_path)
+        return coerced_value
+
+    def unset_value(self, key_path: str, config_path: Optional[str] = None) -> Any:
+        """Reset a configuration value back to its default."""
+        target, field_name = self._resolve_key_path(key_path)
+        default_value = self._get_default_value(target, field_name)
+        setattr(target, field_name, default_value)
+        self.save(config_path)
+        return default_value
+
+    def _resolve_key_path(self, key_path: str) -> tuple[BaseModel, str]:
+        """Resolve a dotted config key into a model instance and field name."""
+        parts = key_path.split(".")
+        if not parts:
+            raise KeyError("Configuration key cannot be empty.")
+
+        if len(parts) == 1:
+            field_name = parts[0]
+            if field_name not in self.__class__.model_fields:
+                raise KeyError(f"Unknown configuration key: {key_path}")
+            return self, field_name
+
+        section_name = parts[0]
+        field_name = ".".join(parts[1:])
+
+        if section_name not in self.__class__.model_fields:
+            raise KeyError(f"Unknown configuration section: {section_name}")
+
+        target = getattr(self, section_name)
+        if not isinstance(target, BaseModel):
+            raise KeyError(f"Configuration key {key_path} does not point to a nested section.")
+
+        if field_name not in target.__class__.model_fields:
+            raise KeyError(f"Unknown configuration key: {key_path}")
+
+        return target, field_name
+
+    def _coerce_value(self, raw_value: str, annotation: Any, current_value: Any) -> Any:
+        """Coerce a string input into the correct config value type."""
+        origin = get_origin(annotation)
+        args = [arg for arg in get_args(annotation) if arg is not type(None)]
+
+        if origin in (list, List):
+            return self._parse_list_value(raw_value)
+
+        if origin is None and annotation is bool:
+            return self._parse_bool_value(raw_value)
+
+        if origin is None and annotation is int:
+            return int(raw_value)
+
+        if origin is None and annotation is float:
+            return float(raw_value)
+
+        if origin is None and annotation is str:
+            return raw_value
+
+        if args:
+            non_none_type = args[0]
+            if raw_value.lower() in {"none", "null"}:
+                return None
+            return self._coerce_value(raw_value, non_none_type, current_value)
+
+        if isinstance(current_value, bool):
+            return self._parse_bool_value(raw_value)
+        if isinstance(current_value, int) and not isinstance(current_value, bool):
+            return int(raw_value)
+        if isinstance(current_value, float):
+            return float(raw_value)
+        if isinstance(current_value, list):
+            return self._parse_list_value(raw_value)
+
+        return raw_value
+
+    def _parse_bool_value(self, raw_value: str) -> bool:
+        """Parse common boolean string values."""
+        normalized = raw_value.strip().lower()
+        if normalized in {"1", "true", "yes", "on"}:
+            return True
+        if normalized in {"0", "false", "no", "off"}:
+            return False
+        raise ValueError(f"Invalid boolean value: {raw_value}")
+
+    def _parse_list_value(self, raw_value: str) -> List[str]:
+        """Parse list values from JSON or comma-separated strings."""
+        stripped = raw_value.strip()
+        if stripped.startswith("["):
+            parsed = json.loads(stripped)
+            if not isinstance(parsed, list):
+                raise ValueError("Expected a JSON array for list configuration.")
+            return parsed
+
+        return [item.strip() for item in stripped.split(",") if item.strip()]
+
+    def _get_default_value(self, target: BaseModel, field_name: str) -> Any:
+        """Read the default value for a field from its Pydantic model."""
+        field_info = target.__class__.model_fields[field_name]
+        if field_info.default_factory is not None:
+            return field_info.default_factory()
+        return field_info.default
