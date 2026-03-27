@@ -26,6 +26,51 @@ pointer
 
 On first run, the CLI will prompt for initialization and configuration.
 
+Run a quick environment check with:
+
+```bash
+pointer doctor
+pointer doctor --json
+```
+
+The doctor command verifies your Python runtime, config directory, config initialization status, workspace detection, and API reachability.
+
+Inspect or update config values with:
+
+```bash
+pointer config show
+pointer config show api.base_url
+pointer config set api.base_url http://localhost:1234
+```
+
+Show the current environment with:
+
+```bash
+pointer status
+```
+
+Manage codebase context from top-level commands:
+
+```bash
+pointer context show
+pointer context refresh
+pointer context search TODO
+pointer context config
+```
+
+Initialize without prompts with:
+
+```bash
+pointer init --non-interactive --api-base-url http://localhost:1234 --model gpt-oss-20b
+```
+
+Enable shell completion with Typer's built-in commands:
+
+```bash
+pointer --install-completion
+pointer --show-completion
+```
+
 ## Configuration
 
 The CLI supports custom API base URLs and model selection for local AI services.
