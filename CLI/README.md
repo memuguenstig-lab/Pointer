@@ -61,6 +61,9 @@ pointer context refresh
 pointer context search TODO
 pointer context files --ext .py
 pointer context inspect src/app.py
+pointer context inspect src/app.py --json
+pointer context rebuild
+pointer context stats --json
 pointer context config
 ```
 
@@ -69,13 +72,18 @@ Manage saved chats with:
 ```bash
 pointer chats export chat_20260327_010000 --format markdown
 pointer chats rename chat_20260327_010000 "Bug triage"
+pointer chats list --json
+pointer chats current --json
+pointer chats delete chat_20260327_010000
 ```
 
 Inspect API connectivity and model setup with:
 
 ```bash
 pointer models
+pointer models --json
 pointer ping
+pointer ping --json
 ```
 
 Initialize without prompts with:

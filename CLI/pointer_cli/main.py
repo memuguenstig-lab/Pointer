@@ -229,6 +229,29 @@ def _complete_context_query(ctx: typer.Context, incomplete: str) -> list[str]:
     return sorted(suggestion for suggestion in suggestions if suggestion.lower().startswith(normalized))[:25]
 
 
+def _complete_context_files(ctx: typer.Context, incomplete: str) -> list[str]:
+    """Autocomplete indexed relative file paths for context inspection."""
+    config_path = ctx.params.get("config_path")
+
+    try:
+        config, codebase_context = _get_codebase_context(config_path)
+    except typer.Exit:
+        return []
+    except Exception:
+        return []
+
+    if not config.codebase.include_context:
+        return []
+
+    codebase_context.force_refresh()
+    normalized = incomplete.lower()
+    return sorted(
+        relative_path
+        for relative_path in codebase_context.context_cache
+        if relative_path.lower().startswith(normalized)
+    )[:50]
+
+
 @app.command("init")
 def init_command(
     config_path: Optional[str] = typer.Option(None, "--config", "-c", help="Path to config file"),
@@ -531,7 +554,12 @@ def context_files_command(
 
 @context_app.command("inspect")
 def context_inspect_command(
-    file_path: str = typer.Argument(..., help="Relative path of the indexed file to inspect"),
+    file_path: str = typer.Argument(
+        ...,
+        help="Relative path of the indexed file to inspect",
+        autocompletion=_complete_context_files,
+    ),
+    json_output: bool = typer.Option(False, "--json", help="Emit machine-readable JSON output"),
     config_path: Optional[str] = typer.Option(None, "--config", "-c", help="Path to config file"),
 ) -> None:
     """Inspect a single indexed file from codebase context."""
@@ -546,6 +574,20 @@ def context_inspect_command(
         console.print(f"[yellow]No indexed file found for '{file_path}'.[/yellow]")
         return
 
+    payload = {
+        "path": file_info.relative_path,
+        "extension": file_info.extension,
+        "lines": file_info.lines,
+        "size": file_info.size,
+        "size_formatted": file_info.size_formatted,
+        "modified": file_info.modified,
+        "preview": file_info.content_preview,
+    }
+
+    if json_output:
+        console.print(json.dumps(payload, indent=2))
+        return
+
     panel_body = (
         f"Path: {file_info.relative_path}\n"
         f"Extension: {file_info.extension}\n"
@@ -554,6 +596,79 @@ def context_inspect_command(
         f"Preview:\n{file_info.content_preview or '[No preview available]'}"
     )
     console.print(Panel(panel_body, title="Context File", border_style="blue"))
+
+
+@context_app.command("rebuild")
+def context_rebuild_command(
+    config_path: Optional[str] = typer.Option(None, "--config", "-c", help="Path to config file"),
+) -> None:
+    """Fully rebuild the cached codebase context."""
+    config, codebase_context = _get_codebase_context(config_path)
+    if not config.codebase.include_context:
+        console.print("[yellow]Codebase context is disabled.[/yellow]")
+        return
+
+    codebase_context.context_cache.clear()
+    codebase_context.last_refresh = 0
+    codebase_context.force_refresh()
+    summary = codebase_context.get_context_summary()
+    console.print(f"[green]Context rebuilt. Indexed {summary.get('total_files', 0)} files.[/green]")
+
+
+@context_app.command("stats")
+def context_stats_command(
+    json_output: bool = typer.Option(False, "--json", help="Emit machine-readable JSON output"),
+    config_path: Optional[str] = typer.Option(None, "--config", "-c", help="Path to config file"),
+) -> None:
+    """Show detailed statistics about indexed codebase context."""
+    config, codebase_context = _get_codebase_context(config_path)
+    if not config.codebase.include_context:
+        console.print("[yellow]Codebase context is disabled.[/yellow]")
+        return
+
+    codebase_context.force_refresh()
+    files = list(codebase_context.context_cache.values())
+    extension_counts = codebase_context._get_file_type_summary()
+    total_size = sum(file_info.size for file_info in files)
+    largest_files = sorted(files, key=lambda file_info: file_info.size, reverse=True)[:5]
+
+    payload = {
+        "total_files": len(files),
+        "total_size_bytes": total_size,
+        "extensions": extension_counts,
+        "largest_files": [
+            {
+                "path": file_info.relative_path,
+                "size": file_info.size,
+                "size_formatted": file_info.size_formatted,
+                "lines": file_info.lines,
+            }
+            for file_info in largest_files
+        ],
+        "exclude_patterns": config.codebase.exclude_patterns,
+        "context_depth": config.codebase.context_depth,
+    }
+
+    if json_output:
+        console.print(json.dumps(payload, indent=2))
+        return
+
+    table = Table(title="Pointer CLI Context Stats")
+    table.add_column("Metric", style="bold")
+    table.add_column("Value", overflow="fold")
+    table.add_row("Total files", str(payload["total_files"]))
+    table.add_row("Total size", f"{total_size} bytes")
+    table.add_row(
+        "Extensions",
+        ", ".join(f"{ext}({count})" for ext, count in extension_counts.items()) or "None",
+    )
+    table.add_row(
+        "Largest files",
+        ", ".join(f"{item['path']} ({item['size_formatted']})" for item in payload["largest_files"]) or "None",
+    )
+    table.add_row("Exclude patterns", ", ".join(config.codebase.exclude_patterns))
+    table.add_row("Context depth", str(config.codebase.context_depth))
+    console.print(table)
 
 
 @context_app.command("config")
@@ -641,9 +756,85 @@ def chats_rename_command(
     console.print(f"[green]Renamed {chat_id} to {title!r}.[/green]")
 
 
+@chats_app.command("list")
+def chats_list_command(
+    json_output: bool = typer.Option(False, "--json", help="Emit machine-readable JSON output"),
+    config_path: Optional[str] = typer.Option(None, "--config", "-c", help="Path to config file"),
+) -> None:
+    """List saved chat sessions."""
+    manager = _get_chat_manager(config_path)
+    chats = manager.list_chats()
+
+    if json_output:
+        console.print(json.dumps(chats, indent=2))
+        return
+
+    if not chats:
+        console.print("[yellow]No saved chats found.[/yellow]")
+        return
+
+    table = Table(title="Pointer CLI Chats")
+    table.add_column("Chat ID", style="bold")
+    table.add_column("Title")
+    table.add_column("Messages")
+    table.add_column("Tokens")
+    table.add_column("Last Modified")
+
+    for chat in chats:
+        table.add_row(
+            chat["id"],
+            chat["title"],
+            str(chat["message_count"]),
+            str(chat["total_tokens"]),
+            chat["last_modified"],
+        )
+
+    console.print(table)
+
+
+@chats_app.command("delete")
+def chats_delete_command(
+    chat_id: str = typer.Argument(..., help="Chat ID to delete", autocompletion=_complete_chat_ids),
+    config_path: Optional[str] = typer.Option(None, "--config", "-c", help="Path to config file"),
+) -> None:
+    """Delete a saved chat session."""
+    manager = _get_chat_manager(config_path)
+    if not manager.delete_chat(chat_id):
+        console.print(f"[red]Chat not found: {chat_id}[/red]")
+        raise typer.Exit(code=EXIT_CONFIG_ERROR)
+
+    console.print(f"[green]Deleted chat {chat_id}.[/green]")
+
+
+@chats_app.command("current")
+def chats_current_command(
+    json_output: bool = typer.Option(False, "--json", help="Emit machine-readable JSON output"),
+    config_path: Optional[str] = typer.Option(None, "--config", "-c", help="Path to config file"),
+) -> None:
+    """Show the most recently modified saved chat."""
+    manager = _get_chat_manager(config_path)
+    chats = manager.list_chats()
+    if not chats:
+        console.print("[yellow]No saved chats found.[/yellow]")
+        return
+
+    current_chat = chats[0]
+    if json_output:
+        console.print(json.dumps(current_chat, indent=2))
+        return
+
+    table = Table(title="Pointer CLI Current Chat")
+    table.add_column("Field", style="bold")
+    table.add_column("Value", overflow="fold")
+    for key in ["id", "title", "message_count", "total_tokens", "last_modified"]:
+        table.add_row(key, str(current_chat[key]))
+    console.print(table)
+
+
 @app.command("models")
 def models_command(
     config_path: Optional[str] = typer.Option(None, "--config", "-c", help="Path to config file"),
+    json_output: bool = typer.Option(False, "--json", help="Emit machine-readable JSON output"),
 ) -> None:
     """Show the configured model and try to discover remote models."""
     config = _load_validated_config(config_path)
@@ -660,6 +851,16 @@ def models_command(
     except Exception:
         discovered_models = []
 
+    payload = {
+        "configured_model": configured_model,
+        "api_base_url": config.api.base_url,
+        "discovered_models": discovered_models,
+    }
+
+    if json_output:
+        console.print(json.dumps(payload, indent=2))
+        return
+
     table = Table(title="Pointer CLI Models")
     table.add_column("Type", style="bold")
     table.add_column("Value", overflow="fold")
@@ -672,6 +873,7 @@ def models_command(
 @app.command("ping")
 def ping_command(
     config_path: Optional[str] = typer.Option(None, "--config", "-c", help="Path to config file"),
+    json_output: bool = typer.Option(False, "--json", help="Emit machine-readable JSON output"),
 ) -> None:
     """Check API reachability and print simple latency information."""
     config = _load_validated_config(config_path)
@@ -682,11 +884,19 @@ def ping_command(
         with request.urlopen(health_url, timeout=config.api.timeout) as response:
             latency_ms = int((__import__("time").time() - start) * 1000)
             status = getattr(response, "status", response.getcode())
+            if json_output:
+                console.print(json.dumps({"ok": True, "url": health_url, "status": status, "latency_ms": latency_ms}, indent=2))
+                return
             console.print(f"[green]OK[/green] {health_url} responded with HTTP {status} in {latency_ms} ms.")
     except error.HTTPError as exc:
         latency_ms = int((__import__("time").time() - start) * 1000)
+        if json_output:
+            console.print(json.dumps({"ok": False, "url": health_url, "status": exc.code, "latency_ms": latency_ms}, indent=2))
+            raise typer.Exit(code=EXIT_DEPENDENCY_ERROR)
         console.print(f"[yellow]WARN[/yellow] {health_url} responded with HTTP {exc.code} in {latency_ms} ms.")
     except Exception as exc:
+        if json_output:
+            console.print(json.dumps({"ok": False, "url": health_url, "error": str(exc)}, indent=2))
         console.print(f"[red]Ping failed:[/red] {exc}")
         raise typer.Exit(code=EXIT_DEPENDENCY_ERROR)
 

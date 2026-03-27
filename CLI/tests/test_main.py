@@ -557,6 +557,100 @@ class TestMainCommands:
         assert "module.py" in result.stdout
         assert "notes.md" not in result.stdout
 
+    def test_context_rebuild_reindexes_files(self, tmp_path, monkeypatch):
+        """`pointer context rebuild` should succeed and report indexed file count."""
+        (tmp_path / ".git").mkdir()
+        (tmp_path / "module.py").write_text("print('x')\n", encoding="utf-8")
+        config_path = tmp_path / "config.json"
+        config_path.write_text(
+            json.dumps(
+                {
+                    "api": {
+                        "base_url": "http://localhost:8000",
+                        "model_name": "context-model",
+                        "api_key": None,
+                        "timeout": 30,
+                        "max_retries": 3,
+                    },
+                    "ui": {
+                        "show_ai_responses": True,
+                        "show_thinking": True,
+                        "show_tool_outputs": True,
+                        "show_diffs": True,
+                        "render_markdown": True,
+                        "theme": "default",
+                        "max_output_lines": 100,
+                    },
+                    "mode": {"auto_run_mode": True},
+                    "codebase": {
+                        "include_context": True,
+                        "max_context_files": 20,
+                        "context_file_types": [".py"],
+                        "exclude_patterns": ["node_modules"],
+                        "context_depth": 3,
+                        "auto_refresh_context": False,
+                        "context_cache_duration": 3600,
+                    },
+                    "initialized": True,
+                }
+            ),
+            encoding="utf-8",
+        )
+        monkeypatch.chdir(tmp_path)
+
+        result = runner.invoke(app, ["context", "rebuild", "--config", str(config_path)])
+
+        assert result.exit_code == 0
+        assert "Context rebuilt" in result.stdout
+
+    def test_context_stats_json_outputs_summary(self, tmp_path, monkeypatch):
+        """`pointer context stats --json` should emit summary statistics."""
+        (tmp_path / ".git").mkdir()
+        (tmp_path / "module.py").write_text("print('x')\n", encoding="utf-8")
+        config_path = tmp_path / "config.json"
+        config_path.write_text(
+            json.dumps(
+                {
+                    "api": {
+                        "base_url": "http://localhost:8000",
+                        "model_name": "context-model",
+                        "api_key": None,
+                        "timeout": 30,
+                        "max_retries": 3,
+                    },
+                    "ui": {
+                        "show_ai_responses": True,
+                        "show_thinking": True,
+                        "show_tool_outputs": True,
+                        "show_diffs": True,
+                        "render_markdown": True,
+                        "theme": "default",
+                        "max_output_lines": 100,
+                    },
+                    "mode": {"auto_run_mode": True},
+                    "codebase": {
+                        "include_context": True,
+                        "max_context_files": 20,
+                        "context_file_types": [".py"],
+                        "exclude_patterns": ["node_modules"],
+                        "context_depth": 3,
+                        "auto_refresh_context": False,
+                        "context_cache_duration": 0,
+                    },
+                    "initialized": True,
+                }
+            ),
+            encoding="utf-8",
+        )
+        monkeypatch.chdir(tmp_path)
+
+        result = runner.invoke(app, ["context", "stats", "--json", "--config", str(config_path)])
+
+        assert result.exit_code == 0
+        payload = json.loads(result.stdout)
+        assert payload["total_files"] >= 1
+        assert ".py" in payload["extensions"]
+
     def test_context_inspect_shows_preview(self, tmp_path, monkeypatch):
         """`pointer context inspect` should show a detailed preview for one file."""
         (tmp_path / ".git").mkdir()
@@ -603,6 +697,54 @@ class TestMainCommands:
         assert result.exit_code == 0
         assert "Context File" in result.stdout
         assert "special_keyword = True" in result.stdout
+
+    def test_context_inspect_json_outputs_structured_data(self, tmp_path, monkeypatch):
+        """`pointer context inspect --json` should emit machine-readable file details."""
+        (tmp_path / ".git").mkdir()
+        (tmp_path / "module.py").write_text("print('hello')\n", encoding="utf-8")
+        config_path = tmp_path / "config.json"
+        config_path.write_text(
+            json.dumps(
+                {
+                    "api": {
+                        "base_url": "http://localhost:8000",
+                        "model_name": "context-model",
+                        "api_key": None,
+                        "timeout": 30,
+                        "max_retries": 3,
+                    },
+                    "ui": {
+                        "show_ai_responses": True,
+                        "show_thinking": True,
+                        "show_tool_outputs": True,
+                        "show_diffs": True,
+                        "render_markdown": True,
+                        "theme": "default",
+                        "max_output_lines": 100,
+                    },
+                    "mode": {"auto_run_mode": True},
+                    "codebase": {
+                        "include_context": True,
+                        "max_context_files": 20,
+                        "context_file_types": [".py"],
+                        "exclude_patterns": ["node_modules"],
+                        "context_depth": 3,
+                        "auto_refresh_context": False,
+                        "context_cache_duration": 0,
+                    },
+                    "initialized": True,
+                }
+            ),
+            encoding="utf-8",
+        )
+        monkeypatch.chdir(tmp_path)
+
+        result = runner.invoke(app, ["context", "inspect", "module.py", "--json", "--config", str(config_path)])
+
+        assert result.exit_code == 0
+        payload = json.loads(result.stdout)
+        assert payload["path"] == "module.py"
+        assert payload["extension"] == ".py"
 
     def test_invalid_config_returns_config_exit_code_for_status(self, tmp_path):
         """Validated commands should stop with the config exit code."""
@@ -713,6 +855,98 @@ class TestMainCommands:
         saved = json.loads(chat_path.read_text(encoding="utf-8"))
         assert saved["title"] == "New Title"
 
+    def test_chats_list_json_outputs_saved_chats(self, tmp_path):
+        """`pointer chats list --json` should emit stored chat metadata."""
+        config_path = tmp_path / "config.json"
+        chats_dir = tmp_path / "chats"
+        chats_dir.mkdir()
+        chat_id = "chat_20260327_010000"
+        (chats_dir / f"{chat_id}.json").write_text(
+            json.dumps(
+                {
+                    "id": chat_id,
+                    "title": "Demo Chat",
+                    "created_at": "2026-03-27T01:00:00",
+                    "last_modified": "2026-03-27T01:05:00",
+                    "total_tokens": 42,
+                    "messages": [],
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        result = runner.invoke(app, ["chats", "list", "--json", "--config", str(config_path)])
+
+        assert result.exit_code == 0
+        payload = json.loads(result.stdout)
+        assert payload[0]["id"] == chat_id
+
+    def test_chats_delete_removes_saved_chat(self, tmp_path):
+        """`pointer chats delete` should remove the chat file."""
+        config_path = tmp_path / "config.json"
+        chats_dir = tmp_path / "chats"
+        chats_dir.mkdir()
+        chat_id = "chat_20260327_010000"
+        chat_path = chats_dir / f"{chat_id}.json"
+        chat_path.write_text(
+            json.dumps(
+                {
+                    "id": chat_id,
+                    "title": "Demo Chat",
+                    "created_at": "2026-03-27T01:00:00",
+                    "last_modified": "2026-03-27T01:05:00",
+                    "total_tokens": 42,
+                    "messages": [],
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        result = runner.invoke(app, ["chats", "delete", chat_id, "--config", str(config_path)])
+
+        assert result.exit_code == 0
+        assert not chat_path.exists()
+
+    def test_chats_current_json_outputs_latest_chat(self, tmp_path):
+        """`pointer chats current --json` should return the most recently modified chat."""
+        config_path = tmp_path / "config.json"
+        chats_dir = tmp_path / "chats"
+        chats_dir.mkdir()
+        older_id = "chat_older"
+        newer_id = "chat_newer"
+        (chats_dir / f"{older_id}.json").write_text(
+            json.dumps(
+                {
+                    "id": older_id,
+                    "title": "Older Chat",
+                    "created_at": "2026-03-27T01:00:00",
+                    "last_modified": "2026-03-27T01:05:00",
+                    "total_tokens": 1,
+                    "messages": [],
+                }
+            ),
+            encoding="utf-8",
+        )
+        (chats_dir / f"{newer_id}.json").write_text(
+            json.dumps(
+                {
+                    "id": newer_id,
+                    "title": "Newer Chat",
+                    "created_at": "2026-03-27T02:00:00",
+                    "last_modified": "2026-03-27T02:05:00",
+                    "total_tokens": 2,
+                    "messages": [],
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        result = runner.invoke(app, ["chats", "current", "--json", "--config", str(config_path)])
+
+        assert result.exit_code == 0
+        payload = json.loads(result.stdout)
+        assert payload["id"] == newer_id
+
     def test_models_command_lists_configured_model(self, tmp_path):
         """`pointer models` should always show the configured model."""
         config_path = tmp_path / "config.json"
@@ -756,6 +990,50 @@ class TestMainCommands:
         assert result.exit_code == 0
         assert "demo-model" in result.stdout
 
+    def test_models_json_outputs_configured_model(self, tmp_path):
+        """`pointer models --json` should emit machine-readable model data."""
+        config_path = tmp_path / "config.json"
+        config_path.write_text(
+            json.dumps(
+                {
+                    "api": {
+                        "base_url": "http://localhost:8000",
+                        "model_name": "demo-model",
+                        "api_key": None,
+                        "timeout": 30,
+                        "max_retries": 3,
+                    },
+                    "ui": {
+                        "show_ai_responses": True,
+                        "show_thinking": True,
+                        "show_tool_outputs": True,
+                        "show_diffs": True,
+                        "render_markdown": True,
+                        "theme": "default",
+                        "max_output_lines": 100,
+                    },
+                    "mode": {"auto_run_mode": True},
+                    "codebase": {
+                        "include_context": True,
+                        "max_context_files": 20,
+                        "context_file_types": [".py"],
+                        "exclude_patterns": [".git"],
+                        "context_depth": 3,
+                        "auto_refresh_context": False,
+                        "context_cache_duration": 3600,
+                    },
+                    "initialized": True,
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        result = runner.invoke(app, ["models", "--json", "--config", str(config_path)])
+
+        assert result.exit_code == 0
+        payload = json.loads(result.stdout)
+        assert payload["configured_model"] == "demo-model"
+
     def test_ping_command_returns_dependency_error_when_unreachable(self, tmp_path):
         """`pointer ping` should use the dependency exit code on failure."""
         config_path = tmp_path / "config.json"
@@ -797,6 +1075,50 @@ class TestMainCommands:
         result = runner.invoke(app, ["ping", "--config", str(config_path)])
 
         assert result.exit_code == EXIT_DEPENDENCY_ERROR
+
+    def test_ping_json_outputs_error_payload_when_unreachable(self, tmp_path):
+        """`pointer ping --json` should emit structured failure details."""
+        config_path = tmp_path / "config.json"
+        config_path.write_text(
+            json.dumps(
+                {
+                    "api": {
+                        "base_url": "http://localhost:65530",
+                        "model_name": "demo-model",
+                        "api_key": None,
+                        "timeout": 1,
+                        "max_retries": 3,
+                    },
+                    "ui": {
+                        "show_ai_responses": True,
+                        "show_thinking": True,
+                        "show_tool_outputs": True,
+                        "show_diffs": True,
+                        "render_markdown": True,
+                        "theme": "default",
+                        "max_output_lines": 100,
+                    },
+                    "mode": {"auto_run_mode": True},
+                    "codebase": {
+                        "include_context": True,
+                        "max_context_files": 20,
+                        "context_file_types": [".py"],
+                        "exclude_patterns": [".git"],
+                        "context_depth": 3,
+                        "auto_refresh_context": False,
+                        "context_cache_duration": 3600,
+                    },
+                    "initialized": True,
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        result = runner.invoke(app, ["ping", "--json", "--config", str(config_path)])
+
+        assert result.exit_code == EXIT_DEPENDENCY_ERROR
+        payload = json.loads(result.stdout)
+        assert payload["ok"] is False
 
     def test_complete_config_keys_suggests_matching_dotted_keys(self):
         """Config key completion should return matching dotted keys."""
