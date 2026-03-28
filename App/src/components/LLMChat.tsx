@@ -34,6 +34,7 @@ import { CodebaseContextService } from '../services/CodebaseContextService';
 import { stripThinkTags, extractCodeBlocks } from '../utils/textUtils';
 import { resizePerformanceMonitor } from '../utils/performance';
 import { ChatService } from '../services/ChatService';
+import { AIBackendService } from '../services/AIBackendService';
 
 // Add TypeScript declarations for window properties
 declare global {

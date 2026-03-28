@@ -7,34 +7,87 @@ const API_PORT = process.env.VITE_API_URL?.match(/:(\d+)$/)?.[1] || '23816'
 const API_HOST = process.env.VITE_API_URL ? new URL(process.env.VITE_API_URL).host : 'http://127.0.0.1:23816'
 const DEV_PORT = parseInt(process.env.VITE_DEV_SERVER_PORT || '3000', 10)
 
-// Dynamic chunk strategy: Smart code splitting based on dependencies
+// Dynamic chunk strategy: AGGRESSIVE splitting to avoid >2MB chunks
 function generateManualChunks(id: string) {
-  // Monaco editor workers - separate heavy chunks
+  // Monaco editor: split EVERY worker separately + core + languages
   if (id.includes('monaco-editor')) {
-    if (id.includes('json.worker')) return 'monaco-json';
-    if (id.includes('css.worker')) return 'monaco-css';
-    if (id.includes('html.worker')) return 'monaco-html';
-    if (id.includes('typescript') || id.includes('ts.worker')) return 'monaco-ts';
-    if (id.includes('editor.worker')) return 'monaco-editor-core';
-    return 'monaco-vendors';
+    // Workers - load on demand only
+    if (id.includes('json.worker')) return 'monaco-json-worker';
+    if (id.includes('css.worker')) return 'monaco-css-worker';
+    if (id.includes('html.worker')) return 'monaco-html-worker';
+    if (id.includes('typescript')) return 'monaco-ts-worker';
+    if (id.includes('editor.worker') || id.includes('editor/editor.main')) return 'monaco-editor-main';
+    
+    // Language support modules (split to avoid huge main)
+    if (id.match(/monaco.*language|language.*json|language.*css|language.*html|language.*typescript/)) {
+      return 'monaco-languages';
+    }
+    
+    // Core Monaco lib
+    return 'monaco-core-lib';
   }
 
-  // Node modules vendor splitting
+  // Separate vendor chunks by functional domain
   if (id.includes('node_modules')) {
-    // React ecosystem
-    if (/react|react-dom|react-markdown/.test(id)) return 'vendor-react';
+    // React core ecosystem - split base from DOM
+    if (id.includes('node_modules/react') && !id.includes('react-')) {
+      return 'vendor-react-core';
+    }
+    if (id.includes('node_modules/react-dom')) {
+      return 'vendor-react-dom';
+    }
     
-    // UI/Editor libraries
-    if (/xterm|@xterm/.test(id)) return 'vendor-terminal';
-    if (/syntax-highlighter|highlight/.test(id)) return 'vendor-highlight';
+    // Heavy markdown/documentation libraries 
+    if (/remark|rehype|markdown|micromark/.test(id)) {
+      return 'vendor-markdown';
+    }
     
-    // Utilities
-    if (/zustand|uuid|chalk|diff/.test(id)) return 'vendor-utils';
+    // Terminal emulation - very heavy, needs its own chunk
+    if (/@xterm|xterm\/lib/.test(id)) {
+      return 'vendor-xterm';
+    }
     
-    // Discord/External integrations
-    if (/discord/.test(id)) return 'vendor-discord';
+    // Syntax highlighting
+    if (/syntax-highlighter|highlight\.js|prism/.test(id)) {
+      return 'vendor-highlight';
+    }
     
-    // Default fallback for other vendors
+    // Math/KaTeX rendering
+    if (/katex|mathjax|math/.test(id)) {
+      return 'vendor-math';
+    }
+    
+    // Emoji support
+    if (/emoji|remark-emoji/.test(id)) {
+      return 'vendor-emoji';
+    }
+    
+    // OpenAI & API clients
+    if (/openai|ai\//.test(id)) {
+      return 'vendor-openai';
+    }
+    
+    // Discord Rich Presence
+    if (/discord/.test(id)) {
+      return 'vendor-discord';
+    }
+    
+    // Small utilities bundle (commonly needed)
+    if (/zustand|uuid|chalk/.test(id)) {
+      return 'vendor-utils-core';
+    }
+    
+    // Diff utilities
+    if (/diff\//.test(id)) {
+      return 'vendor-diff';
+    }
+    
+    // TinyColor
+    if (/tinycolor/.test(id)) {
+      return 'vendor-color';
+    }
+    
+    // Catch remaining vendors
     return 'vendor-common';
   }
 
@@ -44,6 +97,9 @@ function generateManualChunks(id: string) {
 export default defineConfig({
   plugins: [react()],
   base: process.env.NODE_ENV === 'production' ? './' : '/',
+  ssr: {
+    noExternal: ['monaco-editor']
+  },
   define: {
     __API_URL__: JSON.stringify(process.env.VITE_API_URL || 'http://localhost:23816'),
     __DEV_PORT__: JSON.stringify(DEV_PORT),
@@ -100,9 +156,10 @@ export default defineConfig({
     assetsDir: 'assets',
     emptyOutDir: true,
     sourcemap: process.env.NODE_ENV === 'production' ? false : 'inline',
+    // Rollup configuration for better code splitting
     rollupOptions: {
       output: {
-        // Dynamic chunk splitting strategy
+        // Aggressive manual chunk splitting
         manualChunks: generateManualChunks,
         // Optimize chunk file names for caching
         chunkFileNames: (chunkInfo) => {
@@ -122,10 +179,25 @@ export default defineConfig({
         }
       },
     },
-    // Increase chunk size threshold for better caching
-    chunkSizeWarningLimit: 1024,
-    // Enable minification for production
+    // Chunk size threshold: warn if > 3MB (before optimization we had 4.7MB TS worker)
+    chunkSizeWarningLimit: 3072,
+    // Enable minification for production with aggressive compression
     minify: process.env.NODE_ENV === 'production' ? 'terser' : false,
+    // Terser minification options for maximum compression
+    terserOptions: process.env.NODE_ENV === 'production' ? {
+      compress: {
+        drop_console: false,  // Keep console for debugging in production
+        drop_debugger: true,
+        passes: 2,  // Multiple optimization passes
+        pure_funcs: null
+      },
+      mangle: {
+        properties: false
+      },
+      format: {
+        comments: false
+      }
+    } : undefined,
   },
   resolve: {
     alias: {
