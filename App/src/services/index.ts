@@ -52,6 +52,70 @@ export type {
   HeatmapIndex
 } from './LayeredIndexingStrategy';
 
+// Backend Architecture Services (Tier 2 Implementation)
+export { IncrementalCodebaseSync } from './IncrementalCodebaseSync';
+export type {
+  FileChange,
+  ASTDiff
+} from './IncrementalCodebaseSync';
+
+export { TokenBudgetManager } from './TokenBudgetManager';
+export type {
+  TokenRequest,
+  BudgetStats
+} from './TokenBudgetManager';
+
+export { CodeCompressor } from './CodeCompressor';
+export type {
+  CompressionResult,
+  CompressionOptions
+} from './CodeCompressor';
+
+export { SemanticVersionedCache } from './SemanticVersionedCache';
+export type {
+  CacheEntry,
+  CacheDecision
+} from './SemanticVersionedCache';
+
+export { ResponseInterceptionManager } from './ResponseInterceptionManager';
+export type {
+  InterceptionContext,
+  InterceptionResult
+} from './ResponseInterceptionManager';
+
+export { RequestDeduplicator } from './RequestDeduplicator';
+export type {
+  DuplicateQuery,
+  DeduplicationResult
+} from './RequestDeduplicator';
+
+export { LayeredResponseGenerator } from './LayeredResponseGenerator';
+export type {
+  ResponseLayer,
+  LayeredResponse
+} from './LayeredResponseGenerator';
+
+export { PersistentMemoryIndexBuilder } from './PersistentMemoryIndexBuilder';
+export type {
+  MemoryEntry,
+  ConceptHub,
+  SessionMetadata
+} from './PersistentMemoryIndexBuilder';
+
+export { BatchQueryOptimizer } from './BatchQueryOptimizer';
+export type {
+  BatchableQuery,
+  QueryBatch,
+  BatchResult
+} from './BatchQueryOptimizer';
+
+export { OutputStreamOptimizer } from './OutputStreamOptimizer';
+export type {
+  StreamChunk,
+  StreamConfig,
+  StreamStats
+} from './OutputStreamOptimizer';
+
 // Components are exported from respective files
 // import Breadcrumb from '../components/Breadcrumb';
 // import WindowControls from '../components/WindowControls';
