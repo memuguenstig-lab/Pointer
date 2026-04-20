@@ -76,7 +76,7 @@ const Terminal: React.FC<TerminalProps> = ({ isVisible }) => {
             background: '#1e1e1e',
             foreground: '#cccccc',
             cursor: '#ffffff',
-            selection: '#264f78',
+            selectionBackground: '#264f78',
           },
           fontFamily: 'Consolas, "Courier New", monospace',
           fontSize: 14,

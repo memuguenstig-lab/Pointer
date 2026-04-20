@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 interface WebsiteMetadata {
   title?: string;
   description?: string;
-  favicon?: string;
+  favicon?: string | null;
   domain?: string;
 }
 
@@ -307,9 +307,8 @@ const LinkHoverCard: React.FC<LinkHoverCardProps> = ({ url, children }) => {
                       objectFit: 'cover',
                     }}
                     onError={(e) => {
-                      // Fallback to website icon if favicon fails to load
                       e.currentTarget.style.display = 'none';
-                      e.currentTarget.nextElementSibling!.style.display = 'flex';
+                      (e.currentTarget.nextElementSibling as HTMLElement)!.style.display = 'flex';
                     }}
                   />
                 ) : null}

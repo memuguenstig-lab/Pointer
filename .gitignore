@@ -12,3 +12,6 @@ C:\
 C:/
 .vscode
 .env
+release/
+installer/windows-offline/
+installer/macos-offline/

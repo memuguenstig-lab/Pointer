@@ -138,10 +138,9 @@ const Resizable: React.FC<ResizableProps> = ({
           fontSize: '10px',
           opacity: 0,
           transition: 'opacity 0.2s ease',
-          ':hover': {
-            opacity: 1,
-          },
         }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.opacity = '1'; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.opacity = '0'; }}
       >
         <span style={{ 
           transform: isCollapsed ? 'rotate(180deg)' : 'none',
@@ -161,10 +160,9 @@ const Resizable: React.FC<ResizableProps> = ({
           cursor: 'col-resize',
           background: isDragging ? 'var(--accent-color)' : 'transparent',
           transition: 'background-color 0.2s ease',
-          ':hover': {
-            background: 'var(--accent-color)',
-          },
         }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--accent-color)'; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = isDragging ? 'var(--accent-color)' : 'transparent'; }}
       />
     </div>
   );

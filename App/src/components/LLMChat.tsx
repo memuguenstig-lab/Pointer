@@ -34,6 +34,7 @@ import { CodebaseContextService } from '../services/CodebaseContextService';
 import { stripThinkTags, extractCodeBlocks } from '../utils/textUtils';
 import { resizePerformanceMonitor } from '../utils/performance';
 import { ChatService } from '../services/ChatService';
+import { showToast } from '../services/ToastService';
 
 // Add TypeScript declarations for window properties
 declare global {
@@ -3568,7 +3569,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
     if ((!content.trim() && attachments.length === 0) || isProcessing) return;
     
     // Declare streamingTimeoutId at function scope so it's accessible in finally block
-    let streamingTimeoutId: ReturnType<typeof setTimeout> | null = null;
+    let streamingTimeoutId: ReturnType<typeof setTimeout> | undefined = undefined;
     
     try {
       setIsProcessing(true);

@@ -6,14 +6,20 @@
   "scripts": {
     "env": "npx dotenv-wizard",
     "start": "vite",
-    "build": "tsc && vite build",
+    "build": "vite build",
     "serve": "vite preview",
     "dev:server": "vite",
     "dev:electron": "electron .",
     "dev": "node start-pointer.js",
     "electron:dev": "concurrently \"yarn start\" \"wait-on http://localhost:3000 && electron .\"",
     "electron:start": "electron .",
-    "postinstall": "electron-builder install-app-deps"
+    "dist": "yarn build && electron-builder --win --mac",
+    "dist:win": "yarn build && electron-builder --win",
+    "dist:mac": "yarn build && electron-builder --mac",
+    "postinstall": "electron-builder install-app-deps",
+    "installer:test": "node installer/test-installation.js",
+    "installer:prepare-offline": "node installer/prepare-offline.js",
+    "installer:verify": "echo 'Verifying installer components...' && node installer/test-installation.js"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -56,30 +62,71 @@
     "electron-builder": "^24.9.1",
     "typescript": "^5.0.0",
     "vite": "^5.4.14",
-    "wait-on": "^7.2.0"
+    "wait-on": "^7.2.0",
+    "yarn": "^1.22.22"
   },
   "proxy": "http://localhost:1234",
   "build": {
     "appId": "com.pointer",
+    "productName": "Pointer",
+    "copyright": "Copyright © 2024 PointerIDE",
+    "directories": {
+      "output": "release"
+    },
+    "extraResources": [
+      {
+        "from": "backend-node",
+        "to": "backend-node",
+        "filter": ["**/*", "!node_modules/**"]
+      }
+    ],
     "mac": {
       "category": "public.app-category.developer-tools",
       "icon": "electron/logo.png",
       "target": [
-        "dmg",
-        "zip"
+        { "target": "dmg", "arch": ["x64", "arm64"] },
+        { "target": "zip", "arch": ["x64", "arm64"] }
+      ]
+    },
+    "dmg": {
+      "title": "Install Pointer",
+      "contents": [
+        { "x": 130, "y": 220 },
+        { "x": 410, "y": 220, "type": "link", "path": "/Applications" }
       ]
     },
     "win": {
-      "target": "nsis",
-      "icon": "electron/logo3.png"
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "icon": "electron/logo.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "installerIcon": "electron/logo.png",
+      "uninstallerIcon": "electron/logo.png",
+      "installerHeaderIcon": "electron/logo.png",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Pointer",
+      "include": "installer/nsis-custom.nsh",
+      "installerSidebar": null,
+      "license": null
     },
     "linux": {
       "target": "AppImage",
-      "icon": "electron/logo3.png"
+      "icon": "electron/logo.png"
     },
     "files": [
       "dist/**/*",
-      "electron/**/*"
+      "electron/**/*",
+      "!electron/setup.js"
+    ],
+    "extraFiles": [
+      {
+        "from": "electron/setup.js",
+        "to": "resources/app/electron/setup.js"
+      }
     ],
     "publish": [
       {
