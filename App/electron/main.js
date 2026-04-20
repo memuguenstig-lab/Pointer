@@ -9,6 +9,8 @@ const isDev = process.env.NODE_ENV !== 'production';
 const DiscordRPC = require('discord-rpc');
 const { autoUpdater } = require('electron-updater');
 const fs = require('fs');
+const { spawn } = require('child_process');
+const { runSetup, isSetupNeeded } = require('./setup');
 
 // Get dev server port from environment variable or default to 3000
 const DEV_SERVER_PORT = process.env.VITE_DEV_SERVER_PORT || '3000';
@@ -387,11 +389,87 @@ function showMainWindow(mainWindow) {
   }
 }
 
+// ── Backend process management ─────────────────────────────────────────────
+let backendProcess = null;
+
+function getAppRoot() {
+  // In production the resources are at process.resourcesPath/app
+  // In dev they are at the repo root (App/)
+  if (isDev) return path.join(__dirname, '..');
+  return path.join(process.resourcesPath, 'app');
+}
+
+async function startBackend() {
+  const appRoot = getAppRoot();
+  const backendDir = path.join(appRoot, 'backend-node');
+  const serverScript = path.join(backendDir, 'server.js');
+
+  if (!fs.existsSync(serverScript)) {
+    console.error('Backend server.js not found at', serverScript);
+    return false;
+  }
+
+  return new Promise((resolve) => {
+    backendProcess = spawn('node', [serverScript], {
+      cwd: backendDir,
+      stdio: 'pipe',
+      env: { ...process.env }
+    });
+
+    backendProcess.stdout.on('data', d => console.log('[Backend]', d.toString().trim()));
+    backendProcess.stderr.on('data', d => console.error('[Backend ERR]', d.toString().trim()));
+    backendProcess.on('close', code => console.log('[Backend] exited', code));
+
+    // Wait up to 15s for backend to respond
+    let attempts = 0;
+    const check = setInterval(async () => {
+      attempts++;
+      try {
+        const res = await fetch('http://127.0.0.1:23816/test-backend');
+        if (res.ok) { clearInterval(check); resolve(true); }
+      } catch(e) {}
+      if (attempts >= 30) { clearInterval(check); resolve(false); }
+    }, 500);
+  });
+}
+
+app.on('before-quit', () => {
+  if (backendProcess) { try { backendProcess.kill(); } catch(e) {} }
+});
+
 async function createWindow() {
   try {
     // Load settings first
     await loadSettings();
-    
+
+    // ── First-run setup (install Node.js + npm deps if needed) ─────────────
+    if (!isDev) {
+      const appRoot = getAppRoot();
+      if (isSetupNeeded(appRoot)) {
+        updateSplashMessage('Setting up Pointer (first run)...');
+        try {
+          await runSetup({
+            appRoot,
+            onStatus: (msg, pct) => {
+              console.log(`[Setup ${pct}%] ${msg}`);
+              updateSplashMessage(msg);
+            }
+          });
+        } catch(e) {
+          dialog.showErrorBox('Setup Failed', `Pointer could not complete setup:\n\n${e.message}\n\nPlease install Node.js from https://nodejs.org and restart.`);
+          app.quit();
+          return;
+        }
+      }
+    }
+
+    // ── Start Node.js backend ───────────────────────────────────────────────
+    updateSplashMessage('Starting backend...');
+    const backendStarted = await startBackend();
+    if (!backendStarted) {
+      console.warn('Backend did not start in time — continuing anyway');
+    }
+
     // First check if backend is running (unless skipping checks)
     if (!SKIP_CONNECTION_CHECKS) {
       const backendReady = await checkBackendConnection();

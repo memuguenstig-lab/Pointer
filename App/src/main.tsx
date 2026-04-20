@@ -10,7 +10,7 @@ import tsWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker'
 
 // Configure Monaco Editor to use specific workers
 self.MonacoEnvironment = {
-  getWorker(_, label) {
+  getWorker(_, label): Worker {
     if (label === 'json') {
       return new jsonWorker();
     }
@@ -23,8 +23,7 @@ self.MonacoEnvironment = {
     if (label === 'typescript' || label === 'javascript') {
       return new tsWorker();
     }
-    // For all other files, don't use a worker
-    return null;
+    return new editorWorker();
   }
 };
 

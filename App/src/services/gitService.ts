@@ -563,7 +563,7 @@ export class GitService {
   /**
    * Lists all stashes
    */
-  static async listStashes(directory: string): Promise<string[]> {
+  static async listStashes(directory: string): Promise<{ index: string; message: string }[]> {
     try {
       const response = await fetch(`${this.API_URL}/git/stash-list`, {
         method: 'POST',

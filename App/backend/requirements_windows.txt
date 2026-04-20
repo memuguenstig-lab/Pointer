@@ -1,9 +1,0 @@
-# Requirements for Windows
-fastapi==0.104.1
-uvicorn==0.24.0
-pydantic==2.4.2
-PyQt5==5.15.9
-python-multipart==0.0.9
-starlette>=0.27.0
-websockets
-pywin32
