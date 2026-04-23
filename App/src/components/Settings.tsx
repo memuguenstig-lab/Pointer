@@ -1117,6 +1117,8 @@ export function Settings({ isVisible, onClose, initialSettings }: SettingsProps)
 
   const fetchAvailableModels = async (apiEndpoint: string, apiKey?: string) => {
     if (!apiEndpoint) return;
+    // Don't try to discover models for embedded provider
+    if (apiEndpoint.includes('/api/llama')) return;
     
     setIsLoadingModels(true);
     try {

@@ -6768,10 +6768,11 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
         onSubmit={editingMessageIndex !== null ? handleSubmitEdit : handleSubmit}
         style={{
           borderTop: attachedFiles.length > 0 ? 'none' : '1px solid var(--border-primary)',
-          padding: '12px',
+          padding: '10px 12px 12px',
           display: 'flex',
           flexDirection: 'column',
           background: 'var(--bg-secondary)',
+          gap: '8px',
         }}
       >
         <div
@@ -6779,28 +6780,36 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
             position: 'relative',
             display: 'flex',
             flexDirection: 'column',
-            gap: '8px',
+            background: 'var(--bg-primary)',
+            border: '1px solid var(--border-primary)',
+            borderRadius: '8px',
+            overflow: 'visible',
+            transition: 'border-color 0.15s',
           }}
+          onFocusCapture={e => (e.currentTarget.style.borderColor = 'var(--accent-color)')}
+          onBlurCapture={e => (e.currentTarget.style.borderColor = 'var(--border-primary)')}
         >
           <textarea
             ref={textareaRef}
             value={input}
             onChange={handleInputChange}
-            placeholder={editingMessageIndex !== null ? "Edit your message..." : "Type your message... (Use @ to attach files)"}
+            placeholder={editingMessageIndex !== null ? "Edit your message..." : "Ask anything... (@ to attach files)"}
             style={{
               width: '100%',
-              padding: '12px',
-              borderRadius: '4px',
-              border: '1px solid var(--border-primary)',
-              background: isAnyProcessing ? 'var(--bg-tertiary, #f5f5f5)' : 'var(--bg-primary)',
-              color: isAnyProcessing ? 'var(--text-disabled, #888)' : 'var(--text-primary)',
+              padding: '10px 12px 4px',
+              border: 'none',
+              outline: 'none',
+              background: 'transparent',
+              color: isAnyProcessing ? 'var(--text-secondary)' : 'var(--text-primary)',
               resize: 'none',
               fontSize: '13px',
-              minHeight: '60px',
-              maxHeight: '150px',
+              minHeight: '56px',
+              maxHeight: '160px',
               overflow: 'auto',
               opacity: isAnyProcessing ? 0.6 : 1,
               cursor: isAnyProcessing ? 'not-allowed' : 'text',
+              lineHeight: '1.5',
+              fontFamily: 'var(--font-ui)',
             }}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
@@ -6825,104 +6834,124 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
             <div
               ref={suggestionBoxRef}
               className="file-suggestions-dropdown"
-            >
-              {fileSuggestions.map((file, index) => (
-                <div
-                  key={index}
-                  onClick={() => selectFileSuggestion(file)}
-                  className="file-suggestion-item"
-                >
-                  <span className="file-suggestion-icon">📄</span>
-                  {file.name}
-                </div>
-              ))}
-            </div>
+            />
           )}
 
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'flex-end',
-              marginTop: '8px',
-              gap: '8px',
-            }}
-          >
-            {editingMessageIndex !== null && (
-              <button
-                onClick={handleCancelEdit}
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: '4px',
-                  border: '1px solid var(--border-primary)',
-                  background: 'var(--bg-secondary)',
-                  color: 'var(--text-secondary)',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  fontWeight: 500,
-                }}
-                type="button"
-              >
-                Cancel
-              </button>
-            )}
-            
-            {/* Add hidden file input */}
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileInputChange}
-              style={{ display: 'none' }}
-            />
-            
-            {/* File attachment button */}
-            {!editingMessageIndex && !isAnyProcessing && (
-              <button
-                onClick={handleFileAttachment}
-                type="button"
-                className="add-file-button"
-                title="Attach file"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 5v14M5 12h14" />
-                </svg>
-              </button>
-            )}
-            
-            {isAnyProcessing ? (
-              <button
-                onClick={handleCancel}
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: '4px',
-                  border: '1px solid var(--border-primary)',
-                  background: 'var(--bg-secondary)',
-                  color: 'var(--text-error)',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  fontWeight: 500,
-                }}
-                type="button"
-              >
-                Cancel
-              </button>
-            ) : (
-              <button
-                type="submit"
-                disabled={!input.trim() && attachedFiles.length === 0}
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: '4px',
-                  border: '1px solid var(--border-primary)',
-                  background: (input.trim() || attachedFiles.length > 0) ? 'var(--accent-color)' : 'var(--bg-secondary)',
-                  color: (input.trim() || attachedFiles.length > 0) ? 'white' : 'var(--text-secondary)',
-                  cursor: (input.trim() || attachedFiles.length > 0) ? 'pointer' : 'not-allowed',
-                  fontSize: '13px',
-                  fontWeight: 500,
-                }}
-              >
-                {editingMessageIndex !== null ? 'Update' : 'Send'}
-              </button>
-            )}
+          {/* Bottom toolbar inside the input box */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '4px 8px 6px',
+          }}>
+            {/* Left: attach button */}
+            <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+              {/* Add hidden file input */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileInputChange}
+                style={{ display: 'none' }}
+              />
+              {!editingMessageIndex && !isAnyProcessing && (
+                <button
+                  onClick={handleFileAttachment}
+                  type="button"
+                  title="Attach file"
+                  style={{
+                    width: '28px',
+                    height: '28px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'transparent',
+                    border: 'none',
+                    borderRadius: '6px',
+                    color: 'var(--text-secondary)',
+                    cursor: 'pointer',
+                    transition: 'background 0.15s, color 0.15s',
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-hover)'; (e.currentTarget as HTMLElement).style.color = 'var(--text-primary)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'; }}
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                  </svg>
+                </button>
+              )}
+              {editingMessageIndex !== null && (
+                <button
+                  onClick={handleCancelEdit}
+                  type="button"
+                  style={{
+                    height: '28px',
+                    padding: '0 10px',
+                    borderRadius: '6px',
+                    border: '1px solid var(--border-primary)',
+                    background: 'transparent',
+                    color: 'var(--text-secondary)',
+                    cursor: 'pointer',
+                    fontSize: '12px',
+                  }}
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+
+            {/* Right: send / cancel / stop */}
+            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+              {isAnyProcessing ? (
+                <button
+                  onClick={handleCancel}
+                  type="button"
+                  title="Stop generation"
+                  style={{
+                    width: '28px',
+                    height: '28px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'rgba(248, 81, 73, 0.12)',
+                    border: '1px solid rgba(248, 81, 73, 0.3)',
+                    borderRadius: '6px',
+                    color: '#f85149',
+                    cursor: 'pointer',
+                    transition: 'background 0.15s',
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(248, 81, 73, 0.22)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(248, 81, 73, 0.12)'; }}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                    <rect x="4" y="4" width="16" height="16" rx="2"/>
+                  </svg>
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={!input.trim() && attachedFiles.length === 0}
+                  title="Send (Enter)"
+                  style={{
+                    width: '28px',
+                    height: '28px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: (input.trim() || attachedFiles.length > 0) ? 'var(--accent-color)' : 'var(--bg-accent)',
+                    border: 'none',
+                    borderRadius: '6px',
+                    color: (input.trim() || attachedFiles.length > 0) ? '#fff' : 'var(--text-secondary)',
+                    cursor: (input.trim() || attachedFiles.length > 0) ? 'pointer' : 'not-allowed',
+                    transition: 'background 0.15s, color 0.15s',
+                  }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="22" y1="2" x2="11" y2="13"/>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                  </svg>
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </form>

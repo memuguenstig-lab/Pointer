@@ -35,21 +35,33 @@ export class ModelDiscoveryService {
         headers['Authorization'] = `Bearer ${apiKey}`;
       }
 
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5000);
+
       const response = await fetch(`${baseUrl}/models`, {
         method: 'GET',
         headers,
+        signal: controller.signal,
       });
 
+      clearTimeout(timeout);
+
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to fetch models: ${response.status} ${errorText}`);
+        // Don't throw — just return empty list silently
+        console.warn(`Model discovery: endpoint returned ${response.status}`);
+        return [];
       }
 
       const data: ModelsResponse = await response.json();
       return data.data || [];
-    } catch (error) {
-      console.error('Error fetching available models:', error);
-      throw error;
+    } catch (error: any) {
+      // Network errors (no server running) are expected — don't propagate
+      if (error?.name === 'AbortError') {
+        console.warn('Model discovery: request timed out');
+      } else {
+        console.warn('Model discovery: could not reach endpoint:', error?.message || error);
+      }
+      return [];
     }
   }
 
