@@ -188,7 +188,7 @@ const App: React.FC = () => {
         return parsedWidth;
       }
     }
-    return 700; // Default width to match chat component
+    return 380; // Default width — slim agent panel
   });
 
   // Preview tab state management
@@ -1544,6 +1544,7 @@ const App: React.FC = () => {
                 isCollapsed={isSidebarCollapsed}
                 onCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
                 shortcutKey="sidebar"
+                storageKey="sidebarWidth"
               >
                 {isLoading ? (
                   <div style={{
@@ -1652,6 +1653,7 @@ const App: React.FC = () => {
               onClose={() => setIsLLMChatVisible(false)}
               onResize={(newWidth) => {
                 setWidth(newWidth);
+                localStorage.setItem('chatWidth', String(newWidth));
                 // Force editor layout update with proper timing
                 if (editor.current) {
                   // Use a small delay to ensure the DOM has updated
