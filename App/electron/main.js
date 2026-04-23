@@ -397,6 +397,15 @@ async function startBackend() {
     return false;
   }
 
+  // Check if backend is already running (started by start-pointer.js)
+  try {
+    const res = await fetch('http://127.0.0.1:23816/test-backend');
+    if (res.ok) {
+      console.log('[Backend] Already running, skipping start.');
+      return true;
+    }
+  } catch (_) {}
+
   return new Promise((resolve) => {
     backendProcess = spawn('node', [serverScript], {
       cwd: backendDir,
