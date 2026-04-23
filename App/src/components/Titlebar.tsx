@@ -153,7 +153,11 @@ const Titlebar: React.FC<TitlebarProps> = ({
     setIsFileMenuOpen(false);
   };
 
-  const isWindows = systemInfo?.os.system === 'Windows';
+  // Detect Windows immediately via Electron/userAgent, don't wait for systemInfo API call
+  const isWindows = typeof window !== 'undefined' && (
+    window.navigator.userAgent.includes('Windows') ||
+    systemInfo?.os.system === 'Windows'
+  );
 
   // Format the title based on the template
   const formatTitle = () => {
@@ -310,19 +314,30 @@ const Titlebar: React.FC<TitlebarProps> = ({
         </div>
       </div>
       <div className={`titlebar-right ${isWindows ? 'windows' : 'macos'}`}>
-        {!isWindows && (
-          <div className="titlebar-controls">
-            <button className="titlebar-button" onClick={handleMinimize}>
-              &#x2212;
-            </button>
-            <button className="titlebar-button" onClick={handleMaximize}>
-              {isMaximized ? '❐' : '□'}
-            </button>
-            <button className="titlebar-button close" onClick={handleClose}>
-              ✕
-            </button>
-          </div>
-        )}
+        <div className="titlebar-controls">
+          <button className="titlebar-button" onClick={handleMinimize} title="Minimize">
+            <svg width="10" height="1" viewBox="0 0 10 1" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="10" height="1" rx="0.5" fill="currentColor"/>
+            </svg>
+          </button>
+          <button className="titlebar-button" onClick={handleMaximize} title={isMaximized ? 'Restore' : 'Maximize'}>
+            {isMaximized ? (
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 1H9V7" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/>
+                <rect x="1" y="3" width="6" height="6" rx="0.5" stroke="currentColor" strokeWidth="1"/>
+              </svg>
+            ) : (
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="0.5" y="0.5" width="9" height="9" rx="0.5" stroke="currentColor" strokeWidth="1"/>
+              </svg>
+            )}
+          </button>
+          <button className="titlebar-button close" onClick={handleClose} title="Close">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M1 1L9 9M9 1L1 9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   );

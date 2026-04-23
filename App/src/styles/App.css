@@ -157,6 +157,7 @@ body {
 .titlebar-controls {
   -webkit-app-region: no-drag;
   display: flex;
+  height: 100%;
 }
 
 .titlebar-button {
@@ -164,21 +165,23 @@ body {
   height: 32px;
   border: none;
   background: transparent;
-  color: var(--text-primary);
-  font-size: 10px;
+  color: rgba(255, 255, 255, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  border-radius: 0;
 }
 
 .titlebar-button:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .titlebar-button.close:hover {
   background-color: #e81123;
+  color: #fff;
 }
 
 /* File Menu Dropdown */
@@ -552,21 +555,22 @@ input:focus {
   height: 32px;
   border: none;
   background: transparent;
-  color: var(--text-primary);
-  font-size: 10px;
+  color: rgba(255, 255, 255, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .titlebar.windows .titlebar-button:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.95);
 }
 
 .titlebar.windows .titlebar-button.close:hover {
   background-color: #e81123;
+  color: #fff;
 }
 
 /* Add database viewer styles */

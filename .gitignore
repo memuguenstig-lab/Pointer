@@ -15,3 +15,5 @@ C:/
 release/
 installer/windows-offline/
 installer/macos-offline/
+*.msi
+*.pkg

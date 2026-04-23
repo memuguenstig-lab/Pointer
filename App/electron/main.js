@@ -276,19 +276,25 @@ function createSplashScreen() {
     frame: false,
     resizable: false,
     icon: getIconPath(),
-    skipTaskbar: true, // Hide from taskbar until main window is ready
+    skipTaskbar: true,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true
     }
   });
 
-  // Load the splash screen HTML
   splashWindow.loadFile(path.join(__dirname, 'splash.html'));
-  
-  // Prevent the splash screen from closing when clicked
-  splashWindow.on('blur', () => {
-    splashWindow.focus();
+
+  // Allow user to close splash manually (quits the app)
+  splashWindow.on('closed', () => {
+    if (splashWindow !== null) {
+      // Only quit if main window hasn't opened yet
+      splashWindow = null;
+      if (BrowserWindow.getAllWindows().length === 0) {
+        app.quit();
+      }
+    }
+    splashWindow = null;
   });
 }
 
@@ -485,8 +491,8 @@ async function createWindow() {
       show: false, // Don't show until fully loaded
       icon: getIconPath(), // Set application icon
       title: 'Pointer', // Set window title
-      frame: process.platform === 'darwin', // Use native frame on macOS
-      titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden', // Use inset titlebar on macOS
+      frame: false, // Frameless on all platforms (custom titlebar)
+      titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
       backgroundColor: '#1e1e1e',
       webPreferences: {
         nodeIntegration: false,
