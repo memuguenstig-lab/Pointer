@@ -60,6 +60,7 @@ body {
   border-bottom: 1px solid var(--border-color);
   position: relative;
   z-index: 1000;
+  contain: layout style;
 }
 
 .titlebar-title {

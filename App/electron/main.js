@@ -12,6 +12,16 @@ const fs = require('fs');
 const { spawn } = require('child_process');
 const { runSetup, isSetupNeeded } = require('./setup');
 
+// ── Performance flags (before app ready) ──────────────────────────────────
+app.commandLine.appendSwitch('enable-features', 'VizDisplayCompositor,UseSkiaRenderer');
+app.commandLine.appendSwitch('disable-features', 'OutOfBlinkCors');
+app.commandLine.appendSwitch('enable-gpu-rasterization');
+app.commandLine.appendSwitch('enable-zero-copy');
+app.commandLine.appendSwitch('ignore-gpu-blocklist');
+app.commandLine.appendSwitch('disable-http-cache', 'false');
+// Reduce IPC overhead
+app.commandLine.appendSwitch('js-flags', '--max-old-space-size=512');
+
 // Get dev server port from environment variable or default to 3000
 const DEV_SERVER_PORT = process.env.VITE_DEV_SERVER_PORT || '3000';
 // Check if connection checks should be skipped
@@ -490,32 +500,35 @@ async function createWindow() {
     // Update splash message
     updateSplashMessage('Initializing editor...');
     
-    // Initialize Discord RPC after loading settings
-    await initDiscordRPC();
+    // Initialize Discord RPC in background — don't block window creation
+    setTimeout(() => initDiscordRPC(), 2000);
     
     // Create the browser window.
     const mainWindow = new BrowserWindow({
       width: 1200,
       height: 800,
-      show: false, // Don't show until fully loaded
-      icon: getIconPath(), // Set application icon
-      title: 'Pointer', // Set window title
-      frame: false, // Frameless on all platforms (custom titlebar)
+      show: false,
+      icon: getIconPath(),
+      title: 'Pointer',
+      frame: false,
       titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
       backgroundColor: '#1e1e1e',
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
         webSecurity: true,
-        preload: path.join(__dirname, 'preload.js')
+        preload: path.join(__dirname, 'preload.js'),
+        backgroundThrottling: false,   // Don't throttle when window is in background
+        spellcheck: false,             // Disable spellcheck (not needed in code editor)
+        enableBlinkFeatures: 'CSSColorSchemeUARendering',
       }
     });
 
-    // Enable Aero Snap and other Windows behaviors
     mainWindow.setMinimumSize(400, 300);
     mainWindow.setHasShadow(true);
 
-    // Set up window event listeners for debugging
+    // Reduce verbose logging in production
+    if (!isDev) return;
     mainWindow.webContents.on('did-start-loading', () => {
       console.log('Main window did-start-loading');
     });
@@ -649,15 +662,9 @@ app.whenReady().then(async () => {
   
   // Load settings first thing
   await loadSettings();
-  console.log('Settings loaded, creating splash screen...');
   
   // Create and show the splash screen
   createSplashScreen();
-  
-  if (isDev) {
-    await session.defaultSession.clearCache();
-    console.log('Cache cleared');
-  }
   
   // Create the main window
   await createWindow();

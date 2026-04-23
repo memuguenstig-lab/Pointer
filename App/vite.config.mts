@@ -3,12 +3,17 @@ import react from '@vitejs/plugin-react'
 import path from 'path'
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react({
+      // Faster React refresh in dev
+      fastRefresh: true,
+    }),
+  ],
   base: process.env.NODE_ENV === 'production' ? './' : '/',
   server: {
     port: parseInt(process.env.VITE_PORT || '3000', 10),
     strictPort: false,
-    host: true, // needed for Electron
+    host: true,
     fs: {
       strict: false,
       allow: ['..']
@@ -34,21 +39,37 @@ export default defineConfig({
     }
   },
   optimizeDeps: {
-    include: ['monaco-editor'],
-    exclude: ['electron']
+    include: ['monaco-editor', 'react', 'react-dom'],
+    exclude: ['electron'],
   },
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
     emptyOutDir: true,
+    // Increase chunk size warning limit (monaco is large by nature)
+    chunkSizeWarningLimit: 2000,
+    // Enable minification
+    minify: 'esbuild',
+    target: 'esnext',
     rollupOptions: {
       output: {
-        manualChunks: {
-          jsonWorker: ['monaco-editor/esm/vs/language/json/json.worker'],
-          cssWorker: ['monaco-editor/esm/vs/language/css/css.worker'],
-          htmlWorker: ['monaco-editor/esm/vs/language/html/html.worker'],
-          tsWorker: ['monaco-editor/esm/vs/language/typescript/ts.worker'],
-          editorWorker: ['monaco-editor/esm/vs/editor/editor.worker'],
+        manualChunks(id) {
+          // Monaco workers — each in own chunk
+          if (id.includes('monaco-editor/esm/vs/language/json')) return 'jsonWorker';
+          if (id.includes('monaco-editor/esm/vs/language/css')) return 'cssWorker';
+          if (id.includes('monaco-editor/esm/vs/language/html')) return 'htmlWorker';
+          if (id.includes('monaco-editor/esm/vs/language/typescript')) return 'tsWorker';
+          if (id.includes('monaco-editor/esm/vs/editor/editor.worker')) return 'editorWorker';
+          // Monaco core — separate from app code
+          if (id.includes('monaco-editor')) return 'monaco';
+          // Syntax highlighting — large, rarely changes
+          if (id.includes('react-syntax-highlighter') || id.includes('highlight.js') || id.includes('refractor')) return 'syntax';
+          // Markdown rendering
+          if (id.includes('react-markdown') || id.includes('remark') || id.includes('rehype') || id.includes('micromark') || id.includes('mdast')) return 'markdown';
+          // React core
+          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) return 'react';
+          // Other vendor libs
+          if (id.includes('node_modules')) return 'vendor';
         },
       },
     },
@@ -58,4 +79,4 @@ export default defineConfig({
       '@': path.resolve(__dirname, 'src')
     }
   }
-}) 
+})
