@@ -2,6 +2,7 @@ import { cleanAIResponse } from '../utils/textUtils';
 import { Message } from '../types';
 import { AIFileService } from './AIFileService';
 import { ToolService } from './ToolService';
+import llamaService from './LlamaService';
 
 interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
@@ -92,6 +93,21 @@ class LMStudioService {
     try {
       // Get full model configuration including fallbacks
       const modelConfig = await AIFileService.getModelConfigForPurpose(purpose);
+
+      // ── Embedded LLM (node-llama-cpp) ──────────────────────────────────
+      if (modelConfig.modelProvider === 'ollama-embedded') {
+        let full = '';
+        await llamaService.chat(options.messages as any, {
+          temperature: options.temperature ?? 0.7,
+          max_tokens: options.max_tokens ?? undefined,
+          onChunk: (token) => {
+            full += token;
+            onStream?.(full);
+          },
+        });
+        return { choices: [{ message: { content: cleanAIResponse(full) } }] };
+      }
+      // ───────────────────────────────────────────────────────────────────
       console.log(`Attempting to connect to API at: ${modelConfig.apiEndpoint}`);
 
       // Use fallback endpoints if available
@@ -262,6 +278,22 @@ class LMStudioService {
       if (!messages || messages.length === 0) {
         throw new Error('Messages array is required and cannot be empty');
       }
+
+      // ── Embedded LLM (node-llama-cpp) ──────────────────────────────────
+      if (modelConfig.modelProvider === 'ollama-embedded') {
+        let accumulated = '';
+        await llamaService.chat(messages as any, {
+          temperature,
+          max_tokens: max_tokens ?? undefined,
+          signal,
+          onChunk: (token) => {
+            accumulated += token;
+            onUpdateWithFunctionCallDetection(accumulated);
+          },
+        });
+        return;
+      }
+      // ───────────────────────────────────────────────────────────────────
 
       // Use fallback endpoints if available
       const endpointsToTry = modelConfig.fallbackEndpoints || [modelConfig.apiEndpoint];
