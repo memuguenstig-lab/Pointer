@@ -55,9 +55,25 @@
       align-items: center;
     }
 
+    /* Slow down the GIF by overlaying a CSS animation on a canvas-like wrapper */
+    .gif-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
     img {
       max-width: 70%;
       max-height: 70%;
+      /* CSS animation to create a slow pulse/fade that overlays the GIF speed perception */
+      animation: slowPulse 2.4s ease-in-out infinite;
+    }
+
+    @keyframes slowPulse {
+      0%   { opacity: 0.75; transform: scale(0.97); }
+      50%  { opacity: 1;    transform: scale(1.00); }
+      100% { opacity: 0.75; transform: scale(0.97); }
     }
 
     .message {
@@ -70,13 +86,21 @@
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       font-size: 12px;
       -webkit-app-region: no-drag;
+      animation: fadeIn 0.8s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
     }
   </style>
 </head>
 <body>
   <button class="close-btn" onclick="window.close()" title="Close">✕</button>
   <div class="video-container">
-    <img src="loading.gif" alt="Loading animation">
+    <div class="gif-wrapper">
+      <img src="loading.gif" alt="Loading animation">
+    </div>
   </div>
   <div class="message">Starting Pointer...</div>
 </body>
