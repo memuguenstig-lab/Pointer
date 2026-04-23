@@ -16,7 +16,7 @@
   --error-color: #f48771;
   
   --titlebar-bg: #1e1e1e;
-  --statusbar-bg: #007acc;
+  --statusbar-bg: #1e1e1e;
   --activity-bar-fg: #ffffff;
   
   /* Typography */
@@ -794,3 +794,32 @@ input:focus {
   user-select: none;
   flex-shrink: 0;
 }
+
+/* ── Inline Diff Decorations ─────────────────────────────────────────────── */
+.inline-diff-added { background: rgba(63, 185, 80, 0.15) !important; }
+.inline-diff-modified { background: rgba(227, 179, 65, 0.15) !important; }
+.inline-diff-added-gutter { background: #3fb950; width: 3px !important; margin-left: 3px; }
+.inline-diff-modified-gutter { background: #e3b341; width: 3px !important; margin-left: 3px; }
+.inline-diff-deleted-gutter { background: #f85149; width: 3px !important; margin-left: 3px; }
+.inline-diff-deleted-text { color: #f85149; text-decoration: line-through; opacity: 0.7; font-size: 11px; }
+
+/* ── Inline Diff Toolbar ─────────────────────────────────────────────────── */
+.inline-diff-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.inline-diff-toolbar button {
+  padding: 2px 10px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  font-size: 12px;
+}
+.inline-diff-accept { background: rgba(63,185,80,0.15); color: #3fb950; }
+.inline-diff-reject { background: rgba(248,81,73,0.15); color: #f85149; }

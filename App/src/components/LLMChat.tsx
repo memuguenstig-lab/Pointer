@@ -2549,7 +2549,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
   // Add state for tracking attached files
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const [showFileSuggestions, setShowFileSuggestions] = useState(false);
-  const [fileSuggestions, setFileSuggestions] = useState<{ name: string; path: string }[]>([]);
+  const [fileSuggestions, setFileSuggestions] = useState<{ name: string; path: string; type?: 'file' | 'symbol'; symbolType?: string }[]>([]);
   const [mentionPosition, setMentionPosition] = useState<{ start: number; end: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const suggestionBoxRef = useRef<HTMLDivElement>(null);
@@ -3417,27 +3417,36 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
     const match = /@([^@\s]*)$/.exec(inputValue);
     
     if (match) {
-      // If there's a match, show file suggestions
+      const term = match[1];
       const currentDir = FileSystemService.getCurrentDirectory();
-      if (currentDir) {
-        try {
-          // Fetch current directory contents
-          const result = await FileSystemService.fetchFolderContents(currentDir);
-          if (result && result.items) {
-            // Filter files based on match
-            const files = Object.values(result.items)
-              .filter(item => item.type === 'file')
-              .filter(item => match[1] === '' || item.name.toLowerCase().includes(match[1].toLowerCase()))
-              .map(item => ({ name: item.name, path: item.path }));
-            
-            setFileSuggestions(files);
-            setShowFileSuggestions(files.length > 0);
-            setMentionPosition({ start: match.index, end: match.index + match[0].length });
-          }
-        } catch (error) {
-          console.error('Error fetching directory contents:', error);
-        }
-      }
+
+      // Run file + symbol search in parallel
+      const [fileResults, symbolResults] = await Promise.all([
+        // Files
+        currentDir ? FileSystemService.fetchFolderContents(currentDir).then(result => {
+          if (!result?.items) return [];
+          return Object.values(result.items)
+            .filter(item => item.type === 'file')
+            .filter(item => term === '' || item.name.toLowerCase().includes(term.toLowerCase()))
+            .slice(0, 8)
+            .map(item => ({ name: item.name, path: item.path, type: 'file' as const }));
+        }).catch(() => []) : Promise.resolve([]),
+        // Symbols from codebase index
+        term.length >= 2 ? fetch(`http://localhost:23816/api/codebase/search?query=${encodeURIComponent(term)}&limit=8`)
+          .then(r => r.ok ? r.json() : { elements: [] })
+          .then(data => (data.elements || data.results || []).map((el: any) => ({
+            name: el.name,
+            path: el.file || '',
+            type: 'symbol' as const,
+            symbolType: el.type,
+          })))
+          .catch(() => []) : Promise.resolve([]),
+      ]);
+
+      const combined = [...fileResults, ...symbolResults].slice(0, 12);
+      setFileSuggestions(combined);
+      setShowFileSuggestions(combined.length > 0);
+      setMentionPosition({ start: match.index, end: match.index + match[0].length });
     } else {
       // Hide suggestions if there's no match
       setShowFileSuggestions(false);
@@ -6601,30 +6610,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
           </svg>
         </button>
       </div>
-                        width: '100%',
-                        padding: '8px 12px',
-                        background: chat.id === currentChatId ? 'var(--bg-hover)' : 'none',
-                        border: 'none',
-                        borderBottom: '1px solid var(--border-primary)',
-                        color: 'var(--text-primary)',
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                        fontSize: '12px',
-                      }}
-                      title="Click to open chat • Ctrl+Click to open JSON file"
-                    >
-                      <div style={{ fontSize: '13px', fontWeight: chat.id === currentChatId ? 'bold' : 'normal' }}>
-                        {chat.name}
-                      </div>
-                      <div style={{ 
-                        fontSize: '11px', 
-                        color: 'var(--text-secondary)',
-                        marginTop: '2px' 
-                      }}>
-                        {new Date(chat.createdAt).toLocaleString()}
-                      </div>
-                    </button>
-                  ))
+
       <div
         ref={chatContainerRef}
         style={{
@@ -6786,12 +6772,47 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
             disabled={isAnyProcessing}
           />
 
-          {/* File suggestions dropdown */}
+          {/* File + Symbol suggestions dropdown */}
           {showFileSuggestions && (
             <div
               ref={suggestionBoxRef}
-              className="file-suggestions-dropdown"
-            />
+              style={{
+                position: 'absolute',
+                bottom: '100%',
+                left: 0,
+                right: 0,
+                background: 'var(--bg-secondary)',
+                border: '1px solid var(--border-color)',
+                borderRadius: 6,
+                boxShadow: '0 -4px 16px rgba(0,0,0,0.3)',
+                zIndex: 1000,
+                maxHeight: 240,
+                overflowY: 'auto',
+                marginBottom: 4,
+              }}
+            >
+              <div style={{ padding: '4px 10px', fontSize: 10, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid var(--border-color)' }}>
+                Files &amp; Symbols
+              </div>
+              {fileSuggestions.map((s, i) => (
+                <div
+                  key={i}
+                  onClick={() => selectFileSuggestion(s)}
+                  style={{ padding: '7px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <span style={{ fontSize: 12, color: 'var(--text-secondary)', width: 16, textAlign: 'center' }}>
+                    {s.type === 'symbol' ? (s.symbolType === 'function' ? 'ƒ' : s.symbolType === 'class' ? '◆' : '◉') : '📄'}
+                  </span>
+                  <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{s.name}</span>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: 11, marginLeft: 'auto', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160 }}>{s.path}</span>
+                  {s.type === 'symbol' && s.symbolType && (
+                    <span style={{ fontSize: 10, color: 'var(--accent-color)', background: 'rgba(14,99,156,0.15)', borderRadius: 3, padding: '1px 5px', flexShrink: 0 }}>{s.symbolType}</span>
+                  )}
+                </div>
+              ))}
+            </div>
           )}
 
           {/* Bottom toolbar inside the input box */}

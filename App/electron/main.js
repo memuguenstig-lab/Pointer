@@ -3,7 +3,7 @@ if ((process.platform === 'win32') && process.argv.includes('--interactive')) re
   eval: (code) => eval(code)
 });
 
-const { app, BrowserWindow, dialog, ipcMain, shell, session } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, shell, session, Tray, Menu, nativeImage } = require('electron');
 const path = require('path');
 const isDev = process.env.NODE_ENV !== 'production';
 const DiscordRPC = require('discord-rpc');
@@ -462,7 +462,57 @@ async function startBackend() {
   });
 }
 
+// ── Tray ───────────────────────────────────────────────────────────────────
+let tray = null;
+let forceQuit = false;
+
+function createTray() {
+  const iconPath = path.join(__dirname, 'logo.png');
+  let trayIcon;
+  try {
+    trayIcon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 });
+  } catch (e) {
+    trayIcon = nativeImage.createEmpty();
+  }
+
+  tray = new Tray(trayIcon);
+  tray.setToolTip('Pointer — running in background');
+
+  tray.setContextMenu(Menu.buildFromTemplate([
+    {
+      label: 'Show Pointer',
+      click: () => {
+        const wins = BrowserWindow.getAllWindows();
+        if (wins.length === 0) {
+          createWindow();
+        } else {
+          wins.forEach(w => { w.show(); w.focus(); });
+        }
+      },
+    },
+    { type: 'separator' },
+    {
+      label: 'Quit Pointer',
+      click: () => {
+        forceQuit = true;
+        app.quit();
+      },
+    },
+  ]));
+
+  tray.on('click', () => {
+    const wins = BrowserWindow.getAllWindows();
+    if (wins.length === 0) {
+      createWindow();
+    } else {
+      const win = wins[0];
+      if (win.isVisible()) { win.hide(); } else { win.show(); win.focus(); }
+    }
+  });
+}
+
 app.on('before-quit', () => {
+  forceQuit = true;
   if (backendProcess) { try { backendProcess.kill(); } catch(e) {} }
 });
 
@@ -548,6 +598,14 @@ async function createWindow() {
 
     mainWindow.setMinimumSize(400, 300);
     mainWindow.setHasShadow(true);
+
+    // Intercept native close — hide to tray instead of quitting
+    mainWindow.on('close', (e) => {
+      if (!forceQuit) {
+        e.preventDefault();
+        mainWindow.hide();
+      }
+    });
 
     // Reduce verbose logging in production
     if (!isDev) return;
@@ -684,6 +742,9 @@ app.whenReady().then(async () => {
   
   // Load settings first thing
   await loadSettings();
+
+  // Create system tray
+  createTray();
   
   // Create and show the splash screen
   createSplashScreen();
@@ -715,12 +776,9 @@ app.whenReady().then(async () => {
   }, 1 * 60 * 60 * 1000); // every hour
 });
 
-// Quit when all windows are closed.
+// Quit when all windows are closed — hide to tray instead of quitting.
 app.on('window-all-closed', () => {
-  console.log('All windows closed. Quitting app...');
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
+  // Stay alive in tray on all platforms
 });
 
 app.on('activate', () => {
@@ -755,7 +813,7 @@ ipcMain.on('window-maximize', (event) => {
 
 ipcMain.on('window-close', (event) => {
   const win = BrowserWindow.fromWebContents(event.sender);
-  if (win) win.close();
+  if (win) win.hide(); // Hide to tray instead of closing
 });
 
 ipcMain.handle('window-is-maximized', (event) => {

@@ -25,6 +25,10 @@ import { isPreviewableFile, getPreviewType } from './utils/previewUtils';
 import PreviewPane from './components/PreviewPane';
 import PanelLayout from './components/PanelLayout';
 import ActivityBar, { ActivityView } from './components/ActivityBar';
+import CommandPalette from './components/CommandPalette';
+import SplitEditor, { EditorGroup } from './components/SplitEditor';
+import { InlineDiffService } from './services/InlineDiffService';
+import { FileChangeEventService } from './services/FileChangeEventService';
 
 // Initialize language support
 initializeLanguageSupport();
@@ -177,6 +181,28 @@ const App: React.FC = () => {
 
   // Add state for grid layout
   const [isGridLayout, setIsGridLayout] = useState(false);
+
+  // Command palette
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+
+  // Split editor groups
+  const [editorGroups, setEditorGroups] = useState<EditorGroup[]>([{ id: 'group-1', openFiles: [], currentFileId: null }]);
+  const [activeGroupId, setActiveGroupId] = useState('group-1');
+
+  // Sync openFiles + currentFileId with active editor group
+  useEffect(() => {
+    const activeGroup = editorGroups.find(g => g.id === activeGroupId);
+    if (!activeGroup) return;
+    setOpenFiles(activeGroup.openFiles);
+    setFileSystem(prev => ({ ...prev, currentFileId: activeGroup.currentFileId }));
+  }, [editorGroups, activeGroupId]);
+
+  // Bridge FileChangeEventService → InlineDiffService
+  useEffect(() => {
+    return FileChangeEventService.subscribe((filePath, oldContent, newContent) => {
+      InlineDiffService.setDiff(filePath, oldContent, newContent);
+    });
+  }, []);
 
   // Add state for chat visibility
   const [isLLMChatVisible, setIsLLMChatVisible] = useState(true);
@@ -584,6 +610,12 @@ const App: React.FC = () => {
     if (file.type === 'file') {
       if (!openFiles.includes(fileId)) {
         setOpenFiles(prev => [...prev, fileId]);
+        // Also update active editor group
+        setEditorGroups(prev => prev.map(g => g.id === activeGroupId
+          ? { ...g, openFiles: g.openFiles.includes(fileId) ? g.openFiles : [...g.openFiles, fileId], currentFileId: fileId }
+          : g));
+      } else {
+        setEditorGroups(prev => prev.map(g => g.id === activeGroupId ? { ...g, currentFileId: fileId } : g));
       }
       
       try {
@@ -983,6 +1015,18 @@ const App: React.FC = () => {
       } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'i') {
         e.preventDefault();
         setIsLLMChatVisible(!isLLMChatVisible);
+      } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'p') {
+        e.preventDefault();
+        setIsCommandPaletteOpen(true);
+      } else if ((e.ctrlKey || e.metaKey) && e.key === '\\') {
+        e.preventDefault();
+        // Split active group
+        const activeGroup = editorGroups.find(g => g.id === activeGroupId);
+        if (activeGroup?.currentFileId) {
+          const newGroup: EditorGroup = { id: `group-${Date.now()}`, openFiles: [activeGroup.currentFileId], currentFileId: activeGroup.currentFileId };
+          setEditorGroups(prev => [...prev, newGroup]);
+          setActiveGroupId(newGroup.id);
+        }
       } else if ((e.ctrlKey || e.metaKey) && e.key === ',') {
         e.preventDefault();
         setIsSettingsModalOpen(true);
@@ -1574,48 +1618,23 @@ const App: React.FC = () => {
           }
           editor={
             <div className="editor-area" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-              <Tabs
-                openFiles={openFiles}
-                currentFileId={fileSystem.currentFileId}
+              <SplitEditor
                 items={fileSystem.items}
-                onTabSelect={handleTabSelect}
-                onTabClose={handleTabClose}
-                onToggleGrid={handleToggleGrid}
-                isGridLayout={isGridLayout}
-                previewTabs={previewTabs}
-                onPreviewToggle={handlePreviewToggle}
-                onPreviewTabSelect={handlePreviewTabSelect}
-                onPreviewTabClose={handlePreviewTabClose}
-                currentPreviewTabId={currentPreviewTabId}
-              />
-              <EditorGrid
-                openFiles={openFiles}
-                currentFileId={fileSystem.currentFileId}
-                items={fileSystem.items}
+                groups={editorGroups}
+                activeGroupId={activeGroupId}
+                onGroupsChange={setEditorGroups}
+                onActiveGroupChange={setActiveGroupId}
                 onEditorChange={(newEditor) => {
                   editor.current = newEditor;
-                  if (editorRef.current) {
-                    const resizeObserver = new ResizeObserver((entries) => {
-                      const entry = entries[0];
-                      if (entry && editor.current) {
-                        requestAnimationFrame(() => {
-                          try {
-                            editor.current?.layout({ width: entry.contentRect.width, height: entry.contentRect.height });
-                          } catch (error) {
-                            console.error('Error updating editor layout:', error);
-                          }
-                        });
-                      }
-                    });
-                    resizeObserver.observe(editorRef.current);
-                  }
                 }}
-                onTabClose={handleTabClose}
-                isGridLayout={isGridLayout}
-                onToggleGrid={handleToggleGrid}
                 setSaveStatus={setSaveStatus}
                 previewTabs={previewTabs}
                 currentPreviewTabId={currentPreviewTabId}
+                onPreviewToggle={handlePreviewToggle}
+                onPreviewTabSelect={handlePreviewTabSelect}
+                onPreviewTabClose={handlePreviewTabClose}
+                isGridLayout={isGridLayout}
+                onToggleGrid={handleToggleGrid}
               />
             </div>
           }
@@ -1780,6 +1799,17 @@ const App: React.FC = () => {
         )}
 
         <DiffViewer />
+
+        {/* Command Palette */}
+        <CommandPalette
+          isOpen={isCommandPaletteOpen}
+          onClose={() => setIsCommandPaletteOpen(false)}
+          fileItems={fileSystem.items}
+          onOpenFile={(fileId) => {
+            handleFileSelect(fileId);
+            setIsCommandPaletteOpen(false);
+          }}
+        />
 
         {/* Toast notifications */}
         <ToastContainer />
