@@ -59,33 +59,29 @@ const styles = {
   },
   navBar: {
     display: 'flex',
-    flexDirection: 'column' as const,
+    flexDirection: 'row' as const,
     borderBottom: '1px solid var(--border-color)',
-    backgroundColor: 'var(--bg-secondary, #1e1e2e)',
-    padding: '4px 0',
+    backgroundColor: 'var(--bg-secondary)',
+    overflowX: 'auto' as const,
   },
   navButton: {
-    background: 'var(--bg-secondary, #1e1e2e)',
+    background: 'transparent',
     border: 'none',
+    borderBottom: '2px solid transparent',
     color: 'var(--text-secondary)',
-    padding: '4px 8px',
-    margin: '2px 4px',
+    padding: '6px 12px',
     cursor: 'pointer',
-    fontSize: '13px',
+    fontSize: '12px',
     display: 'flex',
     alignItems: 'center',
-    position: 'relative' as const,
-    borderRadius: '0',
-    transition: 'all 0.1s ease',
-    textAlign: 'left' as const,
-    height: '24px',
+    gap: '5px',
+    whiteSpace: 'nowrap' as const,
+    transition: 'color 0.1s',
+    flexShrink: 0,
   },
   activeNavButton: {
-    color: 'var(--accent-color)',
-    backgroundColor: 'var(--bg-selected, #282838)',
-    fontWeight: 500,
-    borderLeft: '2px solid var(--accent-color)',
-    marginLeft: '2px',
+    color: 'var(--text-primary)',
+    borderBottom: '2px solid var(--accent-color)',
   },
   navButtonIcon: {
     width: '16px',
@@ -417,9 +413,21 @@ const GitView: React.FC<GitViewProps> = ({ onBack }) => {
 
     if (error) {
       return (
-        <div style={{ padding: '20px', color: 'var(--error-color)' }}>
-          <p>{error}</p>
-          <button onClick={() => setError(null)} style={{ marginTop: '10px' }}>
+        <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <span style={{ color: 'var(--error-color)', fontSize: 13 }}>{error}</span>
+          <button
+            onClick={() => setError(null)}
+            style={{
+              alignSelf: 'flex-start',
+              background: 'var(--bg-accent)',
+              border: '1px solid var(--border-color)',
+              color: 'var(--text-primary)',
+              borderRadius: 4,
+              padding: '4px 10px',
+              cursor: 'pointer',
+              fontSize: 12,
+            }}
+          >
             Dismiss
           </button>
         </div>
@@ -428,10 +436,14 @@ const GitView: React.FC<GitViewProps> = ({ onBack }) => {
 
     if (!isGitRepo) {
       return (
-        <div style={styles.notGitRepo}>
-          <p>Current directory is not a Git repository</p>
+        <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, textAlign: 'center' }}>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="1.5">
+            <circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="9" r="2.5"/>
+            <path d="M6 8.5v7"/><path d="M8.5 6.5C11 6.5 15.5 6.5 15.5 9" strokeLinecap="round"/>
+          </svg>
+          <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>No Git repository found</span>
           <button onClick={handleInitRepo} style={styles.initButton}>
-            Initialize Git Repository
+            Initialize Repository
           </button>
         </div>
       );
@@ -455,8 +467,8 @@ const GitView: React.FC<GitViewProps> = ({ onBack }) => {
 
   return (
     <div style={styles.container}>
-      <div style={styles.header}>
-        <h3 style={styles.title}>GIT</h3>
+      {/* Header with actions only — title comes from sidebar-panel-header above */}
+      <div style={{ ...styles.header, padding: '4px 8px' }}>
         <div style={styles.headerActions}>
           <button 
             onClick={() => refreshStatus()} 
@@ -483,111 +495,23 @@ const GitView: React.FC<GitViewProps> = ({ onBack }) => {
       
       {isGitRepo && !isLoading && (
         <div style={styles.navBar}>
-          <button 
-            style={{
-              ...styles.navButton,
-              backgroundColor: activeView === 'status' ? 'var(--bg-selected, #282838)' : 'var(--bg-secondary, #1e1e2e)',
-              color: activeView === 'status' ? 'var(--accent-color)' : 'var(--text-secondary)',
-              fontWeight: activeView === 'status' ? 500 : 'normal',
-              borderLeft: activeView === 'status' ? '2px solid var(--accent-color)' : 'none',
-              marginLeft: activeView === 'status' ? '2px' : '4px'
-            }}
-            onClick={() => setActiveView('status')}
-            title="Status"
-          >
-            <div style={styles.iconContainer}>
-              <svg style={styles.navButtonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-              </svg>
-            </div>
-            <span style={styles.navButtonLabel}>Status</span>
-          </button>
-          <button 
-            style={{
-              ...styles.navButton,
-              backgroundColor: activeView === 'log' ? 'var(--bg-selected, #282838)' : 'var(--bg-secondary, #1e1e2e)',
-              color: activeView === 'log' ? 'var(--accent-color)' : 'var(--text-secondary)',
-              fontWeight: activeView === 'log' ? 500 : 'normal',
-              borderLeft: activeView === 'log' ? '2px solid var(--accent-color)' : 'none',
-              marginLeft: activeView === 'log' ? '2px' : '4px'
-            }}
-            onClick={() => setActiveView('log')}
-            title="Log"
-          >
-            <div style={styles.iconContainer}>
-              <svg style={styles.navButtonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                <polyline points="14 2 14 8 20 8"/>
-                <line x1="16" y1="13" x2="8" y2="13"/>
-                <line x1="16" y1="17" x2="8" y2="17"/>
-                <polyline points="10 9 9 9 8 9"/>
-              </svg>
-            </div>
-            <span style={styles.navButtonLabel}>Log</span>
-          </button>
-          <button 
-            style={{
-              ...styles.navButton,
-              backgroundColor: activeView === 'branches' ? 'var(--bg-selected, #282838)' : 'var(--bg-secondary, #1e1e2e)',
-              color: activeView === 'branches' ? 'var(--accent-color)' : 'var(--text-secondary)',
-              fontWeight: activeView === 'branches' ? 500 : 'normal',
-              borderLeft: activeView === 'branches' ? '2px solid var(--accent-color)' : 'none',
-              marginLeft: activeView === 'branches' ? '2px' : '4px'
-            }}
-            onClick={() => setActiveView('branches')}
-            title="Branches"
-          >
-            <div style={styles.iconContainer}>
-              <svg style={styles.navButtonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="6" y1="3" x2="6" y2="15"/>
-                <circle cx="18" cy="6" r="3"/>
-                <circle cx="6" cy="18" r="3"/>
-                <path d="M18 9a9 9 0 0 1-9 9"/>
-              </svg>
-            </div>
-            <span style={styles.navButtonLabel}>Branches</span>
-          </button>
-          <button 
-            style={{
-              ...styles.navButton,
-              backgroundColor: activeView === 'stash' ? 'var(--bg-selected, #282838)' : 'var(--bg-secondary, #1e1e2e)',
-              color: activeView === 'stash' ? 'var(--accent-color)' : 'var(--text-secondary)',
-              fontWeight: activeView === 'stash' ? 500 : 'normal',
-              borderLeft: activeView === 'stash' ? '2px solid var(--accent-color)' : 'none',
-              marginLeft: activeView === 'stash' ? '2px' : '4px'
-            }}
-            onClick={() => setActiveView('stash')}
-            title="Stash"
-          >
-            <div style={styles.iconContainer}>
-              <svg style={styles.navButtonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-              </svg>
-            </div>
-            <span style={styles.navButtonLabel}>Stash</span>
-          </button>
-          <button 
-            style={{
-              ...styles.navButton,
-              backgroundColor: activeView === 'pr' ? 'var(--bg-selected, #282838)' : 'var(--bg-secondary, #1e1e2e)',
-              color: activeView === 'pr' ? 'var(--accent-color)' : 'var(--text-secondary)',
-              fontWeight: activeView === 'pr' ? 500 : 'normal',
-              borderLeft: activeView === 'pr' ? '2px solid var(--accent-color)' : 'none',
-              marginLeft: activeView === 'pr' ? '2px' : '4px'
-            }}
-            onClick={() => setActiveView('pr')}
-            title="Pull Requests"
-          >
-            <div style={styles.iconContainer}>
-              <svg style={styles.navButtonIcon} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="18" cy="18" r="3"/>
-                <circle cx="6" cy="6" r="3"/>
-                <path d="M13 6h3a2 2 0 0 1 2 2v7"/>
-                <line x1="6" y1="9" x2="6" y2="21"/>
-              </svg>
-            </div>
-            <span style={styles.navButtonLabel}>Pull Requests</span>
-          </button>
+          {(['status','log','branches','stash','pr'] as GitViewType[]).map((view) => {
+            const labels: Record<GitViewType, string> = { status: 'Status', log: 'Log', branches: 'Branches', stash: 'Stash', pr: 'Pull Requests' };
+            const isActive = activeView === view;
+            return (
+              <button
+                key={view}
+                style={{
+                  ...styles.navButton,
+                  ...(isActive ? styles.activeNavButton : {}),
+                }}
+                onClick={() => setActiveView(view)}
+                title={labels[view]}
+              >
+                {labels[view]}
+              </button>
+            );
+          })}
         </div>
       )}
       

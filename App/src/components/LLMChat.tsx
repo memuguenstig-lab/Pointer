@@ -6444,8 +6444,6 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
 
 
 
-  if (!isVisible) return null;
-
   return (
     <div 
       ref={containerRef}
@@ -6488,96 +6486,121 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
       />
       
       <div style={{ 
-        padding: '10px', 
+        padding: '0 8px',
         borderBottom: '1px solid var(--border-primary)',
         display: 'flex',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        height: '35px'
+        height: '35px',
+        gap: 4,
+        flexShrink: 0,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-          <span style={{ 
-            fontSize: '14px', 
-            fontWeight: '400', 
-            color: 'var(--text-secondary)'
-          }}>
-            Agent
-          </span>
-          <div className="chat-switcher" style={{ marginRight: '16px' }}>
-            <button
-              onClick={async () => {
-                // Reload chats first, then toggle visibility
-                await loadChats();
-                setIsChatListVisible(!isChatListVisible);
+        {/* + New Chat button */}
+        <button
+          onClick={handleNewChat}
+          className="settings-button"
+          title="New Chat"
+          style={{ marginRight: 2 }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+        </button>
+
+        {/* Chat switcher — fills remaining space */}
+        <div className="chat-switcher" style={{ flex: 1, position: 'relative' }}>
+          <button
+            onClick={async () => {
+              await loadChats();
+              setIsChatListVisible(!isChatListVisible);
+            }}
+            className="settings-button"
+            title="Recent chats"
+            style={{ display: 'flex', alignItems: 'center', gap: 5, width: '100%', justifyContent: 'flex-start', padding: '4px 6px' }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+            <span style={{ fontSize: 12, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {chatTitle || 'Agent'}
+            </span>
+          </button>
+
+          {isChatListVisible && (
+            <div
+              className="chat-switcher-dropdown"
+              style={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                background: 'var(--bg-secondary)',
+                border: '1px solid var(--border-primary)',
+                borderRadius: '6px',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+                zIndex: 1000,
+                minWidth: '220px',
+                maxHeight: '360px',
+                overflowY: 'auto',
               }}
-              className="settings-button"
-              title="Switch chats"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-              </svg>
-            </button>
-            {isChatListVisible && (
-              <div
-                className="chat-switcher-dropdown"
-                style={{
-                  position: 'absolute',
-                  top: '100%',
-                  right: 0,
-                  background: 'var(--bg-primary)',
-                  border: '1px solid var(--border-primary)',
-                  borderRadius: '4px',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                  zIndex: 1000,
-                  minWidth: '200px',
-                  maxHeight: '400px',
-                  overflowY: 'auto',
-                }}
-              >
-                <div
-                  style={{
-                    padding: '8px',
-                    borderBottom: '1px solid var(--border-primary)',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}
-                >
-                  <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Recent Chats</span>
+              <div style={{ padding: '6px 8px', borderBottom: '1px solid var(--border-primary)' }}>
+                <span style={{ fontSize: 11, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Recent Chats</span>
+              </div>
+              {chats.length === 0 ? (
+                <div style={{ padding: '10px 12px', color: 'var(--text-secondary)', fontSize: 12 }}>
+                  No saved chats
+                </div>
+              ) : (
+                chats.map(chat => (
                   <button
-                  onClick={handleNewChat}
+                    key={chat.id}
+                    className="chat-button"
+                    onClick={(e) => {
+                      if (e.ctrlKey || e.metaKey) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleOpenChatFile(chat.id);
+                      } else {
+                        handleSelectChat(chat.id);
+                        setIsChatListVisible(false);
+                      }
+                    }}
                     style={{
-                      background: 'none',
+                      width: '100%',
+                      padding: '7px 12px',
+                      background: chat.id === currentChatId ? 'var(--bg-hover)' : 'none',
                       border: 'none',
+                      borderBottom: '1px solid var(--border-primary)',
                       color: 'var(--text-primary)',
                       cursor: 'pointer',
-                      fontSize: '12px',
-                      padding: '4px 8px',
+                      textAlign: 'left',
+                      fontSize: 12,
                     }}
+                    title="Click to open • Ctrl+Click to open JSON"
                   >
-                    New Chat
+                    <div style={{ fontWeight: chat.id === currentChatId ? 600 : 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {chat.name}
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
+                      {new Date(chat.createdAt).toLocaleString()}
+                    </div>
                   </button>
-                </div>
-                {chats.length === 0 ? (
-                  <div style={{ padding: '10px', color: 'var(--text-secondary)', fontSize: '12px' }}>
-                    No saved chats
-                  </div>
-                ) : (
-                  chats.map(chat => (
-                    <button
-                      key={chat.id}
-                      className="chat-button"
-                      onClick={(e) => {
-                        // Check if Ctrl or Cmd key is pressed
-                        if (e.ctrlKey || e.metaKey) {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleOpenChatFile(chat.id);
-                        } else {
-                          handleSelectChat(chat.id);
-                        }
-                      }}
-                      style={{
+                ))
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="settings-button"
+          title="Close Agent"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
                         width: '100%',
                         padding: '8px 12px',
                         background: chat.id === currentChatId ? 'var(--bg-hover)' : 'none',
@@ -6602,34 +6625,6 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
                       </div>
                     </button>
                   ))
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          {/* Remove Refresh Knowledge button since it's always included now */}
-          <button
-            onClick={onClose}
-            className="close-button"
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'var(--text-primary)',
-              cursor: 'pointer',
-              padding: '4px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-      </div>
-
       <div
         ref={chatContainerRef}
         style={{

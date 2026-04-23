@@ -6,15 +6,13 @@ interface TitlebarProps {
   onOpenFolder?: () => void;
   onOpenFile?: () => void;
   onCloneRepository?: () => void;
-  onToggleGitView?: () => void;
-  onToggleExplorerView?: () => void;
-  onToggleLLMChat?: () => void;
   onOpenSettings?: () => void;
-  onToggleTerminal?: () => void;
-  isGitViewActive?: boolean;
-  isExplorerViewActive?: boolean;
-  isLLMChatVisible?: boolean;
-  terminalOpen?: boolean;
+  onToggleSidebar?: () => void;
+  onToggleAgent?: () => void;
+  onTogglePanel?: () => void;
+  isSidebarVisible?: boolean;
+  isAgentVisible?: boolean;
+  isPanelVisible?: boolean;
   currentFileName?: string;
   workspaceName?: string;
   titleFormat?: string;
@@ -56,15 +54,13 @@ const Titlebar: React.FC<TitlebarProps> = ({
   onOpenFolder, 
   onOpenFile,
   onCloneRepository,
-  onToggleGitView,
-  onToggleExplorerView,
-  onToggleLLMChat,
   onOpenSettings,
-  onToggleTerminal,
-  isGitViewActive,
-  isExplorerViewActive,
-  isLLMChatVisible,
-  terminalOpen,
+  onToggleSidebar,
+  onToggleAgent,
+  onTogglePanel,
+  isSidebarVisible,
+  isAgentVisible,
+  isPanelVisible,
   currentFileName = "",
   workspaceName = "",
   titleFormat = "{filename} - {workspace} - Pointer"
@@ -252,68 +248,47 @@ const Titlebar: React.FC<TitlebarProps> = ({
 
         <div className="titlebar-divider" />
             
-        <div className="titlebar-actions">
-          <button 
-            className="titlebar-action-button" 
-            onClick={onToggleExplorerView}
-            title="Explorer (Ctrl+B)"
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M2 2h12v2H2V2z" fill="currentColor"/>
-              <path d="M2 5h12v9H2V5z" fill="currentColor"/>
-              <path d="M3 6h4v1H3V6z" fill="currentColor"/>
-              <path d="M3 8h10v1H3V8z" fill="currentColor"/>
-              <path d="M3 10h10v1H3v-1z" fill="currentColor"/>
-              <path d="M3 12h6v1H3v-1z" fill="currentColor"/>
-            </svg>
-            {isExplorerViewActive && <div className="active-indicator" />}
-          </button>
-
-          <button 
-            className="titlebar-action-button" 
-            onClick={onToggleGitView}
-            title="Git"
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M15.698 7.287L8.712 0.302C8.51 0.1 8.255 0 7.986 0C7.717 0 7.463 0.099 7.26 0.302L5.809 1.753L7.644 3.588C7.954 3.491 8.308 3.552 8.552 3.795C8.798 4.041 8.858 4.398 8.757 4.709L10.524 6.476C10.835 6.375 11.193 6.434 11.438 6.681C11.775 7.018 11.775 7.564 11.438 7.901C11.101 8.238 10.555 8.238 10.218 7.901C9.958 7.641 9.904 7.253 10.033 6.929L8.382 5.278V10.795C8.465 10.837 8.546 10.891 8.614 10.959C8.951 11.296 8.951 11.842 8.614 12.179C8.277 12.516 7.73 12.516 7.394 12.179C7.057 11.842 7.057 11.296 7.394 10.959C7.478 10.875 7.576 10.814 7.678 10.776V5.215C7.576 5.177 7.478 5.118 7.394 5.032C7.131 4.769 7.08 4.376 7.213 4.05L5.406 2.244L0.302 7.347C0.099 7.551 0 7.805 0 8.074C0 8.343 0.099 8.597 0.302 8.801L7.288 15.786C7.491 15.988 7.745 16.088 8.014 16.088C8.283 16.088 8.537 15.989 8.74 15.786L15.698 8.827C15.9 8.624 16 8.37 16 8.101C16 7.832 15.901 7.578 15.698 7.374V7.287Z" fill="currentColor"/>
-            </svg>
-            {isGitViewActive && <div className="active-indicator" />}
-          </button>
-
-          <button 
-            className="titlebar-action-button" 
-            onClick={onToggleLLMChat}
-            title="Assistant (Ctrl+I)"
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M8 1.33337C4.32 1.33337 1.33333 4.32004 1.33333 8.00004C1.33333 11.68 4.32 14.6667 8 14.6667C11.68 14.6667 14.6667 11.68 14.6667 8.00004C14.6667 4.32004 11.68 1.33337 8 1.33337ZM7.33333 12.0001V10.6667H8.66667V12.0001H7.33333ZM9.89333 7.49337C9.70667 7.79337 9.45333 8.04004 9.14667 8.34004C8.87333 8.60004 8.66667 8.86671 8.53333 9.13337C8.44 9.33337 8.4 9.54671 8.4 9.77337V10.0001H7.06667V9.73337C7.06667 9.37337 7.13333 9.04004 7.26667 8.74671C7.43333 8.39337 7.67333 8.08004 7.98 7.80004C8.27333 7.52671 8.49333 7.28004 8.63333 7.05337C8.76667 6.82671 8.83333 6.59337 8.83333 6.36004C8.83333 6.06671 8.73333 5.83337 8.53333 5.66671C8.33333 5.50004 8.06667 5.41337 7.73333 5.41337C7.4 5.41337 7.13333 5.50671 6.93333 5.70004C6.73333 5.89337 6.62 6.14671 6.6 6.46004H5.26667C5.28 5.77337 5.5 5.21337 5.93333 4.78004C6.36667 4.34671 6.97333 4.13337 7.76 4.13337C8.54667 4.13337 9.14667 4.34004 9.56 4.75337C9.97333 5.16671 10.1733 5.68671 10.1733 6.32004C10.1733 6.70671 10.08 7.05337 9.89333 7.49337Z" fill="currentColor"/>
-            </svg>
-            {isLLMChatVisible && <div className="active-indicator" />}
-          </button>
-
-          <button 
-            className="titlebar-action-button" 
-            onClick={onToggleTerminal}
-            title="Terminal"
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M2 2h12v12H2V2zm1 1v10h10V3H3zm2 2h6v1H5V5zm0 2h6v1H5V7zm0 2h6v1H5V9zm0 2h6v1H5v-1z" fill="currentColor"/>
-            </svg>
-            {terminalOpen && <div className="active-indicator" />}
-          </button>
-
-          <button 
+        </div>
+      <div className={`titlebar-right ${isWindows ? 'windows' : 'macos'}`}>
+        {/* Layout toggle buttons — like VSCode's top-right panel toggles */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 2, marginRight: 8 }}>
+          {/* Toggle sidebar */}
+          <button
             className="titlebar-action-button"
-            onClick={onOpenSettings}
-            title="Settings (⌘,)"
+            onClick={onToggleSidebar}
+            title="Toggle Sidebar (Ctrl+B)"
+            style={{ opacity: isSidebarVisible ? 1 : 0.45 }}
           >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M6.5 14H9.5C10 14 10.5 13.6 10.5 13V11.5C10.8 11.4 11.1 11.2 11.4 11L12.7 11.7C13.2 11.9 13.7 11.7 14 11.3L15.5 8.6C15.7 8.1 15.6 7.6 15.1 7.3L13.8 6.7C13.8 6.5 13.8 6.3 13.8 6.1L15.1 5.5C15.6 5.2 15.8 4.7 15.5 4.2L14 1.5C13.7 1.1 13.2 0.9 12.7 1.1L11.4 1.8C11.1 1.6 10.8 1.4 10.5 1.3V-0.2C10.5 -0.8 10 -1.2 9.5 -1.2H6.5C6 -1.2 5.5 -0.8 5.5 -0.2V1.3C5.2 1.4 4.9 1.6 4.6 1.8L3.3 1.1C2.8 0.9 2.3 1.1 2 1.5L0.5 4.2C0.3 4.7 0.4 5.2 0.9 5.5L2.2 6.1C2.2 6.3 2.2 6.5 2.2 6.7L0.9 7.3C0.4 7.6 0.2 8.1 0.5 8.6L2 11.3C2.3 11.7 2.8 11.9 3.3 11.7L4.6 11C4.9 11.2 5.2 11.4 5.5 11.5V13C5.5 13.6 6 14 6.5 14ZM8 8.5C7.2 8.5 6.5 7.8 6.5 7C6.5 6.2 7.2 5.5 8 5.5C8.8 5.5 9.5 6.2 9.5 7C9.5 7.8 8.8 8.5 8 8.5Z" fill="currentColor"/>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <rect x="1" y="1" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="1.2"/>
+              <path d="M5 1v14" stroke="currentColor" strokeWidth="1.2"/>
+            </svg>
+          </button>
+          {/* Toggle panel (terminal) */}
+          <button
+            className="titlebar-action-button"
+            onClick={onTogglePanel}
+            title="Toggle Panel"
+            style={{ opacity: isPanelVisible ? 1 : 0.45 }}
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <rect x="1" y="1" width="14" height="14" rx="2" stroke="currentColor" strokeWidth="1.2"/>
+              <path d="M1 10h14" stroke="currentColor" strokeWidth="1.2"/>
+            </svg>
+          </button>
+          {/* Toggle agent/chat */}
+          <button
+            className="titlebar-action-button"
+            onClick={onToggleAgent}
+            title="Toggle Agent (Ctrl+I)"
+            style={{ opacity: isAgentVisible ? 1 : 0.45 }}
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M8 1.5C4.41 1.5 1.5 4.41 1.5 8c0 1.05.26 2.04.72 2.91L1.5 14.5l3.59-0.72A6.47 6.47 0 0 0 8 14.5c3.59 0 6.5-2.91 6.5-6.5S11.59 1.5 8 1.5z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
+              <path d="M5 8h6M5 10.5h3.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
             </svg>
           </button>
         </div>
-      </div>
-      <div className={`titlebar-right ${isWindows ? 'windows' : 'macos'}`}>
         <div className="titlebar-controls">
           <button className="titlebar-button" onClick={handleMinimize} title="Minimize">
             <svg width="10" height="1" viewBox="0 0 10 1" fill="none" xmlns="http://www.w3.org/2000/svg">

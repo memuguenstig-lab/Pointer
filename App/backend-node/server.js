@@ -382,6 +382,61 @@ app.post('/api/codebase/query', async (req, res) => res.json(await indexer.query
 app.post('/api/codebase/context', async (req, res) => res.json(await indexer.getRelevantContext(req.body.query, req.body.max_files)));
 app.post('/api/codebase/cleanup-old-cache', async (req, res) => res.json({ success: true, message: 'No old cache to clean' }));
 
+// ── Settings ───────────────────────────────────────────────────────────────
+function getSettingsPath() {
+  return path.join(getAppDataPath(), 'settings');
+}
+
+app.post('/read-settings-files', (req, res) => {
+  const { settingsDir } = req.body;
+  // Always resolve to the proper AppData settings path, ignore relative placeholders
+  const dir = (!settingsDir || settingsDir === 'settings' || settingsDir === 'data' || !path.isAbsolute(settingsDir))
+    ? getSettingsPath()
+    : settingsDir;
+  const settings = {};
+  try {
+    fs.mkdirSync(dir, { recursive: true });
+    for (const f of fs.readdirSync(dir).filter(f => f.endsWith('.json'))) {
+      try {
+        const key = path.basename(f, '.json');
+        settings[key] = JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8'));
+      } catch(e) {}
+    }
+    res.json({ success: true, settings });
+  } catch(e) { res.status(500).json({ success: false, error: e.message }); }
+});
+
+app.post('/save-settings-files', (req, res) => {
+  const { settingsDir, settings } = req.body;
+  const dir = (!settingsDir || settingsDir === 'settings' || settingsDir === 'data' || !path.isAbsolute(settingsDir))
+    ? getSettingsPath()
+    : settingsDir;
+  try {
+    fs.mkdirSync(dir, { recursive: true });
+    for (const [key, value] of Object.entries(settings || {})) {
+      fs.writeFileSync(path.join(dir, `${key}.json`), JSON.stringify(value, null, 2), 'utf8');
+    }
+    res.json({ success: true });
+  } catch(e) { res.status(500).json({ success: false, error: e.message }); }
+});
+
+// Simple key-value settings store
+const simpleSettingsFile = () => path.join(getAppDataPath(), 'app-settings.json');
+app.get('/api/settings', (req, res) => {
+  try {
+    const f = simpleSettingsFile();
+    if (!fs.existsSync(f)) return res.json({});
+    res.json(JSON.parse(fs.readFileSync(f, 'utf8')));
+  } catch(e) { res.json({}); }
+});
+app.post('/api/settings', (req, res) => {
+  try {
+    fs.mkdirSync(path.dirname(simpleSettingsFile()), { recursive: true });
+    fs.writeFileSync(simpleSettingsFile(), JSON.stringify(req.body, null, 2), 'utf8');
+    res.json({ success: true });
+  } catch(e) { res.status(500).json({ success: false, error: e.message }); }
+});
+
 // ── Git ────────────────────────────────────────────────────────────────────
 const gitRoutes = require('./git-routes');
 app.use('/git', gitRoutes);

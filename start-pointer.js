@@ -327,7 +327,7 @@ async function main() {
     let backendProcess = null;
     if (!backendRunning) {
       console.log(chalk.yellow(`Backend not detected on port ${BACKEND_PORT}`));
-      backendProcess = startProcess('py', ['backend/run.py'], 'Backend', 'yellow');
+      backendProcess = startProcess('node', ['backend-node/server.js'], 'Backend', 'yellow');
       
       // Wait for backend to start
       console.log(chalk.yellow('⏳ Waiting for backend to initialize...'));
@@ -347,7 +347,7 @@ async function main() {
         console.log(chalk.green('✅ Backend started successfully!'));
       } catch (error) {
         console.error(chalk.red('❌ Backend failed to start within timeout period.'));
-        console.log(chalk.red('   Try: python backend/run.py'));
+        console.log(chalk.red('   Try: node backend-node/server.js'));
         if (backendProcess) backendProcess.kill();
         process.exit(1);
       }
@@ -445,7 +445,7 @@ async function main() {
     console.error(chalk.red('\n❌ Error starting Pointer:'));
     console.error(chalk.red(`   ${error.message}`));
     console.log(chalk.yellow('\n💡 Tips:'));
-    console.log(chalk.yellow('   • Check backend/run.py is valid'));
+    console.log(chalk.yellow('   • Check backend-node/server.js is valid'));
     console.log(chalk.yellow('   • Ensure ports 23816 and 3000 are available'));
     console.log(chalk.yellow('   • Run: yarn install first'));
     console.log(chalk.yellow('   • View help: node start-pointer.js --help\n'));

@@ -277,23 +277,25 @@ const getIconPath = () => {
 
 // Create a variable to hold the splash window
 let splashWindow = null;
+let splashReady = false;
+let pendingSplashMessage = null;
 
 // Update splash screen message
 function updateSplashMessage(message) {
-  if (!splashWindow || splashWindow.isDestroyed()) {
+  if (!splashWindow || splashWindow.isDestroyed()) return;
+
+  if (!splashReady) {
+    pendingSplashMessage = message;
     return;
   }
 
-  const safeMessage = JSON.stringify(message);
-
+  const safeMessage = JSON.stringify(String(message));
   splashWindow.webContents.executeJavaScript(`
-    const messageElement = document.querySelector('.message');
-    if (messageElement) {
-      messageElement.textContent = ${safeMessage};
-    } else {
-      console.warn('Splash message element not found yet');
-    }
-  `).catch(err => console.error('Error updating splash message:', err));
+    (function() {
+      var el = document.querySelector('.message');
+      if (el) el.textContent = ${safeMessage};
+    })();
+  `).catch(() => {});
 }
 
 function createSplashScreen() {
@@ -311,17 +313,19 @@ function createSplashScreen() {
     }
   });
 
+  splashWindow.webContents.on('did-finish-load', () => {
+    splashReady = true;
+    if (pendingSplashMessage) {
+      updateSplashMessage(pendingSplashMessage);
+      pendingSplashMessage = null;
+    }
+  });
+
   splashWindow.loadFile(path.join(__dirname, 'splash.html'));
 
   // Allow user to close splash manually (quits the app)
   splashWindow.on('closed', () => {
-    if (splashWindow !== null) {
-      // Only quit if main window hasn't opened yet
-      splashWindow = null;
-      if (BrowserWindow.getAllWindows().length === 0) {
-        app.quit();
-      }
-    }
+    splashReady = false;
     splashWindow = null;
   });
 }

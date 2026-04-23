@@ -80,40 +80,52 @@
   Sleep 1000
 
   install_deps:
-  ; ── Install backend dependencies ───────────────────────────────────────
+  ; ── Install backend-node dependencies ──────────────────────────────────
   DetailPrint "Installing backend dependencies (this may take a few minutes)..."
-  nsExec::ExecToLog 'cmd /C "cd /D "$INSTDIR\resources\backend-node" && npm install --production --prefer-offline --no-audit --no-fund 2>&1"'
+  nsExec::ExecToLog 'cmd /C "cd /D "$INSTDIR\resources\backend-node" && npm install --no-audit --no-fund 2>&1"'
   Pop $0
   ${If} $0 != 0
-    DetailPrint "Warning: npm install (backend) returned code $0"
-    ; Try with longer timeout
-    DetailPrint "Retrying with longer timeout..."
-    nsExec::ExecToLog 'cmd /C "cd /D "$INSTDIR\resources\backend-node" && npm install --production --prefer-offline --no-audit --no-fund --verbose 2>&1"'
+    DetailPrint "Warning: npm install (backend-node) returned code $0 — retrying..."
+    nsExec::ExecToLog 'cmd /C "cd /D "$INSTDIR\resources\backend-node" && npm install --no-audit --no-fund --verbose 2>&1"'
     Pop $0
     ${If} $0 != 0
-      MessageBox MB_OK|MB_ICONINFORMATION "Backend dependencies installation had issues (code: $0).$\nPointer will try to start anyway." /SD IDOK
+      MessageBox MB_OK|MB_ICONEXCLAMATION "Backend dependencies could not be installed (code: $0).$\nPlease run: npm install$\nin $INSTDIR\resources\backend-node" /SD IDOK
     ${EndIf}
   ${Else}
     DetailPrint "Backend dependencies installed successfully."
   ${EndIf}
 
-  ; ── Install app dependencies ────────────────────────────────────────────
-  DetailPrint "Installing app dependencies..."
-  nsExec::ExecToLog 'cmd /C "cd /D "$INSTDIR\resources\app" && npm install --production --prefer-offline --no-audit --no-fund 2>&1"'
+  ; ── Install app (root) dependencies ────────────────────────────────────
+  DetailPrint "Installing app dependencies (tcp-port-used, chalk, etc.)..."
+  nsExec::ExecToLog 'cmd /C "cd /D "$INSTDIR\resources\app" && npm install --no-audit --no-fund 2>&1"'
   Pop $0
   ${If} $0 != 0
-    DetailPrint "Warning: npm install (app) returned code $0"
-    ; Try with longer timeout
-    DetailPrint "Retrying with longer timeout..."
-    nsExec::ExecToLog 'cmd /C "cd /D "$INSTDIR\resources\app" && npm install --production --prefer-offline --no-audit --no-fund --verbose 2>&1"'
+    DetailPrint "Warning: npm install (app) returned code $0 — retrying..."
+    nsExec::ExecToLog 'cmd /C "cd /D "$INSTDIR\resources\app" && npm install --no-audit --no-fund --verbose 2>&1"'
     Pop $0
     ${If} $0 != 0
-      MessageBox MB_OK|MB_ICONINFORMATION "App dependencies installation had issues (code: $0).$\nPointer will try to start anyway." /SD IDOK
+      MessageBox MB_OK|MB_ICONEXCLAMATION "App dependencies could not be installed (code: $0).$\nPlease run: npm install$\nin $INSTDIR\resources\app" /SD IDOK
     ${EndIf}
   ${Else}
     DetailPrint "App dependencies installed successfully."
   ${EndIf}
-  
+
+  ; ── Verify critical modules are present ────────────────────────────────
+  DetailPrint "Verifying critical modules..."
+  IfFileExists "$INSTDIR\resources\app\node_modules\tcp-port-used\*" tcp_ok tcp_missing
+  tcp_missing:
+    DetailPrint "tcp-port-used missing — installing individually..."
+    nsExec::ExecToLog 'cmd /C "cd /D "$INSTDIR\resources\app" && npm install tcp-port-used chalk --no-audit --no-fund 2>&1"'
+    Pop $0
+  tcp_ok:
+
+  IfFileExists "$INSTDIR\resources\backend-node\node_modules\express\*" express_ok express_missing
+  express_missing:
+    DetailPrint "express missing — installing backend deps individually..."
+    nsExec::ExecToLog 'cmd /C "cd /D "$INSTDIR\resources\backend-node" && npm install express cors ws simple-git sql.js --no-audit --no-fund 2>&1"'
+    Pop $0
+  express_ok:
+
   DetailPrint "Pointer installation completed successfully!"
 
 !macroend

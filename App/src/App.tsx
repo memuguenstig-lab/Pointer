@@ -24,6 +24,7 @@ import { PathConfig } from './config/paths';
 import { isPreviewableFile, getPreviewType } from './utils/previewUtils';
 import PreviewPane from './components/PreviewPane';
 import PanelLayout from './components/PanelLayout';
+import ActivityBar, { ActivityView } from './components/ActivityBar';
 
 // Initialize language support
 initializeLanguageSupport();
@@ -179,7 +180,8 @@ const App: React.FC = () => {
 
   // Add state for chat visibility
   const [isLLMChatVisible, setIsLLMChatVisible] = useState(true);
-
+  // Activity bar view state — replaces isGitViewActive / isExplorerViewActive
+  const [activeView, setActiveView] = useState<ActivityView>('explorer');
   // Add state for chat width
   const [width, setWidth] = useState(() => {
     const savedWidth = localStorage.getItem('chatWidth');
@@ -1259,9 +1261,9 @@ const App: React.FC = () => {
   // Add to the App component state declarations
   const [currentChatId, setCurrentChatId] = useState<string>(uuidv4());
 
-  // Add this state for Explorer and Git view toggle
-  const [isGitViewActive, setIsGitViewActive] = useState(false);
-  const [isExplorerViewActive, setIsExplorerViewActive] = useState(true);
+  // Add this state for Explorer and Git view toggle (derived from activeView)
+  const isGitViewActive = activeView === 'git';
+  const isExplorerViewActive = activeView === 'explorer';
 
   useEffect(() => {
     let mounted = true;
@@ -1388,34 +1390,20 @@ const App: React.FC = () => {
     }
   }, [fileSystem.currentFileId]);
 
-  // Update the toggle Git view function
-  const handleToggleGitView = () => {
-    if (isGitViewActive) {
-      // If Git view is already active, deactivate it and collapse sidebar
-      setIsGitViewActive(false);
-      setIsExplorerViewActive(false);
-      setIsSidebarCollapsed(true); // Hide sidebar completely
+  // Activity bar view handler
+  const handleActivityViewChange = (view: ActivityView) => {
+    if (activeView === view) {
+      setActiveView(null);
+      setIsSidebarCollapsed(true);
     } else {
-      // If Git view is not active, activate it and deactivate Explorer
-      setIsGitViewActive(true);
-      setIsExplorerViewActive(false);
-      setIsSidebarCollapsed(false); // Show sidebar
+      setActiveView(view);
+      setIsSidebarCollapsed(view === null);
     }
   };
 
-  // Add a function to toggle Explorer view
-  const handleToggleExplorerView = () => {
-    // Toggle explorer on/off
-    setIsExplorerViewActive(!isExplorerViewActive);
-    
-    // Also collapse/expand the sidebar based on Explorer state
-    setIsSidebarCollapsed(isExplorerViewActive);
-    
-    // If we're turning Explorer on, make sure Git view is off
-    if (!isExplorerViewActive) {
-      setIsGitViewActive(false);
-    }
-  };
+  // Keep legacy handlers for any remaining references
+  const handleToggleGitView = () => handleActivityViewChange('git');
+  const handleToggleExplorerView = () => handleActivityViewChange('explorer');
 
   // Corrected useEffect for loadAllSettings
   useEffect(() => {
@@ -1521,19 +1509,26 @@ const App: React.FC = () => {
           onOpenFolder={handleOpenFolder} 
           onOpenFile={handleOpenFile} 
           onCloneRepository={handleCloneRepository}
-          onToggleGitView={handleToggleGitView}
-          onToggleExplorerView={handleToggleExplorerView}
-          onToggleLLMChat={() => setIsLLMChatVisible(!isLLMChatVisible)}
           onOpenSettings={() => setIsSettingsModalOpen(true)}
-          onToggleTerminal={toggleTerminal}
-          isGitViewActive={isGitViewActive}
-          isExplorerViewActive={isExplorerViewActive}
-          isLLMChatVisible={isLLMChatVisible}
-          terminalOpen={fileSystem.terminalOpen}
+          onToggleSidebar={() => handleActivityViewChange(activeView ?? 'explorer')}
+          onToggleAgent={() => setIsLLMChatVisible(v => !v)}
+          onTogglePanel={toggleTerminal}
+          isSidebarVisible={!isSidebarCollapsed}
+          isAgentVisible={isLLMChatVisible}
+          isPanelVisible={fileSystem.terminalOpen}
           currentFileName={getCurrentFileName()}
           workspaceName={fileSystem.items[fileSystem.rootId]?.name || ''}
           titleFormat={dynamicTitleFormat || settingsData.advanced?.titleFormat || '{filename} - {workspace} - Pointer'}
         />
+        {/* VSCode-style layout: ActivityBar + Sidebar + Editor + Chat */}
+        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+          <ActivityBar
+            activeView={activeView}
+            onViewChange={handleActivityViewChange}
+            onToggleTerminal={toggleTerminal}
+            onOpenSettings={() => setIsSettingsModalOpen(true)}
+            terminalOpen={fileSystem.terminalOpen}
+          />
         <PanelLayout
           showSidebar={!isSidebarCollapsed}
           showChat={isLLMChatVisible}
@@ -1547,6 +1542,10 @@ const App: React.FC = () => {
               shortcutKey="sidebar"
               storageKey="sidebarWidth"
             >
+              {/* VSCode-style panel header */}
+              <div className="sidebar-panel-header">
+                {isGitViewActive ? 'Source Control' : 'Explorer'}
+              </div>
               {isLoading ? (
                 <div style={{ padding: '16px', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <div>Loading folder contents...</div>
@@ -1567,8 +1566,8 @@ const App: React.FC = () => {
                   onRenameItem={handleRenameItem}
                 />
               ) : (
-                <div style={{ padding: '16px', color: 'var(--text-primary)' }}>
-                  Select a view from the titlebar
+                <div style={{ padding: '16px', color: 'var(--text-secondary)', fontSize: 13 }}>
+                  No view selected
                 </div>
               )}
             </Resizable>
@@ -1645,6 +1644,7 @@ const App: React.FC = () => {
             />
           }
         />
+        </div>{/* end ActivityBar + PanelLayout wrapper */}
 
         {/* Status Bar */}
         <div style={{
