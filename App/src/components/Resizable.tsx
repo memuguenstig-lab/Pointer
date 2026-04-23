@@ -47,13 +47,11 @@ const Resizable: React.FC<ResizableProps> = ({
     dragStartWidthRef.current = width;
     
     document.body.style.userSelect = 'none';
-    document.body.style.cursor = 'ew-resize';
   }, [width]);
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
     document.body.style.userSelect = '';
-    document.body.style.cursor = '';
     
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);

@@ -32,7 +32,6 @@ import {
 } from '../config/chatConfig';
 import { CodebaseContextService } from '../services/CodebaseContextService';
 import { stripThinkTags, extractCodeBlocks } from '../utils/textUtils';
-import { resizePerformanceMonitor } from '../utils/performance';
 import { ChatService } from '../services/ChatService';
 import { showToast } from '../services/ToastService';
 
@@ -2655,57 +2654,23 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
     const startX = e.clientX;
     const startWidth = width;
     let animationFrameId: number | null = null;
-    let lastUpdateTime = 0;
-    const THROTTLE_MS = 16; // ~60fps
-
-    // Start performance monitoring in development (check if console is available)
-    const isDevelopment = typeof console !== 'undefined' && console.log;
-    if (isDevelopment) {
-      resizePerformanceMonitor.startMonitoring();
-    }
 
     const handleMouseMove = (e: MouseEvent) => {
-      const now = performance.now();
-      
-      // Throttle updates to improve performance
-      if (now - lastUpdateTime < THROTTLE_MS) {
-        return;
-      }
-      lastUpdateTime = now;
-
-      // Use requestAnimationFrame for smooth updates
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-      }
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
 
       animationFrameId = requestAnimationFrame(() => {
-        // Record frame for performance monitoring
-        if (isDevelopment) {
-          resizePerformanceMonitor.recordFrame();
-        }
-
-        // Calculate how much the mouse has moved
         const dx = startX - e.clientX;
-        // Update width directly (adding dx because this is on the right side)
-        // Increase max width and add screen size awareness
-        const maxWidth = Math.min(Math.max(window.innerWidth * 0.7, 600), 1200); // 70% of screen or max 1200px
-        const minWidth = 250; // Slightly smaller minimum
+        const maxWidth = Math.min(Math.max(window.innerWidth * 0.7, 600), 1200);
+        const minWidth = 250;
         const newWidth = Math.max(minWidth, Math.min(maxWidth, startWidth + dx));
         
-        // Update locally
         setWidth(newWidth);
         
-        // Update container width immediately for smooth visual feedback
         if (containerRef.current) {
           containerRef.current.style.width = `${newWidth}px`;
         }
         
-        // Indicate active resize state
         setIsResizing(true);
-        
-        // Prevent text selection while resizing
-        document.body.style.userSelect = 'none';
-        document.body.style.cursor = 'ew-resize';
       });
     };
 
@@ -2713,29 +2678,17 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
       
-      // Clean up animation frame
-      if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-      }
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
       
-      // Stop performance monitoring and log results
-      if (isDevelopment) {
-        resizePerformanceMonitor.stopMonitoring();
-      }
-      
-      // Reset states
       setIsResizing(false);
       document.body.style.userSelect = '';
-      document.body.style.cursor = '';
       
-      // Debounced final resize update to parent
       setTimeout(() => {
-        if (onResize) {
-          onResize(width);
-        }
+        if (onResize) onResize(width);
       }, 100);
     };
-    
+
+    document.body.style.userSelect = 'none';
     document.addEventListener('mousemove', handleMouseMove, { passive: true });
     document.addEventListener('mouseup', handleMouseUp);
   }, [width, onResize]);
