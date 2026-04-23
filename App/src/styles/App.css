@@ -758,3 +758,13 @@ input:focus {
 
 /* Styles for the rest of the app */
 /* ... existing code ... */
+
+/* ── Panel drag & drop ──────────────────────────────────────────────────── */
+.panel-container:hover .panel-drag-handle {
+  opacity: 1 !important;
+}
+
+.panel-drag-handle:active {
+  cursor: grabbing !important;
+  opacity: 1 !important;
+}

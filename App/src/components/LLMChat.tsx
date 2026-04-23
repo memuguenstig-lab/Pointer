@@ -6443,18 +6443,16 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
       style={{ 
         display: isVisible ? 'flex' : 'none',
         flexDirection: 'column',
-        position: 'fixed',
-        top: '32px', // Account for titlebar height
-        right: 0,
+        position: 'relative',
         width: `${width}px`,
-        height: 'calc(100vh - 54px)', // Subtract titlebar (32px) + statusbar (22px)
+        height: '100%',
+        flexShrink: 0,
         backgroundColor: 'var(--bg-secondary)',
         borderLeft: '1px solid var(--border-primary)',
         zIndex: 1,
-        // Performance optimizations
         contain: 'layout style size',
         willChange: isResizing ? 'none' : 'auto',
-        transform: 'translateZ(0)', // Create compositing layer
+        transform: 'translateZ(0)',
       }}
     >
       {/* Resize Handle */}

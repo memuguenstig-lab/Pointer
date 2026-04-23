@@ -23,6 +23,7 @@ import CloneRepositoryModal from './components/CloneRepositoryModal';
 import { PathConfig } from './config/paths';
 import { isPreviewableFile, getPreviewType } from './utils/previewUtils';
 import PreviewPane from './components/PreviewPane';
+import PanelLayout from './components/PanelLayout';
 
 // Initialize language support
 initializeLanguageSupport();
@@ -1533,135 +1534,104 @@ const App: React.FC = () => {
           workspaceName={fileSystem.items[fileSystem.rootId]?.name || ''}
           titleFormat={dynamicTitleFormat || settingsData.advanced?.titleFormat || '{filename} - {workspace} - Pointer'}
         />
-        <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
-          {/* Sidebar removed - content will now be controlled via titlebar buttons */}
-          <div style={{ display: 'flex' }}>
-            {!isSidebarCollapsed && (
-              <Resizable
-                defaultWidth={300}
-                minWidth={170}
-                maxWidth={850}
-                isCollapsed={isSidebarCollapsed}
-                onCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                shortcutKey="sidebar"
-                storageKey="sidebarWidth"
-              >
-                {isLoading ? (
-                  <div style={{
-                    padding: '16px',
-                    color: 'var(--text-primary)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '8px',
-                  }}>
-                    <div>Loading folder contents...</div>
-                    {loadingError && (
-                      <div style={{ color: 'var(--error-color)' }}>
-                        {loadingError}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  isGitViewActive ? (
-                    <GitView onBack={handleToggleExplorerView} />
-                  ) : isExplorerViewActive ? (
-                    <FileExplorer
-                      items={fileSystem.items}
-                      rootId={fileSystem.rootId}
-                      currentFileId={fileSystem.currentFileId}
-                      onFileSelect={handleFileSelect}
-                      onCreateFile={createFile}
-                      onCreateFolder={createFolder}
-                      onFolderContentsLoaded={handleFolderContentsLoaded}
-                      onDeleteItem={handleDeleteItem}
-                      onRenameItem={handleRenameItem}
-                    />
-                  ) : (
-                    <div style={{ padding: '16px', color: 'var(--text-primary)' }}>
-                      Select a view from the titlebar
-                    </div>
-                  )
-                )}
-              </Resizable>
-            )}
-          </div>
-
-          {/* Main Editor Area */}
-          <div 
-            className="editor-area"
-            style={{ 
-              flex: 1, 
-              display: 'flex', 
-              flexDirection: 'column',
-              marginRight: isLLMChatVisible ? `${width}px` : '0',
-              transition: 'margin-right 0.2s ease-in-out'
-            }}>
-            <Tabs
-              openFiles={openFiles}
-              currentFileId={fileSystem.currentFileId}
-              items={fileSystem.items}
-              onTabSelect={handleTabSelect}
-              onTabClose={handleTabClose}
-              onToggleGrid={handleToggleGrid}
-              isGridLayout={isGridLayout}
-              previewTabs={previewTabs}
-              onPreviewToggle={handlePreviewToggle}
-              onPreviewTabSelect={handlePreviewTabSelect}
-              onPreviewTabClose={handlePreviewTabClose}
-              currentPreviewTabId={currentPreviewTabId}
-            />
-            <EditorGrid
-              openFiles={openFiles}
-              currentFileId={fileSystem.currentFileId}
-              items={fileSystem.items}
-              onEditorChange={(newEditor) => {
-                editor.current = newEditor;
-                // Set up a resize observer for the editor container
-                if (editorRef.current) {
-                  const resizeObserver = new ResizeObserver((entries) => {
-                    const entry = entries[0];
-                    if (entry && editor.current) {
-                      // Use requestAnimationFrame to ensure smooth updates
-                      requestAnimationFrame(() => {
-                        try {
-                          editor.current?.layout({
-                            width: entry.contentRect.width,
-                            height: entry.contentRect.height
-                          });
-                        } catch (error) {
-                          console.error('Error updating editor layout:', error);
-                        }
-                      });
-                    }
-                  });
-                  resizeObserver.observe(editorRef.current);
-                }
-              }}
-              onTabClose={handleTabClose}
-              isGridLayout={isGridLayout}
-              onToggleGrid={handleToggleGrid}
-              setSaveStatus={setSaveStatus}
-              previewTabs={previewTabs}
-              currentPreviewTabId={currentPreviewTabId}
-            />
-          </div>
-
-          {/* LLMChat */}
-          {isLLMChatVisible && (
+        <PanelLayout
+          showSidebar={!isSidebarCollapsed}
+          showChat={isLLMChatVisible}
+          sidebar={
+            <Resizable
+              defaultWidth={300}
+              minWidth={170}
+              maxWidth={850}
+              isCollapsed={isSidebarCollapsed}
+              onCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              shortcutKey="sidebar"
+              storageKey="sidebarWidth"
+            >
+              {isLoading ? (
+                <div style={{ padding: '16px', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div>Loading folder contents...</div>
+                  {loadingError && <div style={{ color: 'var(--error-color)' }}>{loadingError}</div>}
+                </div>
+              ) : isGitViewActive ? (
+                <GitView onBack={handleToggleExplorerView} />
+              ) : isExplorerViewActive ? (
+                <FileExplorer
+                  items={fileSystem.items}
+                  rootId={fileSystem.rootId}
+                  currentFileId={fileSystem.currentFileId}
+                  onFileSelect={handleFileSelect}
+                  onCreateFile={createFile}
+                  onCreateFolder={createFolder}
+                  onFolderContentsLoaded={handleFolderContentsLoaded}
+                  onDeleteItem={handleDeleteItem}
+                  onRenameItem={handleRenameItem}
+                />
+              ) : (
+                <div style={{ padding: '16px', color: 'var(--text-primary)' }}>
+                  Select a view from the titlebar
+                </div>
+              )}
+            </Resizable>
+          }
+          editor={
+            <div className="editor-area" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <Tabs
+                openFiles={openFiles}
+                currentFileId={fileSystem.currentFileId}
+                items={fileSystem.items}
+                onTabSelect={handleTabSelect}
+                onTabClose={handleTabClose}
+                onToggleGrid={handleToggleGrid}
+                isGridLayout={isGridLayout}
+                previewTabs={previewTabs}
+                onPreviewToggle={handlePreviewToggle}
+                onPreviewTabSelect={handlePreviewTabSelect}
+                onPreviewTabClose={handlePreviewTabClose}
+                currentPreviewTabId={currentPreviewTabId}
+              />
+              <EditorGrid
+                openFiles={openFiles}
+                currentFileId={fileSystem.currentFileId}
+                items={fileSystem.items}
+                onEditorChange={(newEditor) => {
+                  editor.current = newEditor;
+                  if (editorRef.current) {
+                    const resizeObserver = new ResizeObserver((entries) => {
+                      const entry = entries[0];
+                      if (entry && editor.current) {
+                        requestAnimationFrame(() => {
+                          try {
+                            editor.current?.layout({ width: entry.contentRect.width, height: entry.contentRect.height });
+                          } catch (error) {
+                            console.error('Error updating editor layout:', error);
+                          }
+                        });
+                      }
+                    });
+                    resizeObserver.observe(editorRef.current);
+                  }
+                }}
+                onTabClose={handleTabClose}
+                isGridLayout={isGridLayout}
+                onToggleGrid={handleToggleGrid}
+                setSaveStatus={setSaveStatus}
+                previewTabs={previewTabs}
+                currentPreviewTabId={currentPreviewTabId}
+              />
+            </div>
+          }
+          chat={
             <LLMChat
               isVisible={isLLMChatVisible}
               onClose={() => setIsLLMChatVisible(false)}
               onResize={(newWidth) => {
                 setWidth(newWidth);
                 localStorage.setItem('chatWidth', String(newWidth));
-                // Force editor layout update with proper timing
                 if (editor.current) {
-                  // Use a small delay to ensure the DOM has updated
                   setTimeout(() => {
                     requestAnimationFrame(() => {
                       try {
                         editor.current?.layout();
-                        // Dispatch a resize event after the layout update
                         window.dispatchEvent(new Event('resize'));
                       } catch (error) {
                         console.error('Error updating editor layout:', error);
@@ -1673,8 +1643,8 @@ const App: React.FC = () => {
               currentChatId={currentChatId}
               onSelectChat={setCurrentChatId}
             />
-          )}
-        </div>
+          }
+        />
 
         {/* Status Bar */}
         <div style={{
