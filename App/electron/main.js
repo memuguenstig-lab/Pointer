@@ -582,9 +582,6 @@ async function createWindow() {
         showMainWindow(mainWindow);
       }
       
-      if (isDev) {
-        mainWindow.webContents.openDevTools();
-      }
     } else {
       updateSplashMessage('Loading application...');
       console.log('Loading application from dist folder');
