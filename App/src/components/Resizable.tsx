@@ -8,6 +8,8 @@ interface ResizableProps {
   isCollapsed: boolean;
   onCollapse: () => void;
   shortcutKey?: string;
+  storageKey?: string; // localStorage key to persist width
+  onWidthChange?: (width: number) => void;
 }
 
 const Resizable: React.FC<ResizableProps> = ({
@@ -18,8 +20,19 @@ const Resizable: React.FC<ResizableProps> = ({
   isCollapsed,
   onCollapse,
   shortcutKey,
+  storageKey,
+  onWidthChange,
 }) => {
-  const [width, setWidth] = useState(defaultWidth);
+  const [width, setWidth] = useState(() => {
+    if (storageKey) {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const parsed = parseInt(saved, 10);
+        if (!isNaN(parsed) && parsed >= minWidth && parsed <= maxWidth) return parsed;
+      }
+    }
+    return defaultWidth;
+  });
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [hoverCollapse, setHoverCollapse] = useState(false);
@@ -36,13 +49,11 @@ const Resizable: React.FC<ResizableProps> = ({
     dragStartWidthRef.current = width;
     
     document.body.style.userSelect = 'none';
-    document.body.style.cursor = 'ew-resize';
   }, [width]);
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
     document.body.style.userSelect = '';
-    document.body.style.cursor = '';
     
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
@@ -61,6 +72,8 @@ const Resizable: React.FC<ResizableProps> = ({
         
         if (newWidth !== width) {
           setWidth(newWidth);
+          if (storageKey) localStorage.setItem(storageKey, String(newWidth));
+          onWidthChange?.(newWidth);
           window.dispatchEvent(new Event('resize'));
         }
       });
@@ -87,8 +100,10 @@ const Resizable: React.FC<ResizableProps> = ({
 
   const handleDoubleClick = useCallback(() => {
     setWidth(defaultWidth);
+    if (storageKey) localStorage.setItem(storageKey, String(defaultWidth));
+    onWidthChange?.(defaultWidth);
     window.dispatchEvent(new Event('resize'));
-  }, [defaultWidth]);
+  }, [defaultWidth, storageKey, onWidthChange]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

@@ -12,6 +12,16 @@ const fs = require('fs');
 const { spawn } = require('child_process');
 const { runSetup, isSetupNeeded } = require('./setup');
 
+// ── Performance flags (before app ready) ──────────────────────────────────
+app.commandLine.appendSwitch('enable-features', 'VizDisplayCompositor,UseSkiaRenderer');
+app.commandLine.appendSwitch('disable-features', 'OutOfBlinkCors');
+app.commandLine.appendSwitch('enable-gpu-rasterization');
+app.commandLine.appendSwitch('enable-zero-copy');
+app.commandLine.appendSwitch('ignore-gpu-blocklist');
+app.commandLine.appendSwitch('disable-http-cache', 'false');
+// Reduce IPC overhead
+app.commandLine.appendSwitch('js-flags', '--max-old-space-size=512');
+
 // Get dev server port from environment variable or default to 3000
 const DEV_SERVER_PORT = process.env.VITE_DEV_SERVER_PORT || '3000';
 // Check if connection checks should be skipped
@@ -294,19 +304,25 @@ function createSplashScreen() {
     frame: false,
     resizable: false,
     icon: getIconPath(),
-    skipTaskbar: true, // Hide from taskbar until main window is ready
+    skipTaskbar: true,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true
     }
   });
 
-  // Load the splash screen HTML
   splashWindow.loadFile(path.join(__dirname, 'splash.html'));
-  
-  // Prevent the splash screen from closing when clicked
-  splashWindow.on('blur', () => {
-    splashWindow.focus();
+
+  // Allow user to close splash manually (quits the app)
+  splashWindow.on('closed', () => {
+    if (splashWindow !== null) {
+      // Only quit if main window hasn't opened yet
+      splashWindow = null;
+      if (BrowserWindow.getAllWindows().length === 0) {
+        app.quit();
+      }
+    }
+    splashWindow = null;
   });
 }
 
@@ -409,6 +425,15 @@ async function startBackend() {
     return false;
   }
 
+  // Check if backend is already running (started by start-pointer.js)
+  try {
+    const res = await fetch('http://127.0.0.1:23816/test-backend');
+    if (res.ok) {
+      console.log('[Backend] Already running, skipping start.');
+      return true;
+    }
+  } catch (_) {}
+
   return new Promise((resolve) => {
     backendProcess = spawn('node', [serverScript], {
       cwd: backendDir,
@@ -493,32 +518,35 @@ async function createWindow() {
     // Update splash message
     updateSplashMessage('Initializing editor...');
     
-    // Initialize Discord RPC after loading settings
-    await initDiscordRPC();
+    // Initialize Discord RPC in background — don't block window creation
+    setTimeout(() => initDiscordRPC(), 2000);
     
     // Create the browser window.
     const mainWindow = new BrowserWindow({
       width: 1200,
       height: 800,
-      show: false, // Don't show until fully loaded
-      icon: getIconPath(), // Set application icon
-      title: 'Pointer', // Set window title
-      frame: process.platform === 'darwin', // Use native frame on macOS
-      titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden', // Use inset titlebar on macOS
+      show: false,
+      icon: getIconPath(),
+      title: 'Pointer',
+      frame: false,
+      titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
       backgroundColor: '#1e1e1e',
       webPreferences: {
         nodeIntegration: false,
         contextIsolation: true,
         webSecurity: true,
-        preload: path.join(__dirname, 'preload.js')
+        preload: path.join(__dirname, 'preload.js'),
+        backgroundThrottling: false,   // Don't throttle when window is in background
+        spellcheck: false,             // Disable spellcheck (not needed in code editor)
+        enableBlinkFeatures: 'CSSColorSchemeUARendering',
       }
     });
 
-    // Enable Aero Snap and other Windows behaviors
     mainWindow.setMinimumSize(400, 300);
     mainWindow.setHasShadow(true);
 
-    // Set up window event listeners for debugging
+    // Reduce verbose logging in production
+    if (!isDev) return;
     mainWindow.webContents.on('did-start-loading', () => {
       console.log('Main window did-start-loading');
     });
@@ -594,9 +622,6 @@ async function createWindow() {
         showMainWindow(mainWindow);
       }
       
-      if (isDev) {
-        mainWindow.webContents.openDevTools();
-      }
     } else {
       updateSplashMessage('Loading application...');
       console.log('Loading application from dist folder');
@@ -655,15 +680,9 @@ app.whenReady().then(async () => {
   
   // Load settings first thing
   await loadSettings();
-  console.log('Settings loaded, creating splash screen...');
   
   // Create and show the splash screen
   createSplashScreen();
-  
-  if (isDev) {
-    await session.defaultSession.clearCache();
-    console.log('Cache cleared');
-  }
   
   // Create the main window
   await createWindow();

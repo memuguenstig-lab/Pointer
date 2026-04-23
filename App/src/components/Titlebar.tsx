@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import logo from '../assets/logo.png';
-import WindowControls from './WindowControls';
 
 
 interface TitlebarProps {
@@ -19,8 +18,6 @@ interface TitlebarProps {
   currentFileName?: string;
   workspaceName?: string;
   titleFormat?: string;
-  backendHealthStatus?: 'healthy' | 'unhealthy' | 'unknown';
-  backendHealthMessage?: string;
 }
 
 interface SystemInfo {
@@ -70,9 +67,7 @@ const Titlebar: React.FC<TitlebarProps> = ({
   terminalOpen,
   currentFileName = "",
   workspaceName = "",
-  titleFormat = "{filename} - {workspace} - Pointer",
-  backendHealthStatus = 'unknown',
-  backendHealthMessage = 'Backend health status unknown'
+  titleFormat = "{filename} - {workspace} - Pointer"
 }) => {
   const [isMaximized, setIsMaximized] = useState(false);
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
@@ -158,7 +153,11 @@ const Titlebar: React.FC<TitlebarProps> = ({
     setIsFileMenuOpen(false);
   };
 
-  const isWindows = systemInfo?.os.system === 'Windows';
+  // Detect Windows immediately via Electron/userAgent, don't wait for systemInfo API call
+  const isWindows = typeof window !== 'undefined' && (
+    window.navigator.userAgent.includes('Windows') ||
+    systemInfo?.os.system === 'Windows'
+  );
 
   // Format the title based on the template
   const formatTitle = () => {
@@ -177,11 +176,6 @@ const Titlebar: React.FC<TitlebarProps> = ({
       <div className={`titlebar-left ${isWindows ? 'windows' : 'macos'}`}>
         <img src={logo} alt="Pointer Logo" className="titlebar-logo" />
         <div className="titlebar-divider" />
-
-        <div className={`titlebar-backend-health ${backendHealthStatus}`}>
-          <span className="health-dot" />
-          <span className="health-text">{backendHealthMessage}</span>
-        </div>
         
         <div className="file-menu-container">
           <button 
@@ -320,14 +314,30 @@ const Titlebar: React.FC<TitlebarProps> = ({
         </div>
       </div>
       <div className={`titlebar-right ${isWindows ? 'windows' : 'macos'}`}>
-        <WindowControls
-          onMinimize={handleMinimize}
-          onMaximize={handleMaximize}
-          onClose={handleClose}
-          isMaximized={isMaximized}
-          position="right"
-          theme="dark"
-        />
+        <div className="titlebar-controls">
+          <button className="titlebar-button" onClick={handleMinimize} title="Minimize">
+            <svg width="10" height="1" viewBox="0 0 10 1" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="10" height="1" rx="0.5" fill="currentColor"/>
+            </svg>
+          </button>
+          <button className="titlebar-button" onClick={handleMaximize} title={isMaximized ? 'Restore' : 'Maximize'}>
+            {isMaximized ? (
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 1H9V7" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round"/>
+                <rect x="1" y="3" width="6" height="6" rx="0.5" stroke="currentColor" strokeWidth="1"/>
+              </svg>
+            ) : (
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="0.5" y="0.5" width="9" height="9" rx="0.5" stroke="currentColor" strokeWidth="1"/>
+              </svg>
+            )}
+          </button>
+          <button className="titlebar-button close" onClick={handleClose} title="Close">
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M1 1L9 9M9 1L1 9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   );

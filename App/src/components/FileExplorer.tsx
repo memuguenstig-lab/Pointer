@@ -58,7 +58,7 @@ const FileExplorerItem: React.FC<{
   onCreateFile: (parentId: string) => void;
   onCreateFolder: (parentId: string) => void;
   onDeleteItem: (item: FileSystemItem) => void;
-}> = ({ item, items, level, currentFileId, onFileSelect, onCreateFile, onCreateFolder, onDeleteItem }) => {
+}> = React.memo(({ item, items, level, currentFileId, onFileSelect, onCreateFile, onCreateFolder, onDeleteItem }) => {
   const [isExpanded, setIsExpanded] = React.useState(true);
   const [isHovered, setIsHovered] = React.useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -364,7 +364,15 @@ const FileExplorerItem: React.FC<{
       )}
     </div>
   );
-};
+}, (prevProps, nextProps) => {
+  // Only re-render if relevant props changed
+  return (
+    prevProps.item === nextProps.item &&
+    prevProps.currentFileId === nextProps.currentFileId &&
+    prevProps.level === nextProps.level &&
+    prevProps.items === nextProps.items
+  );
+});
 
 const buttonStyle = {
   padding: '0 4px',

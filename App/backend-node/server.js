@@ -390,6 +390,10 @@ app.use('/git', gitRoutes);
 const githubRoutes = require('./github-routes');
 app.use('/', githubRoutes);
 
+// ── Embedded LLM (node-llama-cpp) ──────────────────────────────────────────
+const llamaRoutes = require('./llama-routes');
+app.use('/api/llama', llamaRoutes);
+
 // ── Relevant files (keyword search) ───────────────────────────────────────
 app.post('/get-relevant-files', (req, res) => {
   if (!baseDirectory) return res.status(400).json({ detail: 'No directory opened' });

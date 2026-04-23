@@ -7,6 +7,7 @@ import ColorInput from './ColorInput';
 import { presetThemes } from '../themes/presetThemes';
 import { PathConfig } from '../config/paths';
 import { ModelDiscoveryService, ModelInfo } from '../services/ModelDiscoveryService';
+import EmbeddedModelSetup from './EmbeddedModelSetup';
 // Add electron API import with proper typing
 // @ts-ignore
 const electron = window.require ? window.require('electron') : null;
@@ -1149,6 +1150,8 @@ export function Settings({ isVisible, onClose, initialSettings }: SettingsProps)
 
   const fetchAvailableModels = async (apiEndpoint: string, apiKey?: string) => {
     if (!apiEndpoint) return;
+    // Don't try to discover models for embedded provider
+    if (apiEndpoint.includes('/api/llama')) return;
     
     setIsLoadingModels(true);
     try {
@@ -1864,6 +1867,7 @@ export function Settings({ isVisible, onClose, initialSettings }: SettingsProps)
                               }}
                             >
                               <option value="local">Local (LMStudio/Ollama)</option>
+                              <option value="ollama-embedded">Embedded (no install needed)</option>
                               <option value="openai">OpenAI</option>
                             </select>
                           </div>
@@ -1920,6 +1924,25 @@ export function Settings({ isVisible, onClose, initialSettings }: SettingsProps)
                             <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
                               Your API key will be stored securely and only used for API calls
                             </p>
+                          </div>
+                        )}
+
+                        {modelConfigs[activeTab].modelProvider === 'ollama-embedded' && (
+                          <div style={{
+                            padding: '16px',
+                            background: 'var(--bg-secondary)',
+                            borderRadius: '6px',
+                            border: '1px solid var(--border-color)',
+                          }}>
+                            <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '12px', color: 'var(--text-primary)' }}>
+                              Embedded AI Model
+                            </div>
+                            <EmbeddedModelSetup
+                              onModelReady={(modelId) => {
+                                handleModelConfigChange(activeTab, 'id', modelId);
+                                handleModelConfigChange(activeTab, 'apiEndpoint', 'http://127.0.0.1:23816/api/llama');
+                              }}
+                            />
                           </div>
                         )}
 

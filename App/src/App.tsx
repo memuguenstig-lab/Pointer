@@ -4,7 +4,7 @@ import FileExplorer from './components/FileExplorer';
 import Tabs from './components/Tabs';
 import Resizable from './components/Resizable';
 import { FileSystemItem, FileSystemState, TabInfo } from './types';
-import { FileService } from './services/FileService';
+import { FileSystemService } from './services/FileSystemService';
 import EditorGrid from './components/EditorGrid';
 import { initializeLanguageSupport, getLanguageFromFileName } from './utils/languageUtils';
 import { LLMChat } from './components/LLMChat';
@@ -23,13 +23,7 @@ import CloneRepositoryModal from './components/CloneRepositoryModal';
 import { PathConfig } from './config/paths';
 import { isPreviewableFile, getPreviewType } from './utils/previewUtils';
 import PreviewPane from './components/PreviewPane';
-import ErrorBoundary from './components/ErrorBoundary';
-
-// TODO: Services to be integrated in next phase
-// import { ServiceInitializer } from './services/ServiceInitializer';
-// import { PerformanceMonitor } from './services/PerformanceMonitor';
-// import { WorkspaceManager, Workspace } from './services/WorkspaceManager';
-// import { KeyboardShortcutsRegistry } from './services/KeyboardShortcutsRegistry';
+import PanelLayout from './components/PanelLayout';
 
 // Initialize language support
 initializeLanguageSupport();
@@ -143,11 +137,6 @@ const App: React.FC = () => {
   const [isConnecting, setIsConnecting] = useState(true);
   const [connectionMessage, setConnectionMessage] = useState('');
 
-  // Add backend health status
-  const [backendHealthStatus, setBackendHealthStatus] = useState<'healthy' | 'unhealthy' | 'unknown'>('unknown');
-  const [backendHealthMessage, setBackendHealthMessage] = useState('Backend health status unknown');
-  const [backendHealthLastChecked, setBackendHealthLastChecked] = useState<number | null>(null);
-
   // Add save status state
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error' | null>(null);
 
@@ -200,7 +189,7 @@ const App: React.FC = () => {
         return parsedWidth;
       }
     }
-    return 700; // Default width to match chat component
+    return 380; // Default width — slim agent panel
   });
 
   // Preview tab state management
@@ -218,60 +207,11 @@ const App: React.FC = () => {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [settingsData, setSettingsData] = useState<Record<string, any>>({});
 
-  // Multi-workspace support (Improvement 23)
-  const [workspaces, setWorkspaces] = useState<any[]>([]);
-  const [currentWorkspaceId, setCurrentWorkspaceId] = useState<string | null>(null);
-  const [showWorkspaceSwitcher, setShowWorkspaceSwitcher] = useState(false);
-
   // Add this inside the App component
   const loadChats = async () => {
     const loadedChats = await ChatService.listChats();
     setChats(loadedChats);
   };
-
-  // Initialize services on component mount (Improvement 13, 19, 23)
-  // TODO: Integrate new services in next phase
-  useEffect(() => {
-    // PerformanceMonitor.mark('app:initialization');
-    
-    // // Initialize services
-    // ServiceInitializer.initializeAll().catch(error => {
-    //   console.error('Service initialization failed:', error);
-    // });
-
-    // // Initialize keyboard shortcuts (Improvement 19)
-    // KeyboardShortcutsRegistry.initialize();
-    
-    // // Register custom commands
-    // KeyboardShortcutsRegistry.registerCommand(
-    //   'editor.action.newFile',
-    //   'ctrl+n',
-    //   () => console.log('New file'),
-    //   'Create new file',
-    //   { mac: 'cmd+n' }
-    // );
-
-    // KeyboardShortcutsRegistry.registerCommand(
-    //   'editor.action.openFile',
-    //   'ctrl+o',
-    //   () => console.log('Open file'),
-    //   'Open file',
-    //   { mac: 'cmd+o' }
-    // );
-
-    // // Initialize workspace manager (Improvement 23)
-    // WorkspaceManager.initialize({ maxWorkspaces: 10, autoSave: true });
-    // setWorkspaces(WorkspaceManager.listWorkspaces());
-
-    // // Update workspace list when workspaces change
-    // const updateWorkspaceList = () => {
-    //   setWorkspaces(WorkspaceManager.listWorkspaces());
-    // };
-
-    return () => {
-      // PerformanceMonitor.measure('app:initialization');
-    };
-  }, []);
 
   // Add this for Discord RPC settings
   const [discordRpcSettings, setDiscordRpcSettings] = useState({
@@ -291,8 +231,8 @@ const App: React.FC = () => {
   // Load settings, including Discord settings
   const loadSettings = async () => {
     try {
-      const result = await FileService.readSettingsFiles(PathConfig.getActiveSettingsPath());
-      if (result && result.settings) {
+      const result = await FileSystemService.readSettingsFiles(PathConfig.getActiveSettingsPath());
+      if (result && result.success) {
         setSettingsData(result.settings);
         
         // Apply editor settings if they exist
@@ -646,10 +586,10 @@ const App: React.FC = () => {
       
       try {
         // Refresh structure before loading file
-        // await FileService.refreshStructure(); // TODO: Method is private
+        await FileSystemService.refreshStructure();
         
         // Then load the file
-        const content = await FileService.readFile(fileId);
+        const content = await FileSystemService.readFile(fileId);
         if (content !== null) {
           setFileSystem(prev => ({
             ...prev,
@@ -731,7 +671,7 @@ const App: React.FC = () => {
     
     // Then load the file content
     try {
-      const content = await FileService.readFile(tabId);
+      const content = await FileSystemService.readFile(tabId);
       console.log('File content loaded:', content ? 'success' : 'null');
       
       if (content !== null) {
@@ -770,7 +710,7 @@ const App: React.FC = () => {
 
         // Only save if there's actual content and a valid path
         if (content && fileSystem.items[tabId].path) {
-          await FileService.saveFile(tabId, content);
+          await FileSystemService.saveFile(tabId, content);
         }
       } catch (error) {
         console.error(`Error saving file before closing tab: ${tabId}`, error);
@@ -816,9 +756,9 @@ const App: React.FC = () => {
       setLoadingError(null);
 
       // Clear loaded folders when opening a new directory
-      FileService.clearLoadedFolders();
+      FileSystemService.clearLoadedFolders();
 
-      const result = await FileService.openDirectory();
+      const result = await FileSystemService.openDirectory();
       
       if (result) {
         // Update editor content
@@ -866,7 +806,7 @@ const App: React.FC = () => {
     applyCustomTheme();
     
     try {
-      const result = await FileService.openFile();
+      const result = await FileSystemService.openFile();
       if (!result) {
         console.error('Failed to open file: No result returned');
         return;
@@ -888,42 +828,42 @@ const App: React.FC = () => {
           };
         }
         
-        // Add the file under the "Opened Files" directory using fileId from result
-        const fileEntry = result.items[result.fileId];
-        if (fileEntry) {
-          newItems[result.fileId] = {
-            id: result.fileId,
-            name: fileEntry.name || result.path.split('/').pop() || 'file',
-            type: 'file',
-            content: fileEntry.content || '',
-            parentId: openedFilesDirId,
-            path: result.path,
-          };
-        }
+        // Add the file under the "Opened Files" directory
+        newItems[result.id] = {
+          id: result.id,
+          name: result.filename,
+          type: 'file',
+          content: result.content,
+          parentId: openedFilesDirId,
+          path: result.fullPath, // Store the full path for saving
+        };
 
         // Update the content in the file system state
         const updatedItems = {
           ...newItems,
-          ...result.items,
+          [result.id]: {
+            ...newItems[result.id],
+            content: result.content,
+          },
         };
 
         return {
           ...prev,
           items: updatedItems,
-          currentFileId: result.fileId,
+          currentFileId: result.id,
         };
       });
 
       // Add to open files
-      setOpenFiles(prev => [...prev, result.fileId]);
+      setOpenFiles(prev => [...prev, result.id]);
 
       // Set the editor content
-      if (editor.current && result.items[result.fileId]?.content) {
-        editor.current.setValue(result.items[result.fileId].content);
+      if (editor.current) {
+        editor.current.setValue(result.content);
         // Apply custom theme after setting content
         applyCustomTheme();
       } else {
-        console.error('Editor not initialized or file content not available');
+        console.error('Editor not initialized');
       }
     } catch (error) {
       console.error('Error opening file:', error);
@@ -934,24 +874,24 @@ const App: React.FC = () => {
     if (!modalState.parentId || !modalState.type || !modalState.name) return;
 
     if (modalState.type === 'file') {
-      const result = await FileService.createFile(modalState.parentId, modalState.name);
+      const result = await FileSystemService.createFile(modalState.parentId, modalState.name);
       if (result) {
         setFileSystem(prev => ({
           ...prev,
           items: {
             ...prev.items,
-            [result.item.id]: result.item,
+            [result.id]: result.file,
           },
         }));
       }
     } else {
-      const result = await FileService.createDirectory(modalState.parentId, modalState.name);
+      const result = await FileSystemService.createDirectory(modalState.parentId, modalState.name);
       if (result) {
         setFileSystem(prev => ({
           ...prev,
           items: {
             ...prev.items,
-            [result.item.id]: result.item,
+            [result.id]: result.directory,
           },
         }));
       }
@@ -993,9 +933,9 @@ const App: React.FC = () => {
     const content = editor.current.getValue();
     
     try {
-      const result = await FileService.saveFile(fileSystem.currentFileId, content);
+      const result = await FileSystemService.saveFile(fileSystem.currentFileId, content);
       
-      if (result === true || (typeof result === 'object' && result)) {
+      if (result.success) {
         // Update the file system state with the saved content
         setFileSystem(prev => ({
           ...prev,
@@ -1003,10 +943,15 @@ const App: React.FC = () => {
             ...prev.items,
             [prev.currentFileId!]: {
               ...prev.items[prev.currentFileId!],
-              content: content,
+              content: result.content,
             },
           },
         }));
+
+        // Update editor content if needed
+        if (editor.current && editor.current.getValue() !== result.content) {
+          editor.current.setValue(result.content);
+        }
 
         setSaveStatus('saved');
         setTimeout(() => setSaveStatus(null), 2000);
@@ -1063,8 +1008,8 @@ const App: React.FC = () => {
         saveTimeout = window.setTimeout(async () => {
           setSaveStatus('saving');
           try {
-            const result = await FileService.saveFile(fileSystem.currentFileId!, content);
-            if (result === true || (typeof result === 'object' && result)) {
+            const result = await FileSystemService.saveFile(fileSystem.currentFileId!, content);
+            if (result.success) {
               // Update the file system state with the saved content
               setFileSystem(prev => ({
                 ...prev,
@@ -1072,7 +1017,7 @@ const App: React.FC = () => {
                   ...prev.items,
                   [prev.currentFileId!]: {
                     ...prev.items[prev.currentFileId!],
-                    content: content,
+                    content: result.content,
                   },
                 },
               }));
@@ -1150,7 +1095,7 @@ const App: React.FC = () => {
   };
 
   const handleDeleteItem = async (item: FileSystemItem) => {
-    const success = await FileService.deleteItem(item.path);
+    const success = await FileSystemService.deleteItem(item.path);
     if (success) {
       // If the deleted item was a file and it was open, close its tab
       if (item.type === 'file' && openFiles.includes(item.id)) {
@@ -1193,18 +1138,16 @@ const App: React.FC = () => {
 
   const handleRenameItem = async (item: FileSystemItem, newName: string) => {
     try {
-      const result = await FileService.renameItem(item.path, newName);
-      if (result && result.item) {
+      const result = await FileSystemService.renameItem(item.path, newName);
+      if (result.success && result.newPath) {
         // Update the item in the file system state
         setFileSystem(prev => {
           const updatedItems = { ...prev.items };
-          // Update using the returned item
-          if (result.item.id) {
-            updatedItems[result.item.id] = {
-              ...result.item,
-              name: newName,
-            };
-          }
+          updatedItems[item.id] = {
+            ...item,
+            name: newName,
+            path: result.newPath as string, // Use type assertion to fix TypeScript error
+          };
           return {
             ...prev,
             items: updatedItems,
@@ -1223,7 +1166,7 @@ const App: React.FC = () => {
       if (!file || file.type !== 'file') return;
 
       // Re-fetch the file content
-      const content = await FileService.readFile(fileId);
+      const content = await FileSystemService.readFile(fileId);
       if (content !== null) {
         // Update file system state
         setFileSystem(prev => ({
@@ -1344,7 +1287,7 @@ const App: React.FC = () => {
         const lastDir = localStorage.getItem('lastDirectory');
         if (lastDir) {
           setConnectionMessage('');
-          const result = await FileService.openSpecificDirectory(lastDir);
+          const result = await FileSystemService.openSpecificDirectory(lastDir);
           if (result) {
             setFileSystem(prevState => ({
               ...prevState,
@@ -1377,62 +1320,6 @@ const App: React.FC = () => {
       mounted = false;
     };
   }, []); // Empty dependency array
-
-  // Periodic backend health check
-  useEffect(() => {
-    let isActive = true;
-
-    const checkBackendHealth = async () => {
-      try {
-        const response = await fetch('http://localhost:23816/health');
-
-        if (!isActive) return;
-
-        const now = Date.now();
-
-        if (response.ok) {
-          const data = await response.json();
-          const status = data?.status === 'healthy' ? 'healthy' : 'unhealthy';
-          const message = status === 'healthy'
-            ? `Backend healthy (${new Date(now).toLocaleTimeString()})`
-            : `Backend unhealthy: ${data?.error || JSON.stringify(data)}`;
-
-          setBackendHealthStatus(status);
-          setBackendHealthMessage(message);
-          setBackendHealthLastChecked(now);
-
-          if (status === 'healthy') {
-            if (isConnecting) setIsConnecting(false);
-            setConnectionMessage('');
-          } else {
-            setConnectionMessage('Backend appears unhealthy. Check logs and settings.');
-          }
-        } else {
-          const text = await response.text();
-          setBackendHealthStatus('unhealthy');
-          setBackendHealthMessage(`Health check failed: ${response.status} ${response.statusText}`);
-          setBackendHealthLastChecked(now);
-          setConnectionMessage(`Health check failed: ${response.statusText}`);
-        }
-      } catch (error: unknown) {
-        if (!isActive) return;
-        const message = error instanceof Error ? error.message : String(error);
-
-        setBackendHealthStatus('unhealthy');
-        setBackendHealthMessage(`Health check error: ${message}`);
-        setBackendHealthLastChecked(Date.now());
-        setConnectionMessage(`Cannot reach backend: ${message}`);
-      }
-    };
-
-    checkBackendHealth();
-    const interval = setInterval(checkBackendHealth, 15000);
-
-    return () => {
-      isActive = false;
-      clearInterval(interval);
-    };
-  }, []);
 
   // Add a function to handle terminal toggle
   const toggleTerminal = () => {
@@ -1618,11 +1505,10 @@ const App: React.FC = () => {
   };
 
   return (
-    <ErrorBoundary>
-      <div className="app-container">
-        {isConnecting && (
-          <LoadingScreen message={connectionMessage} />
-        )}
+    <div className="app-container">
+      {isConnecting && (
+        <LoadingScreen message={connectionMessage} />
+      )}
       
       <div style={{ 
         display: 'flex', 
@@ -1647,136 +1533,105 @@ const App: React.FC = () => {
           currentFileName={getCurrentFileName()}
           workspaceName={fileSystem.items[fileSystem.rootId]?.name || ''}
           titleFormat={dynamicTitleFormat || settingsData.advanced?.titleFormat || '{filename} - {workspace} - Pointer'}
-          backendHealthStatus={backendHealthStatus}
-          backendHealthMessage={backendHealthMessage}
         />
-        <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
-          {/* Sidebar removed - content will now be controlled via titlebar buttons */}
-          <div style={{ display: 'flex' }}>
-            {!isSidebarCollapsed && (
-              <Resizable
-                defaultWidth={300}
-                minWidth={170}
-                maxWidth={850}
-                isCollapsed={isSidebarCollapsed}
-                onCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-                shortcutKey="sidebar"
-              >
-                {isLoading ? (
-                  <div style={{
-                    padding: '16px',
-                    color: 'var(--text-primary)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '8px',
-                  }}>
-                    <div>Loading folder contents...</div>
-                    {loadingError && (
-                      <div style={{ color: 'var(--error-color)' }}>
-                        {loadingError}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  isGitViewActive ? (
-                    <GitView onBack={handleToggleExplorerView} />
-                  ) : isExplorerViewActive ? (
-                    <FileExplorer
-                      items={fileSystem.items}
-                      rootId={fileSystem.rootId}
-                      currentFileId={fileSystem.currentFileId}
-                      onFileSelect={handleFileSelect}
-                      onCreateFile={createFile}
-                      onCreateFolder={createFolder}
-                      onFolderContentsLoaded={handleFolderContentsLoaded}
-                      onDeleteItem={handleDeleteItem}
-                      onRenameItem={handleRenameItem}
-                    />
-                  ) : (
-                    <div style={{ padding: '16px', color: 'var(--text-primary)' }}>
-                      Select a view from the titlebar
-                    </div>
-                  )
-                )}
-              </Resizable>
-            )}
-          </div>
-
-          {/* Main Editor Area */}
-          <div 
-            className="editor-area"
-            style={{ 
-              flex: 1, 
-              display: 'flex', 
-              flexDirection: 'column',
-              marginRight: isLLMChatVisible ? `${width}px` : '0',
-              transition: 'margin-right 0.2s ease-in-out'
-            }}>
-            <Tabs
-              openFiles={openFiles}
-              currentFileId={fileSystem.currentFileId}
-              items={fileSystem.items}
-              onTabSelect={handleTabSelect}
-              onTabClose={handleTabClose}
-              onToggleGrid={handleToggleGrid}
-              isGridLayout={isGridLayout}
-              previewTabs={previewTabs}
-              onPreviewToggle={handlePreviewToggle}
-              onPreviewTabSelect={handlePreviewTabSelect}
-              onPreviewTabClose={handlePreviewTabClose}
-              currentPreviewTabId={currentPreviewTabId}
-            />
-            <EditorGrid
-              openFiles={openFiles}
-              currentFileId={fileSystem.currentFileId}
-              items={fileSystem.items}
-              onEditorChange={(newEditor) => {
-                editor.current = newEditor;
-                // Set up a resize observer for the editor container
-                if (editorRef.current) {
-                  const resizeObserver = new ResizeObserver((entries) => {
-                    const entry = entries[0];
-                    if (entry && editor.current) {
-                      // Use requestAnimationFrame to ensure smooth updates
-                      requestAnimationFrame(() => {
-                        try {
-                          editor.current?.layout({
-                            width: entry.contentRect.width,
-                            height: entry.contentRect.height
-                          });
-                        } catch (error) {
-                          console.error('Error updating editor layout:', error);
-                        }
-                      });
-                    }
-                  });
-                  resizeObserver.observe(editorRef.current);
-                }
-              }}
-              onTabClose={handleTabClose}
-              isGridLayout={isGridLayout}
-              onToggleGrid={handleToggleGrid}
-              setSaveStatus={setSaveStatus}
-              previewTabs={previewTabs}
-              currentPreviewTabId={currentPreviewTabId}
-            />
-          </div>
-
-          {/* LLMChat */}
-          {isLLMChatVisible && (
+        <PanelLayout
+          showSidebar={!isSidebarCollapsed}
+          showChat={isLLMChatVisible}
+          sidebar={
+            <Resizable
+              defaultWidth={300}
+              minWidth={170}
+              maxWidth={850}
+              isCollapsed={isSidebarCollapsed}
+              onCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+              shortcutKey="sidebar"
+              storageKey="sidebarWidth"
+            >
+              {isLoading ? (
+                <div style={{ padding: '16px', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <div>Loading folder contents...</div>
+                  {loadingError && <div style={{ color: 'var(--error-color)' }}>{loadingError}</div>}
+                </div>
+              ) : isGitViewActive ? (
+                <GitView onBack={handleToggleExplorerView} />
+              ) : isExplorerViewActive ? (
+                <FileExplorer
+                  items={fileSystem.items}
+                  rootId={fileSystem.rootId}
+                  currentFileId={fileSystem.currentFileId}
+                  onFileSelect={handleFileSelect}
+                  onCreateFile={createFile}
+                  onCreateFolder={createFolder}
+                  onFolderContentsLoaded={handleFolderContentsLoaded}
+                  onDeleteItem={handleDeleteItem}
+                  onRenameItem={handleRenameItem}
+                />
+              ) : (
+                <div style={{ padding: '16px', color: 'var(--text-primary)' }}>
+                  Select a view from the titlebar
+                </div>
+              )}
+            </Resizable>
+          }
+          editor={
+            <div className="editor-area" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <Tabs
+                openFiles={openFiles}
+                currentFileId={fileSystem.currentFileId}
+                items={fileSystem.items}
+                onTabSelect={handleTabSelect}
+                onTabClose={handleTabClose}
+                onToggleGrid={handleToggleGrid}
+                isGridLayout={isGridLayout}
+                previewTabs={previewTabs}
+                onPreviewToggle={handlePreviewToggle}
+                onPreviewTabSelect={handlePreviewTabSelect}
+                onPreviewTabClose={handlePreviewTabClose}
+                currentPreviewTabId={currentPreviewTabId}
+              />
+              <EditorGrid
+                openFiles={openFiles}
+                currentFileId={fileSystem.currentFileId}
+                items={fileSystem.items}
+                onEditorChange={(newEditor) => {
+                  editor.current = newEditor;
+                  if (editorRef.current) {
+                    const resizeObserver = new ResizeObserver((entries) => {
+                      const entry = entries[0];
+                      if (entry && editor.current) {
+                        requestAnimationFrame(() => {
+                          try {
+                            editor.current?.layout({ width: entry.contentRect.width, height: entry.contentRect.height });
+                          } catch (error) {
+                            console.error('Error updating editor layout:', error);
+                          }
+                        });
+                      }
+                    });
+                    resizeObserver.observe(editorRef.current);
+                  }
+                }}
+                onTabClose={handleTabClose}
+                isGridLayout={isGridLayout}
+                onToggleGrid={handleToggleGrid}
+                setSaveStatus={setSaveStatus}
+                previewTabs={previewTabs}
+                currentPreviewTabId={currentPreviewTabId}
+              />
+            </div>
+          }
+          chat={
             <LLMChat
               isVisible={isLLMChatVisible}
               onClose={() => setIsLLMChatVisible(false)}
               onResize={(newWidth) => {
                 setWidth(newWidth);
-                // Force editor layout update with proper timing
+                localStorage.setItem('chatWidth', String(newWidth));
                 if (editor.current) {
-                  // Use a small delay to ensure the DOM has updated
                   setTimeout(() => {
                     requestAnimationFrame(() => {
                       try {
                         editor.current?.layout();
-                        // Dispatch a resize event after the layout update
                         window.dispatchEvent(new Event('resize'));
                       } catch (error) {
                         console.error('Error updating editor layout:', error);
@@ -1788,8 +1643,8 @@ const App: React.FC = () => {
               currentChatId={currentChatId}
               onSelectChat={setCurrentChatId}
             />
-          )}
-        </div>
+          }
+        />
 
         {/* Status Bar */}
         <div style={{
@@ -1973,7 +1828,6 @@ const App: React.FC = () => {
         />
       </div>
     </div>
-    </ErrorBoundary>
   );
 };
 

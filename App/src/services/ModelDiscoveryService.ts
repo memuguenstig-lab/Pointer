@@ -18,9 +18,9 @@ export class ModelDiscoveryService {
    * @returns Promise<ModelInfo[]> Array of available models
    */
   static async getAvailableModels(apiEndpoint: string, apiKey?: string): Promise<ModelInfo[]> {
-    let baseUrl = apiEndpoint;
     try {
       // Ensure the endpoint ends with /v1
+      let baseUrl = apiEndpoint;
       if (!baseUrl.endsWith('/v1')) {
         baseUrl = baseUrl.endsWith('/') 
           ? `${baseUrl}v1` 
@@ -35,28 +35,33 @@ export class ModelDiscoveryService {
         headers['Authorization'] = `Bearer ${apiKey}`;
       }
 
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5000);
+
       const response = await fetch(`${baseUrl}/models`, {
         method: 'GET',
         headers,
+        signal: controller.signal,
       });
 
+      clearTimeout(timeout);
+
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to fetch models: ${response.status} ${errorText}`);
+        // Don't throw — just return empty list silently
+        console.warn(`Model discovery: endpoint returned ${response.status}`);
+        return [];
       }
 
       const data: ModelsResponse = await response.json();
       return data.data || [];
-    } catch (error) {
-      // Improve diagnostics for endpoint connectivity issues (e.g., local server not running)
-      const message = error instanceof Error ? error.message : String(error);
-      console.error(`Error fetching available models from ${baseUrl}:`, message);
-
-      if (message.includes('Failed to fetch') || message.includes('NetworkError')) {
-        throw new Error(`Unable to reach model endpoint at ${baseUrl}. Please check your endpoint and network.`);
+    } catch (error: any) {
+      // Network errors (no server running) are expected — don't propagate
+      if (error?.name === 'AbortError') {
+        console.warn('Model discovery: request timed out');
+      } else {
+        console.warn('Model discovery: could not reach endpoint:', error?.message || error);
       }
-
-      throw error;
+      return [];
     }
   }
 
