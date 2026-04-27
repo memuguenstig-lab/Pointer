@@ -761,12 +761,12 @@ input:focus {
 
 /* ── Panel drag & drop ──────────────────────────────────────────────────── */
 .panel-container:hover .panel-drag-handle {
-  opacity: 1 !important;
+  opacity: 0 !important;
 }
 
 .panel-drag-handle:active {
   cursor: grabbing !important;
-  opacity: 1 !important;
+  opacity: 0.4 !important;
 }
 
 /* ── Activity Bar ─────────────────────────────────────────────────────────── */
@@ -823,3 +823,91 @@ input:focus {
 }
 .inline-diff-accept { background: rgba(63,185,80,0.15); color: #3fb950; }
 .inline-diff-reject { background: rgba(248,81,73,0.15); color: #f85149; }
+
+/* ── Global hover animations ─────────────────────────────────────────────── */
+
+/* Buttons */
+button {
+  transition: background 0.15s ease, color 0.15s ease, opacity 0.15s ease, transform 0.1s ease;
+}
+button:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+/* Titlebar buttons */
+.titlebar-action-button {
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.titlebar-action-button:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* Activity bar buttons */
+.activity-bar-btn:hover {
+  background: rgba(255,255,255,0.08) !important;
+  color: var(--text-primary) !important;
+}
+
+/* File explorer items */
+.file-explorer-item,
+.tree-item {
+  transition: background 0.1s ease;
+}
+
+/* Tab hover */
+.tab-item {
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+/* Sidebar panel header */
+.sidebar-panel-header {
+  transition: color 0.15s ease;
+}
+
+/* Chat buttons */
+.settings-button {
+  transition: background 0.15s ease, color 0.15s ease;
+  border-radius: 4px;
+}
+.settings-button:hover {
+  background: var(--bg-hover) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Chat list items */
+.chat-button:hover {
+  background: var(--bg-hover) !important;
+}
+
+/* Git nav tabs */
+.git-nav-tab {
+  transition: color 0.12s ease, border-color 0.12s ease;
+}
+
+/* Resizable handle */
+.resize-handle {
+  transition: background 0.15s ease;
+}
+.resize-handle:hover {
+  background: var(--accent-color) !important;
+  opacity: 0.6;
+}
+
+/* Terminal tabs */
+.terminal-tab {
+  transition: color 0.12s ease, border-color 0.12s ease;
+}
+
+/* Close/remove buttons */
+.close-button:hover,
+.remove-file-button:hover {
+  background: rgba(248, 81, 73, 0.15) !important;
+  color: #f85149 !important;
+}
+
+/* Smooth focus rings */
+:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}

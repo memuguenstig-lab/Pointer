@@ -349,6 +349,7 @@ export interface AttachedFile {
   name: string;
   path: string;
   content: string;
+  dataUrl?: string; // base64 data URL for image preview
 }
 
 export interface ExtendedMessage extends Message {

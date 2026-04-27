@@ -3361,24 +3361,31 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
     if (e.target.files && e.target.files.length > 0) {
       try {
         const file = e.target.files[0];
-        const content = await readFileContent(file);
+        const isImage = file.type.startsWith('image/');
+        const content = isImage ? '' : await readFileContent(file);
+        const dataUrl = isImage ? await readFileAsDataUrl(file) : undefined;
         
-        // Add file to attached files
         setAttachedFiles(prev => [...prev, {
           name: file.name,
-          path: file.name, // Just using filename as path for uploaded files
-          content
+          path: file.name,
+          content,
+          dataUrl,
         }]);
         
-        // Reset file input
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
-        }
+        if (fileInputRef.current) fileInputRef.current.value = '';
       } catch (error) {
         console.error('Error reading file:', error);
       }
     }
   };
+
+  const readFileAsDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = e => resolve(e.target?.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
 
   // Function to read file content
   const readFileContent = (file: File): Promise<string> => {
@@ -6665,43 +6672,50 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
 
       {/* Attached Files Section */}
       {attachedFiles.length > 0 && (
-        <div className="attached-files-container">
-          <div
-            style={{
-              fontSize: '12px',
-              fontWeight: 'bold',
-              marginBottom: '6px',
-              color: 'var(--text-secondary)',
-            }}
-          >
-            Attached Files ({attachedFiles.length})
-          </div>
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '4px',
-            }}
-          >
-            {attachedFiles.map((file, index) => (
-              <div key={index} className="attached-file-item">
-                <div className="attached-file-name">
-                  <span className="attached-file-icon">📎</span>
-                  {file.name}
-                </div>
+        <div style={{ padding: '6px 12px 0', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {attachedFiles.map((file, index) => {
+            const isImage = !!file.dataUrl;
+            return (
+              <div
+                key={index}
+                style={{
+                  position: 'relative',
+                  borderRadius: 6,
+                  overflow: 'hidden',
+                  border: '1px solid var(--border-color)',
+                  background: 'var(--bg-accent)',
+                  flexShrink: 0,
+                }}
+                title={file.name}
+              >
+                {isImage ? (
+                  <img
+                    src={file.dataUrl}
+                    alt={file.name}
+                    style={{ width: 56, height: 56, objectFit: 'cover', display: 'block' }}
+                  />
+                ) : (
+                  <div style={{ width: 56, height: 56, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, padding: 4 }}>
+                    <span style={{ fontSize: 20 }}>📄</span>
+                    <span style={{ fontSize: 9, color: 'var(--text-secondary)', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%', padding: '0 2px' }}>{file.name}</span>
+                  </div>
+                )}
+                {/* Remove button */}
                 <button
                   onClick={() => removeAttachedFile(index)}
-                  className="remove-file-button"
-                  title="Remove file"
-                >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </button>
+                  title="Remove"
+                  style={{
+                    position: 'absolute', top: 2, right: 2,
+                    width: 16, height: 16,
+                    background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '50%',
+                    color: '#fff', cursor: 'pointer', fontSize: 10,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    lineHeight: 1,
+                  }}
+                >✕</button>
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
       )}
 

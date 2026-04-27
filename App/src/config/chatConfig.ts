@@ -8,6 +8,7 @@ export interface AttachedFile {
   size?: number;
   lastModified?: string;
   type?: string;
+  dataUrl?: string; // base64 data URL for image preview
 }
 
 export interface ExtendedMessage extends Message {

@@ -193,11 +193,11 @@ export const PanelLayout: React.FC<Props> = ({
       title={`Drag to move ${label} panel`}
       style={{
         position: 'absolute',
-        top: '50%',
+        top: '4px',
         left: '50%',
-        transform: 'translate(-50%, -50%)',
-        width: '32px',
-        height: '4px',
+        transform: 'translateX(-50%)',
+        width: '80%',
+        height: '6px',
         cursor: 'grab',
         display: 'flex',
         alignItems: 'center',
