@@ -7,7 +7,7 @@ import { FileSystemItem, FileSystemState, TabInfo } from './types';
 import { FileSystemService } from './services/FileSystemService';
 import EditorGrid from './components/EditorGrid';
 import { initializeLanguageSupport, getLanguageFromFileName } from './utils/languageUtils';
-import { LLMChat } from './components/LLMChat';
+import { LLMChat, MemoizedLLMChat } from './components/LLMChat';
 import './styles/App.css';
 import { ChatService, ChatSession } from './services/ChatService';
 import { v4 as uuidv4 } from 'uuid';
@@ -1449,6 +1449,18 @@ const App: React.FC = () => {
   const handleToggleGitView = () => handleActivityViewChange('git');
   const handleToggleExplorerView = () => handleActivityViewChange('explorer');
 
+  // Stable callbacks for MemoizedLLMChat
+  const handleLLMClose = useCallback(() => setIsLLMChatVisible(false), []);
+  const handleLLMResize = useCallback((newWidth: number) => {
+    setWidth(newWidth);
+    localStorage.setItem('chatWidth', String(newWidth));
+    if (editor.current) {
+      setTimeout(() => requestAnimationFrame(() => {
+        try { editor.current?.layout(); window.dispatchEvent(new Event('resize')); } catch {}
+      }), 0);
+    }
+  }, []);
+
   // Corrected useEffect for loadAllSettings
   useEffect(() => {
     if (typeof loadSettings === 'function') {
@@ -1639,25 +1651,10 @@ const App: React.FC = () => {
             </div>
           }
           chat={
-            <LLMChat
+            <MemoizedLLMChat
               isVisible={isLLMChatVisible}
-              onClose={() => setIsLLMChatVisible(false)}
-              onResize={(newWidth) => {
-                setWidth(newWidth);
-                localStorage.setItem('chatWidth', String(newWidth));
-                if (editor.current) {
-                  setTimeout(() => {
-                    requestAnimationFrame(() => {
-                      try {
-                        editor.current?.layout();
-                        window.dispatchEvent(new Event('resize'));
-                      } catch (error) {
-                        console.error('Error updating editor layout:', error);
-                      }
-                    });
-                  }, 0);
-                }
-              }}
+              onClose={handleLLMClose}
+              onResize={handleLLMResize}
               currentChatId={currentChatId}
               onSelectChat={setCurrentChatId}
             />

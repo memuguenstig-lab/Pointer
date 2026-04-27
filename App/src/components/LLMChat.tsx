@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import lmStudio from '../services/LMStudioService';
@@ -2489,8 +2489,6 @@ const normalizeConversationHistory = (messages: ExtendedMessage[]): Message[] =>
 };
 
 export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectChat }: LLMChatProps) {
-  console.log('LLMChat rendered with currentChatId:', currentChatId);
-  // Always use agent mode
   const mode: 'agent' = 'agent';
   
   // Get current prompts settings and generate initial system message
@@ -6944,3 +6942,8 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
     </div>
   );
 }
+
+export const MemoizedLLMChat = memo(LLMChat, (prev, next) =>
+  prev.isVisible === next.isVisible &&
+  prev.currentChatId === next.currentChatId
+);

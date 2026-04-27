@@ -193,36 +193,28 @@ export const PanelLayout: React.FC<Props> = ({
       title={`Drag to move ${label} panel`}
       style={{
         position: 'absolute',
-        top: '6px',
+        top: '50%',
         left: '50%',
-        transform: 'translateX(-50%)',
-        width: '28px',
-        height: '14px',
+        transform: 'translate(-50%, -50%)',
+        width: '32px',
+        height: '4px',
         cursor: 'grab',
         display: 'flex',
-        flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: '3px',
         opacity: 0,
         transition: 'opacity 0.15s',
         zIndex: 10,
-        borderRadius: '3px',
       }}
       className="panel-drag-handle"
     >
-      {/* Grip dots */}
-      {[0, 1].map(row => (
-        <div key={row} style={{ display: 'flex', gap: '3px' }}>
-          {[0, 1, 2].map(col => (
-            <div key={col} style={{
-              width: '3px', height: '3px',
-              borderRadius: '50%',
-              background: 'var(--text-secondary)',
-            }} />
-          ))}
-        </div>
-      ))}
+      {/* Thin drag line */}
+      <div style={{
+        width: '100%',
+        height: '2px',
+        borderRadius: '2px',
+        background: 'var(--text-secondary)',
+      }} />
     </div>
   );
 
