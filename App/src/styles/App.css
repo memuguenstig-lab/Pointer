@@ -970,3 +970,77 @@ button:active:not(:disabled) {
   box-shadow: inset 3px 0 0 var(--file-color, var(--accent-color)) !important;
   color: var(--file-color, var(--accent-color)) !important;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   STATUS BAR
+   ══════════════════════════════════════════════════════════════════════════ */
+.status-bar {
+  height: 24px;
+  background: var(--statusbar-bg, #141414);
+  color: var(--statusbar-fg, #cccccc);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px;
+  font-size: 11px;
+  font-family: var(--font-ui);
+  user-select: none;
+  flex-shrink: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  gap: 2px;
+  overflow: hidden;
+}
+
+.status-bar__left,
+.status-bar__right {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  overflow: hidden;
+}
+
+.status-bar__right {
+  flex-shrink: 0;
+}
+
+.status-bar__item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 7px;
+  height: 24px;
+  white-space: nowrap;
+  opacity: 0.85;
+  border-radius: 3px;
+  transition: background 0.12s ease, opacity 0.12s ease;
+  color: inherit;
+}
+
+.status-bar__item--btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 11px;
+  font-family: var(--font-ui);
+  color: inherit;
+}
+
+.status-bar__item--btn:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  opacity: 1;
+  transform: none;
+}
+
+.status-bar__item--time {
+  opacity: 0.55;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.status-bar__divider {
+  width: 1px;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.12);
+  flex-shrink: 0;
+  margin: 0 1px;
+}

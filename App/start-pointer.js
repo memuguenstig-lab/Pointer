@@ -165,11 +165,15 @@ async function buildProject() {
     console.log(chalk.cyan(`   📁 Building in: ${buildDir}`));
     
     // Use npm instead of yarn.cmd (more reliable)
-    const buildProcess = spawn('npm', ['run', 'build'], {
-      stdio: 'inherit',
-      shell: true,
-      cwd: buildDir
-    });
+    const buildProcess = spawn(
+      process.platform === 'win32' ? 'npm.cmd' : 'npm',
+      ['run', 'build'],
+      {
+        stdio: 'inherit',
+        shell: false,
+        cwd: buildDir
+      }
+    );
     
     buildProcess.on('close', (code) => {
       if (code === 0) {
@@ -244,7 +248,6 @@ function startProcess(command, args, name, color, env = {}) {
   console.log(chalk[color](`\n▶️  Starting ${name}...`));
   
   const options = { 
-    shell: true,
     stdio: 'pipe',
     env: { ...process.env, ...env }
   };
@@ -253,8 +256,10 @@ function startProcess(command, args, name, color, env = {}) {
   if (runInBackground && name !== 'Backend') {
     options.detached = true;
   }
-  
-  const childProcess = spawn(command, args, options);
+
+  // Join command + args into a single string to avoid DEP0190 (shell:true + args array)
+  const fullCommand = args && args.length > 0 ? `${command} ${args.join(' ')}` : command;
+  const childProcess = spawn(fullCommand, [], { ...options, shell: true });
   
   childProcess.stdout.on('data', (data) => {
     const output = data.toString().trim();

@@ -229,7 +229,7 @@ export const PanelLayout: React.FC<Props> = ({
       return (
         <div
           key="sidebar"
-          style={{ position: 'relative', display: 'flex', height: '100%' }}
+          style={{ position: 'relative', display: 'flex', height: '100%', overflow: 'hidden', minHeight: 0 }}
           className="panel-container"
         >
           {renderDragHandle('sidebar', 'Explorer')}
@@ -241,7 +241,7 @@ export const PanelLayout: React.FC<Props> = ({
       return (
         <div
           key="chat"
-          style={{ position: 'relative', display: 'flex', height: '100%' }}
+          style={{ position: 'relative', display: 'flex', height: '100%', overflow: 'hidden', minHeight: 0 }}
           className="panel-container"
         >
           {renderDragHandle('chat', 'Agent')}
@@ -252,7 +252,7 @@ export const PanelLayout: React.FC<Props> = ({
   };
 
   return (
-    <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
+    <div style={{ flex: 1, minHeight: 0, display: 'flex', overflow: 'hidden', position: 'relative' }}>
       {/* Drop zones — only visible while dragging */}
       {renderDropZone('left')}
       {renderDropZone('right')}
@@ -261,7 +261,7 @@ export const PanelLayout: React.FC<Props> = ({
       {renderPanel(leftPanel)}
 
       {/* Editor — always center */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0, minHeight: 0 }}>
         {editor}
       </div>
 

@@ -27,6 +27,7 @@ import PanelLayout from './components/PanelLayout';
 import ActivityBar, { ActivityView } from './components/ActivityBar';
 import CommandPalette from './components/CommandPalette';
 import SplitEditor, { EditorGroup } from './components/SplitEditor';
+import StatusBar from './components/StatusBar';
 import { InlineDiffService } from './services/InlineDiffService';
 import { FileChangeEventService } from './services/FileChangeEventService';
 
@@ -149,6 +150,24 @@ const App: React.FC = () => {
 
   // Add state for cursor position
   const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
+
+  // Diagnostics (errors/warnings) from Monaco markers
+  const [diagnostics, setDiagnostics] = useState({ errors: 0, warnings: 0 });
+
+  // Subscribe to Monaco marker changes to count errors/warnings
+  useEffect(() => {
+    const disposable = monaco.editor.onDidChangeMarkers(() => {
+      const allMarkers = monaco.editor.getModelMarkers({});
+      let errors = 0;
+      let warnings = 0;
+      for (const m of allMarkers) {
+        if (m.severity === monaco.MarkerSeverity.Error) errors++;
+        else if (m.severity === monaco.MarkerSeverity.Warning) warnings++;
+      }
+      setDiagnostics({ errors, warnings });
+    });
+    return () => disposable.dispose();
+  }, []);
   
   // Add debounced function to update cursor position on the server
   const updateCursorPositionOnServer = useCallback(
@@ -1577,7 +1596,7 @@ const App: React.FC = () => {
           titleFormat={dynamicTitleFormat || settingsData.advanced?.titleFormat || '{filename} - {workspace} - Pointer'}
         />
         {/* VSCode-style layout: ActivityBar + Sidebar + Editor + Chat */}
-        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+        <div style={{ flex: 1, display: 'flex', overflow: 'hidden', minHeight: 0 }}>
           <ActivityBar
             activeView={activeView}
             onViewChange={handleActivityViewChange}
@@ -1585,140 +1604,103 @@ const App: React.FC = () => {
             onOpenSettings={() => setIsSettingsModalOpen(true)}
             terminalOpen={fileSystem.terminalOpen}
           />
-        <PanelLayout
-          showSidebar={!isSidebarCollapsed}
-          showChat={isLLMChatVisible}
-          sidebar={
-            <Resizable
-              defaultWidth={300}
-              minWidth={170}
-              maxWidth={850}
-              isCollapsed={isSidebarCollapsed}
-              onCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-              shortcutKey="sidebar"
-              storageKey="sidebarWidth"
-            >
-              {/* VSCode-style panel header */}
-              <div className="sidebar-panel-header">
-                {isGitViewActive ? 'Source Control' : 'Explorer'}
-              </div>
-              {isLoading ? (
-                <div style={{ padding: '16px', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <div>Loading folder contents...</div>
-                  {loadingError && <div style={{ color: 'var(--error-color)' }}>{loadingError}</div>}
+          <PanelLayout
+            showSidebar={!isSidebarCollapsed}
+            showChat={isLLMChatVisible}
+            sidebar={
+              <Resizable
+                defaultWidth={300}
+                minWidth={170}
+                maxWidth={850}
+                isCollapsed={isSidebarCollapsed}
+                onCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+                shortcutKey="sidebar"
+                storageKey="sidebarWidth"
+              >
+                {/* VSCode-style panel header */}
+                <div className="sidebar-panel-header">
+                  {isGitViewActive ? 'Source Control' : 'Explorer'}
                 </div>
-              ) : isGitViewActive ? (
-                <GitView onBack={handleToggleExplorerView} />
-              ) : isExplorerViewActive ? (
-                <FileExplorer
+                {isLoading ? (
+                  <div style={{ padding: '16px', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div>Loading folder contents...</div>
+                    {loadingError && <div style={{ color: 'var(--error-color)' }}>{loadingError}</div>}
+                  </div>
+                ) : isGitViewActive ? (
+                  <GitView onBack={handleToggleExplorerView} />
+                ) : isExplorerViewActive ? (
+                  <FileExplorer
+                    items={fileSystem.items}
+                    rootId={fileSystem.rootId}
+                    currentFileId={fileSystem.currentFileId}
+                    onFileSelect={handleFileSelect}
+                    onCreateFile={createFile}
+                    onCreateFolder={createFolder}
+                    onFolderContentsLoaded={handleFolderContentsLoaded}
+                    onDeleteItem={handleDeleteItem}
+                    onRenameItem={handleRenameItem}
+                  />
+                ) : (
+                  <div style={{ padding: '16px', color: 'var(--text-secondary)', fontSize: 13 }}>
+                    No view selected
+                  </div>
+                )}
+              </Resizable>
+            }
+            editor={
+              <div className="editor-area" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <SplitEditor
                   items={fileSystem.items}
-                  rootId={fileSystem.rootId}
-                  currentFileId={fileSystem.currentFileId}
-                  onFileSelect={handleFileSelect}
-                  onCreateFile={createFile}
-                  onCreateFolder={createFolder}
-                  onFolderContentsLoaded={handleFolderContentsLoaded}
-                  onDeleteItem={handleDeleteItem}
-                  onRenameItem={handleRenameItem}
+                  groups={editorGroups}
+                  activeGroupId={activeGroupId}
+                  onGroupsChange={setEditorGroups}
+                  onActiveGroupChange={setActiveGroupId}
+                  onEditorChange={(newEditor) => {
+                    editor.current = newEditor;
+                  }}
+                  setSaveStatus={setSaveStatus}
+                  previewTabs={previewTabs}
+                  currentPreviewTabId={currentPreviewTabId}
+                  onPreviewToggle={handlePreviewToggle}
+                  onPreviewTabSelect={handlePreviewTabSelect}
+                  onPreviewTabClose={handlePreviewTabClose}
+                  isGridLayout={isGridLayout}
+                  onToggleGrid={handleToggleGrid}
                 />
-              ) : (
-                <div style={{ padding: '16px', color: 'var(--text-secondary)', fontSize: 13 }}>
-                  No view selected
-                </div>
-              )}
-            </Resizable>
-          }
-          editor={
-            <div className="editor-area" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-              <SplitEditor
-                items={fileSystem.items}
-                groups={editorGroups}
-                activeGroupId={activeGroupId}
-                onGroupsChange={setEditorGroups}
-                onActiveGroupChange={setActiveGroupId}
-                onEditorChange={(newEditor) => {
-                  editor.current = newEditor;
-                }}
-                setSaveStatus={setSaveStatus}
-                previewTabs={previewTabs}
-                currentPreviewTabId={currentPreviewTabId}
-                onPreviewToggle={handlePreviewToggle}
-                onPreviewTabSelect={handlePreviewTabSelect}
-                onPreviewTabClose={handlePreviewTabClose}
-                isGridLayout={isGridLayout}
-                onToggleGrid={handleToggleGrid}
+              </div>
+            }
+            chat={
+              <MemoizedLLMChat
+                isVisible={isLLMChatVisible}
+                onClose={handleLLMClose}
+                onResize={handleLLMResize}
+                currentChatId={currentChatId}
+                onSelectChat={setCurrentChatId}
               />
-            </div>
-          }
-          chat={
-            <MemoizedLLMChat
-              isVisible={isLLMChatVisible}
-              onClose={handleLLMClose}
-              onResize={handleLLMResize}
-              currentChatId={currentChatId}
-              onSelectChat={setCurrentChatId}
-            />
-          }
+            }
+          />
+        </div>{/* end ActivityBar + PanelLayout row */}
+
+        {/* Terminal panel — full width between panels and status bar */}
+        {fileSystem.terminalOpen && (
+          <Terminal
+            isVisible={fileSystem.terminalOpen}
+            errorCount={diagnostics.errors}
+            warningCount={diagnostics.warnings}
+          />
+        )}
+
+        {/* Status Bar — VSCode style */}
+        <StatusBar
+          currentFileId={fileSystem.currentFileId}
+          items={fileSystem.items}
+          cursorPosition={cursorPosition}
+          saveStatus={saveStatus}
+          activeView={activeView}
+          onToggleGitView={() => handleActivityViewChange('git')}
+          errorCount={diagnostics.errors}
+          warningCount={diagnostics.warnings}
         />
-        </div>{/* end ActivityBar + PanelLayout wrapper */}
-
-        {/* Status Bar */}
-        <div style={{
-          height: '22px',
-          background: 'var(--statusbar-bg)',
-          borderTop: '1px solid var(--border-color)',
-          display: 'flex',
-          alignItems: 'center',
-          padding: '0 8px',
-          fontSize: '12px',
-          color: 'var(--text-secondary)',
-          gap: '16px',
-        }}>
-          {/* File name */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span>{getCurrentFileName()}</span>
-          </div>
-
-          {/* Syntax - Only show if we have a valid file */}
-          {fileSystem.currentFileId && 
-           fileSystem.items[fileSystem.currentFileId] && 
-           fileSystem.items[fileSystem.currentFileId].type === 'file' && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span>
-                {getLanguageFromFileName(fileSystem.items[fileSystem.currentFileId].name)}
-              </span>
-            </div>
-          )}
-
-          {/* Line and Column */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span>Ln {cursorPosition.line}, Col {cursorPosition.column}</span>
-          </div>
-
-          {/* Encoding and Line Ending */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span>UTF-8</span>
-            <span>LF</span>
-          </div>
-
-          {/* Indentation */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span>Spaces: 2</span>
-          </div>
-
-          {/* Save status */}
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '4px' }}>
-            {saveStatus === 'saving' && (
-              <span>Saving...</span>
-            )}
-            {saveStatus === 'saved' && (
-              <span>Saved</span>
-            )}
-            {saveStatus === 'error' && (
-              <span style={{ color: 'var(--error-color)' }}>Error saving file</span>
-            )}
-          </div>
-        </div>
 
         {modalState.isOpen && (
           <div style={{
@@ -1788,11 +1770,6 @@ const App: React.FC = () => {
               </div>
             </div>
           </div>
-        )}
-
-        {/* Terminal */}
-        {fileSystem.terminalOpen && (
-          <Terminal isVisible={fileSystem.terminalOpen} />
         )}
 
         <DiffViewer />

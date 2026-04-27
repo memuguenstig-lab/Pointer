@@ -5,6 +5,21 @@ const router = express.Router();
 
 function git(dir) { return simpleGit(dir); }
 
+// GET /git/branch — returns current branch for the active workspace
+router.get('/branch', async (req, res) => {
+  try {
+    const { execFile } = require('child_process');
+    const { promisify } = require('util');
+    const execFileAsync = promisify(execFile);
+    const cwd = req.query.dir || process.cwd();
+    const { stdout } = await execFileAsync('git', ['branch', '--show-current'], { cwd });
+    const branch = stdout.trim();
+    res.json({ branch: branch || null });
+  } catch(e) {
+    res.json({ branch: null });
+  }
+});
+
 router.post('/is-repo', async (req, res) => {
   try {
     const g = git(req.body.directory);

@@ -159,7 +159,7 @@ async function initDiscordRPC() {
   rpc.login({ clientId: DISCORD_CLIENT_ID })
     .then(() => console.log('Discord RPC login successful'))
     .catch(error => {
-      console.error('Discord RPC login failed:', error);
+      console.log('Discord RPC unavailable (Discord not running):', error.message);
       // disable RPC to avoid repeated attempts
       discordRpcSettings.enabled = false;
     });
@@ -228,11 +228,11 @@ function updateRichPresence() {
     // Set the activity
     rpc.setActivity(activity)
       .catch(error => {
-        console.error('Discord RPC error:', error);
+        console.log('Discord RPC setActivity failed:', error.message);
       });
       
   } catch (error) {
-    console.error('Error in updateRichPresence:', error);
+    console.log('Discord RPC updateRichPresence skipped:', error.message);
   }
 }
 
