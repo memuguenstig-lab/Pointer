@@ -1,6 +1,7 @@
 /**
  * Service for interacting with AI tools via the backend
  */
+import { TerminalBus } from '../components/Terminal';
 
 export class ToolService {
   // Use the main backend URL
@@ -195,6 +196,14 @@ export class ToolService {
       // Normalize parameters for the backend
       const mappedParams = this.normalizeParamsForBackend(backendToolName, params);
       
+      // ── Mirror terminal commands into the visible terminal ──────────────
+      if (backendToolName === 'run_terminal_cmd' && mappedParams.command) {
+        // Fire-and-forget: push the command into the active terminal so the
+        // user can watch it run live. We don't await here because the actual
+        // result still comes from the backend /api/tools/call endpoint.
+        TerminalBus.runCommand(mappedParams.command).catch(() => {});
+      }
+
       console.log(`Making API call to backend tool ${backendToolName} with params:`, mappedParams);
       // Debug: print full tool call payload clearly
       try {

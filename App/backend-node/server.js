@@ -437,6 +437,64 @@ app.post('/api/settings', (req, res) => {
   } catch(e) { res.status(500).json({ success: false, error: e.message }); }
 });
 
+// ── Ports scanner ──────────────────────────────────────────────────────────
+app.get('/api/ports', async (req, res) => {
+  try {
+    const isWin = process.platform === 'win32';
+    const cmd = isWin
+      ? 'netstat -ano -p TCP'
+      : 'ss -tlnp 2>/dev/null || netstat -tlnp 2>/dev/null';
+    const { stdout } = await execAsync(cmd, { timeout: 8000 }).catch(() => ({ stdout: '' }));
+    const ports = [];
+    const seen = new Set();
+    if (isWin) {
+      for (const line of stdout.split('\n')) {
+        const m = line.match(/TCP\s+[\d.:]+:(\d+)\s+[\d.:]+\s+LISTENING\s+(\d+)/i);
+        if (!m) continue;
+        const port = parseInt(m[1]);
+        const pid = m[2];
+        if (seen.has(port)) continue;
+        seen.add(port);
+        ports.push({ port, pid, protocol: 'TCP', state: 'LISTENING' });
+      }
+    } else {
+      for (const line of stdout.split('\n')) {
+        const m = line.match(/:(\d+)\s+.*LISTEN.*pid=(\d+)/);
+        if (!m) continue;
+        const port = parseInt(m[1]);
+        const pid = m[2];
+        if (seen.has(port)) continue;
+        seen.add(port);
+        ports.push({ port, pid, protocol: 'TCP', state: 'LISTEN' });
+      }
+    }
+    ports.sort((a, b) => a.port - b.port);
+    res.json({ ports });
+  } catch(e) { res.json({ ports: [], error: e.message }); }
+});
+
+// ── Output log (in-memory ring buffer) ────────────────────────────────────
+const outputLog = [];
+const MAX_OUTPUT = 500;
+function appendOutput(source, text) {
+  const lines = text.split('\n').filter(l => l.trim());
+  for (const line of lines) {
+    outputLog.push({ ts: Date.now(), source, text: line });
+    if (outputLog.length > MAX_OUTPUT) outputLog.shift();
+  }
+}
+// Capture backend's own stdout/stderr into the output log
+const _origLog = console.log.bind(console);
+const _origErr = console.error.bind(console);
+console.log = (...a) => { _origLog(...a); appendOutput('backend', a.join(' ')); };
+console.error = (...a) => { _origErr(...a); appendOutput('backend:err', a.join(' ')); };
+
+app.get('/api/output', (req, res) => {
+  const since = parseInt(req.query.since || '0');
+  const lines = since ? outputLog.filter(l => l.ts > since) : outputLog;
+  res.json({ lines, lastTs: outputLog.length ? outputLog[outputLog.length - 1].ts : 0 });
+});
+
 // ── Git ────────────────────────────────────────────────────────────────────
 const gitRoutes = require('./git-routes');
 app.use('/git', gitRoutes);
@@ -503,18 +561,60 @@ const wss = new WebSocket.Server({ server, path: '/ws/terminal' });
 
 wss.on('connection', (ws) => {
   const cwd = getWorkingDirectory();
-  const shell = process.platform === 'win32'
-    ? { cmd: 'powershell.exe', args: ['-NoLogo','-NoExit','-NoProfile'] }
-    : { cmd: 'bash', args: [] };
+  const isWin = process.platform === 'win32';
 
-  const proc = spawn(shell.cmd, shell.args, { cwd, stdio: 'pipe', shell: false });
+  let proc;
+  if (isWin) {
+    // PowerShell with OSC 7 prompt for CWD tracking
+    const initScript = [
+      '$OutputEncoding = [Console]::OutputEncoding = [Text.Encoding]::UTF8',
+      // Emit OSC 7 on every prompt so the frontend can track cwd
+      'function prompt { $p = $PWD.Path; Write-Host -NoNewline "`e]7;file://localhost/$($p.Replace(\'\\\',$\'/\'))$([char]7)"; "PS $p> " }',
+    ].join('; ');
+    proc = spawn('powershell.exe', ['-NoLogo', '-NoExit', '-NoProfile', '-Command', initScript], {
+      cwd, stdio: 'pipe', shell: false,
+      env: { ...process.env, TERM: 'xterm-256color' }
+    });
+  } else {
+    // bash/zsh: inject OSC 7 via PROMPT_COMMAND
+    proc = spawn('bash', ['--login'], {
+      cwd, stdio: 'pipe', shell: false,
+      env: {
+        ...process.env,
+        TERM: 'xterm-256color',
+        PROMPT_COMMAND: 'printf "\\e]7;file://localhost%s\\007" "$PWD"',
+      }
+    });
+  }
 
-  proc.stdout.on('data', d => ws.readyState === WebSocket.OPEN && ws.send(d.toString()));
-  proc.stderr.on('data', d => ws.readyState === WebSocket.OPEN && ws.send(d.toString()));
-  proc.on('close', () => ws.readyState === WebSocket.OPEN && ws.close());
+  const enc = new (require('string_decoder').StringDecoder)('utf8');
+  proc.stdout.on('data', d => { if (ws.readyState === WebSocket.OPEN) ws.send(enc.write(d)); });
+  proc.stderr.on('data', d => { if (ws.readyState === WebSocket.OPEN) ws.send(enc.write(d)); });
+  proc.on('close', () => { if (ws.readyState === WebSocket.OPEN) ws.close(); });
 
-  ws.on('message', data => { try { proc.stdin.write(data.toString()); } catch(e) {} });
-  ws.on('close', () => { try { proc.kill(); } catch(e) {} });
+  ws.on('message', data => {
+    try {
+      const str = data.toString();
+      // Check for JSON control messages (resize, etc.)
+      if (str.startsWith('{')) {
+        try {
+          const msg = JSON.parse(str);
+          if (msg.type === 'resize' && proc.pid) {
+            // Resize PTY — best-effort via stty if available
+            try {
+              const { execSync } = require('child_process');
+              if (process.platform !== 'win32') {
+                execSync(`stty rows ${msg.rows} cols ${msg.cols}`, { stdio: 'inherit' });
+              }
+            } catch {}
+          }
+          return;
+        } catch {}
+      }
+      proc.stdin.write(str);
+    } catch(e) {}
+  });
+  ws.on('close', () => { try { proc.kill('SIGTERM'); } catch(e) {} });
 });
 
 server.listen(PORT, '127.0.0.1', () => console.log(`Backend running on http://127.0.0.1:${PORT}`));

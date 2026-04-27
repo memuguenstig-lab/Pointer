@@ -2537,6 +2537,12 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
     isLineEdit?: boolean;
   }[]>([]);
   const [autoInsertInProgress, setAutoInsertInProgress] = useState<boolean>(false);
+  // ── Prompt Queue (Codex-style: queue prompts, send one-by-one) ────────────
+  const [promptQueue, setPromptQueue] = useState<string[]>([]);
+  const promptQueueRef = useRef<string[]>([]);
+  const isProcessingQueueRef = useRef(false);
+  useEffect(() => { promptQueueRef.current = promptQueue; }, [promptQueue]);
+
   // Add state to track if insert model has been preloaded
   const [insertModelPreloaded, setInsertModelPreloaded] = useState(false);
   // Add state for auto-insert setting
@@ -4065,10 +4071,50 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
     }
   };
 
+  // ── Queue runner ──────────────────────────────────────────────────────────
+  const runQueue = useCallback(async () => {
+    if (isProcessingQueueRef.current) return;
+    isProcessingQueueRef.current = true;
+    while (promptQueueRef.current.length > 0) {
+      const next = promptQueueRef.current[0];
+      setPromptQueue(prev => prev.slice(1));
+      promptQueueRef.current = promptQueueRef.current.slice(1);
+      await processUserMessage(next, []);
+    }
+    isProcessingQueueRef.current = false;
+  }, []);
+
+  // Drain queue whenever the agent becomes idle
+  const prevProcessingRef = useRef(false);
+  useEffect(() => {
+    const wasProcessing = prevProcessingRef.current;
+    prevProcessingRef.current = isAnyProcessing;
+    if (wasProcessing && !isAnyProcessing && promptQueueRef.current.length > 0) {
+      // Small delay so state fully settles before next message
+      setTimeout(() => runQueue(), 300);
+    }
+  }, [isAnyProcessing, runQueue]);
+
   // Simplify handleSubmit to use the shared function
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await processUserMessage(input, attachedFiles);
+    if (!input.trim() && attachedFiles.length === 0) return;
+
+    // If agent is busy, queue the prompt instead of sending immediately
+    if (isAnyProcessing) {
+      setPromptQueue(prev => [...prev, input.trim()]);
+      promptQueueRef.current = [...promptQueueRef.current, input.trim()];
+      setInput('');
+      return;
+    }
+
+    const msg = input.trim();
+    const files = [...attachedFiles];
+    setInput('');
+    setAttachedFiles([]);
+    await processUserMessage(msg, files);
+    // After current message finishes, drain the queue
+    runQueue();
   };
   
   // Cancel ongoing requests
@@ -6723,10 +6769,46 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
         </div>
       )}
 
+      {/* ── Prompt Queue indicator ── */}
+      {promptQueue.length > 0 && (
+        <div style={{
+          borderTop: '1px solid var(--border-primary)',
+          padding: '6px 12px 0',
+          background: 'var(--bg-secondary)',
+          display: 'flex', flexDirection: 'column', gap: 4,
+        }}>
+          <div style={{ fontSize: 10, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor" style={{ opacity: 0.6 }}>
+              <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zM0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm6.5-3.5a.5.5 0 0 1 .5.5v3.793l2.146 2.147a.5.5 0 0 1-.708.707l-2.5-2.5A.5.5 0 0 1 5.5 9V5a.5.5 0 0 1 .5-.5z"/>
+            </svg>
+            Queued ({promptQueue.length})
+          </div>
+          {promptQueue.map((q, i) => (
+            <div key={i} style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              background: 'var(--bg-primary)', borderRadius: 5,
+              padding: '4px 8px', fontSize: 12,
+              border: '1px solid var(--border-color)',
+            }}>
+              <span style={{ color: 'var(--text-secondary)', fontSize: 10, flexShrink: 0, opacity: 0.5 }}>#{i + 1}</span>
+              <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text-primary)' }}>{q}</span>
+              <button
+                type="button"
+                onClick={() => setPromptQueue(prev => prev.filter((_, idx) => idx !== i))}
+                style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '0 2px', fontSize: 11, lineHeight: 1, flexShrink: 0 }}
+                title="Remove from queue"
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#f85149'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'; }}
+              >✕</button>
+            </div>
+          ))}
+        </div>
+      )}
+
       <form
         onSubmit={editingMessageIndex !== null ? handleSubmitEdit : handleSubmit}
         style={{
-          borderTop: attachedFiles.length > 0 ? 'none' : '1px solid var(--border-primary)',
+          borderTop: (attachedFiles.length > 0 || promptQueue.length > 0) ? 'none' : '1px solid var(--border-primary)',
           padding: '10px 12px 12px',
           display: 'flex',
           flexDirection: 'column',
@@ -6759,14 +6841,12 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
               border: 'none',
               outline: 'none',
               background: 'transparent',
-              color: isAnyProcessing ? 'var(--text-secondary)' : 'var(--text-primary)',
+              color: 'var(--text-primary)',
               resize: 'none',
               fontSize: '13px',
               minHeight: '56px',
               maxHeight: '160px',
               overflow: 'auto',
-              opacity: isAnyProcessing ? 0.6 : 1,
-              cursor: isAnyProcessing ? 'not-allowed' : 'text',
               lineHeight: '1.5',
               fontFamily: 'var(--font-ui)',
             }}
@@ -6785,7 +6865,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
                 e.preventDefault();
               }
             }}
-            disabled={isAnyProcessing}
+            disabled={false}
           />
 
           {/* File + Symbol suggestions dropdown */}
@@ -6924,25 +7004,40 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
                 <button
                   type="submit"
                   disabled={!input.trim() && attachedFiles.length === 0}
-                  title="Send (Enter)"
+                  title={isAnyProcessing ? 'Add to queue (Enter)' : 'Send (Enter)'}
                   style={{
-                    width: '28px',
                     height: '28px',
+                    padding: '0 10px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    background: (input.trim() || attachedFiles.length > 0) ? 'var(--accent-color)' : 'var(--bg-accent)',
-                    border: 'none',
+                    gap: 5,
+                    background: (input.trim() || attachedFiles.length > 0)
+                      ? (isAnyProcessing ? 'rgba(88,166,255,0.15)' : 'var(--accent-color)')
+                      : 'var(--bg-accent)',
+                    border: isAnyProcessing ? '1px solid rgba(88,166,255,0.4)' : 'none',
                     borderRadius: '6px',
-                    color: (input.trim() || attachedFiles.length > 0) ? '#fff' : 'var(--text-secondary)',
+                    color: (input.trim() || attachedFiles.length > 0)
+                      ? (isAnyProcessing ? '#58a6ff' : '#fff')
+                      : 'var(--text-secondary)',
                     cursor: (input.trim() || attachedFiles.length > 0) ? 'pointer' : 'not-allowed',
                     transition: 'background 0.15s, color 0.15s',
+                    fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap',
                   }}
                 >
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="22" y1="2" x2="11" y2="13"/>
-                    <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-                  </svg>
+                  {isAnyProcessing ? (
+                    <>
+                      <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zM0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm6.5-3.5a.5.5 0 0 1 .5.5v3.793l2.146 2.147a.5.5 0 0 1-.708.707l-2.5-2.5A.5.5 0 0 1 5.5 9V5a.5.5 0 0 1 .5-.5z"/>
+                      </svg>
+                      Queue
+                    </>
+                  ) : (
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="22" y1="2" x2="11" y2="13"/>
+                      <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                    </svg>
+                  )}
                 </button>
               )}
             </div>

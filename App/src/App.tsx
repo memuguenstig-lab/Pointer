@@ -1610,7 +1610,7 @@ const App: React.FC = () => {
             sidebar={
               <Resizable
                 defaultWidth={300}
-                minWidth={170}
+                minWidth={80}
                 maxWidth={850}
                 isCollapsed={isSidebarCollapsed}
                 onCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
@@ -1648,7 +1648,7 @@ const App: React.FC = () => {
               </Resizable>
             }
             editor={
-              <div className="editor-area" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <div className="editor-area" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
                 <SplitEditor
                   items={fileSystem.items}
                   groups={editorGroups}
@@ -1667,6 +1667,14 @@ const App: React.FC = () => {
                   isGridLayout={isGridLayout}
                   onToggleGrid={handleToggleGrid}
                 />
+                {/* Terminal sits inside the editor column — between sidebar and chat */}
+                {fileSystem.terminalOpen && (
+                  <Terminal
+                    isVisible={fileSystem.terminalOpen}
+                    errorCount={diagnostics.errors}
+                    warningCount={diagnostics.warnings}
+                  />
+                )}
               </div>
             }
             chat={
@@ -1680,15 +1688,6 @@ const App: React.FC = () => {
             }
           />
         </div>{/* end ActivityBar + PanelLayout row */}
-
-        {/* Terminal panel — full width between panels and status bar */}
-        {fileSystem.terminalOpen && (
-          <Terminal
-            isVisible={fileSystem.terminalOpen}
-            errorCount={diagnostics.errors}
-            warningCount={diagnostics.warnings}
-          />
-        )}
 
         {/* Status Bar — VSCode style */}
         <StatusBar
