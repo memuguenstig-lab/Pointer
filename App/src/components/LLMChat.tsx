@@ -6182,20 +6182,24 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
         <div
           className={`message ${message.role}`}
           style={{
-              background: message.role === 'user' ? 'var(--bg-primary)' : 'var(--bg-secondary)',
-              padding: '10px',
-              borderRadius: '10px',
-            maxWidth: '100%',
-            border: message.role === 'user' ? '1px solid var(--border-primary)' : 'none',
+            background: message.role === 'user'
+              ? 'linear-gradient(135deg, var(--accent-color) 0%, #1a7abf 100%)'
+              : 'transparent',
+            padding: message.role === 'user' ? '10px 14px' : '0',
+            borderRadius: message.role === 'user' ? '18px 18px 4px 18px' : '0',
+            maxWidth: message.role === 'user' ? '85%' : '100%',
+            border: 'none',
+            color: message.role === 'user' ? '#fff' : 'var(--text-primary)',
+            boxShadow: message.role === 'user' ? '0 2px 8px rgba(14,99,156,0.3)' : 'none',
           }}
         >
           {/* Assistant message */}
           {message.role === 'assistant' && (
             <div
               style={{
-                backgroundColor: isError ? 'var(--error-bg)' : 'var(--bg-secondary)',
-                padding: '10px',
-                borderRadius: '10px',
+                backgroundColor: 'transparent',
+                padding: '0',
+                borderRadius: '0',
                 marginBottom: '8px',
                 position: 'relative',
                 borderLeft: isError ? '4px solid var(--error-color)' : 'none',

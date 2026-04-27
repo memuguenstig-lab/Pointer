@@ -46,7 +46,7 @@ const activeFileStyle = {
 
 const hoverFileStyle = {
   backgroundColor: 'var(--bg-hover)',
-  borderLeft: '2px solid var(--border-color)',
+  boxShadow: 'inset 2px 0 0 var(--border-color)',
 };
 
 const FileExplorerItem: React.FC<{
@@ -718,8 +718,10 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
           onMouseEnter={() => handleFolderHover(id)}
           onMouseLeave={() => handleFolderHover(null)}
           onContextMenu={(e) => handleContextMenu(e, id)}
+          className={item.type === 'file' ? `file-type-${item.name.split('.').pop()?.toLowerCase() ?? 'default'}${isSelected ? ' file-selected' : ''}` : ''}
           style={{
-            paddingLeft: `${depth * 20}px`,
+            paddingLeft: isHovered && !isSelected ? `${depth * 20 + 6}px` : `${depth * 20}px`,
+            paddingRight: '8px',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
@@ -729,11 +731,9 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
             fontSize: '13px',
             position: 'relative',
             borderBottom: '1px solid var(--border-subtle)',
-            transition: 'all 0.1s ease',
+            transition: 'background 0.15s ease, padding-left 0.15s ease, box-shadow 0.15s ease',
             ...(isSelected ? activeFileStyle : {}),
             ...(isHovered && !isSelected ? hoverFileStyle : {}),
-            paddingRight: '8px',
-            marginLeft: isSelected || isHovered ? '-2px' : '0',
           }}
         >
           <div style={{ 

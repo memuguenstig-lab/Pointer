@@ -911,3 +911,62 @@ button:active:not(:disabled) {
   outline: 2px solid var(--accent-color);
   outline-offset: 2px;
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   GLASSMORPHISM SIDEBAR
+   ══════════════════════════════════════════════════════════════════════════ */
+.resizable {
+  background: rgba(37, 37, 38, 0.85) !important;
+  backdrop-filter: blur(12px) saturate(1.4);
+  -webkit-backdrop-filter: blur(12px) saturate(1.4);
+  border-right: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+.sidebar-panel-header {
+  background: rgba(30, 30, 30, 0.6) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Activity bar glass */
+.activity-bar-btn {
+  backdrop-filter: blur(4px);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   FILE TYPE COLOR CODING — left border on hover/select
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* TypeScript */
+.file-type-ts  { --file-color: #3178C6; }
+.file-type-tsx { --file-color: #61DAFB; }
+/* JavaScript */
+.file-type-js  { --file-color: #F1DD3F; }
+.file-type-jsx { --file-color: #F1DD3F; }
+/* Python */
+.file-type-py  { --file-color: #3776AB; }
+/* CSS / SCSS */
+.file-type-css  { --file-color: #2965F1; }
+.file-type-scss { --file-color: #CC6699; }
+/* HTML */
+.file-type-html { --file-color: #E44D26; }
+/* JSON */
+.file-type-json { --file-color: #F1DD3F; }
+/* Markdown */
+.file-type-md { --file-color: #ffffff; }
+/* Rust */
+.file-type-rs { --file-color: #DEA584; }
+/* Go */
+.file-type-go { --file-color: #00ADD8; }
+/* Ruby */
+.file-type-rb { --file-color: #CC342D; }
+
+/* Apply color as left accent on hover */
+[class*="file-type-"]:hover {
+  box-shadow: inset 3px 0 0 var(--file-color, var(--border-color)) !important;
+}
+[class*="file-type-"].file-selected {
+  box-shadow: inset 3px 0 0 var(--file-color, var(--accent-color)) !important;
+  color: var(--file-color, var(--accent-color)) !important;
+}
