@@ -46,10 +46,14 @@ class LlamaService {
   }
 
   async getModels(): Promise<LlamaModel[]> {
-    const res = await fetch(`${BACKEND}/api/llama/models`);
-    if (!res.ok) throw new Error('Failed to fetch models');
-    const data = await res.json();
-    return data.models;
+    try {
+      const res = await fetch(`${BACKEND}/api/llama/models`);
+      if (!res.ok) return [];
+      const data = await res.json();
+      return data.models ?? [];
+    } catch {
+      return [];
+    }
   }
 
   async downloadModel(modelId: string): Promise<void> {
@@ -59,8 +63,10 @@ class LlamaService {
       body: JSON.stringify({ modelId }),
     });
     if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || 'Download failed');
+      const text = await res.text();
+      let msg = 'Download failed';
+      try { msg = JSON.parse(text).error || msg; } catch (_) { msg = text.slice(0, 200) || msg; }
+      throw new Error(msg);
     }
   }
 
@@ -77,8 +83,10 @@ class LlamaService {
       body: JSON.stringify({ modelId }),
     });
     if (!res.ok) {
-      const err = await res.json();
-      throw new Error(err.error || 'Failed to load model');
+      const text = await res.text();
+      let msg = 'Failed to load model';
+      try { msg = JSON.parse(text).error || msg; } catch (_) { msg = text.slice(0, 200) || msg; }
+      throw new Error(msg);
     }
   }
 
