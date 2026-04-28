@@ -106,7 +106,12 @@ const TerminalPane: React.FC<Props> = ({ instance, isActive, onReady, onCwdChang
   return (
     <div
       ref={instance.containerRef}
-      style={{ width: '100%', height: '100%', display: isActive ? 'block' : 'none' }}
+      style={{
+        width: '100%',
+        height: '100%',
+        display: isActive ? 'block' : 'none',
+        WebkitAppRegion: 'no-drag',
+      } as React.CSSProperties}
       onClick={() => instance.xterm?.focus()}
     />
   );

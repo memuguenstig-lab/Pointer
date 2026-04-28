@@ -1712,30 +1712,40 @@ const App: React.FC = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            zIndex: 1000,
-          }}>
+            zIndex: 10000,
+            WebkitAppRegion: 'no-drag',
+          } as React.CSSProperties}>
             <div style={{
               background: 'var(--bg-primary)',
               padding: '20px',
-              borderRadius: '4px',
-              minWidth: '300px',
-            }}>
-              <h3 style={{ margin: '0 0 16px 0', color: 'var(--text-primary)' }}>
+              borderRadius: '8px',
+              minWidth: '320px',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+              WebkitAppRegion: 'no-drag',
+            } as React.CSSProperties}>
+              <h3 style={{ margin: '0 0 16px 0', color: 'var(--text-primary)', fontSize: '14px' }}>
                 Create New {modalState.type === 'file' ? 'File' : 'Folder'}
               </h3>
               <input
                 type="text"
                 value={modalState.name}
                 onChange={(e) => setModalState(prev => ({ ...prev, name: e.target.value }))}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleModalSubmit();
+                  if (e.key === 'Escape') setModalState({ isOpen: false, type: null, parentId: null, name: '' });
+                }}
                 placeholder={`Enter ${modalState.type} name`}
                 style={{
                   width: '100%',
-                  padding: '8px',
+                  padding: '8px 10px',
                   marginBottom: '16px',
                   background: 'var(--bg-secondary)',
-                  border: '1px solid var(--border-color)',
+                  border: '1px solid var(--accent-color)',
                   borderRadius: '4px',
                   color: 'var(--text-primary)',
+                  fontSize: '13px',
+                  outline: 'none',
+                  boxSizing: 'border-box',
                 }}
                 autoFocus
               />
@@ -1743,25 +1753,29 @@ const App: React.FC = () => {
                 <button
                   onClick={() => setModalState({ isOpen: false, type: null, parentId: null, name: '' })}
                   style={{
-                    padding: '6px 12px',
+                    padding: '6px 14px',
                     background: 'transparent',
                     border: '1px solid var(--border-color)',
                     borderRadius: '4px',
                     color: 'var(--text-primary)',
                     cursor: 'pointer',
+                    fontSize: '13px',
                   }}
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleModalSubmit}
+                  disabled={!modalState.name.trim()}
                   style={{
-                    padding: '6px 12px',
-                    background: 'var(--accent-color)',
+                    padding: '6px 14px',
+                    background: modalState.name.trim() ? 'var(--accent-color)' : 'var(--bg-accent)',
                     border: 'none',
                     borderRadius: '4px',
                     color: 'white',
-                    cursor: 'pointer',
+                    cursor: modalState.name.trim() ? 'pointer' : 'not-allowed',
+                    fontSize: '13px',
+                    opacity: modalState.name.trim() ? 1 : 0.6,
                   }}
                 >
                   Create

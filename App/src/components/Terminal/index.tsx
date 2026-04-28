@@ -86,7 +86,8 @@ const Terminal: React.FC<TerminalProps> = ({ isVisible, errorCount = 0, warningC
       background: '#141414', flexShrink: 0,
       height: height + TABBAR_H + 4,
       position: 'relative',
-    }}>
+      WebkitAppRegion: 'no-drag',
+    } as React.CSSProperties}>
       {/* Resize handle */}
       <div
         onMouseDown={handleMouseDown}
