@@ -34,6 +34,8 @@ export interface DownloadState {
   bytesReceived: number;
   bytesTotal: number;
   percent: number;
+  speed: number;       // bytes/sec
+  eta: number | null;  // seconds remaining
   error: string | null;
   done: boolean;
 }

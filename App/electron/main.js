@@ -585,20 +585,6 @@ async function createWindow() {
       }
     });
 
-    // Reduce verbose logging in production
-    if (!isDev) return;
-    mainWindow.webContents.on('did-start-loading', () => {
-      console.log('Main window did-start-loading');
-    });
-
-    mainWindow.webContents.on('did-finish-load', () => {
-      console.log('Main window did-finish-load');
-    });
-
-    mainWindow.webContents.on('dom-ready', () => {
-      console.log('Main window dom-ready');
-    });
-
     // Handle external links - open them in the default browser
     mainWindow.webContents.on('new-window', (event, navigationUrl) => {
       event.preventDefault();
@@ -616,28 +602,33 @@ async function createWindow() {
       app.setAppUserModelId('com.pointer');
     }
 
-    // Set up a timeout fallback to show the window in case the ready-to-show event doesn't fire
+    // ── Window show logic ──────────────────────────────────────────────────
+    // Strategy: show window as soon as React signals ready OR after fallbacks.
+    // This prevents the black-window flash.
     const windowShowTimeout = setTimeout(() => {
-      console.log('Window show timeout reached, forcing display');
       showMainWindow(mainWindow);
-    }, 10000); // 10 second fallback timeout
+    }, 12000);
 
-    // React signals when it's ready via IPC — show window then
     let reactReady = false;
-    ipcMain.once('react-app-ready', () => {
-      if (!reactReady) {
-        reactReady = true;
-        clearTimeout(windowShowTimeout);
-        showMainWindow(mainWindow);
-      }
+    const doShow = () => {
+      if (reactReady) return;
+      reactReady = true;
+      clearTimeout(windowShowTimeout);
+      showMainWindow(mainWindow);
+    };
+
+    // Primary: React sends IPC when app is fully initialized
+    ipcMain.once('react-app-ready', doShow);
+
+    // Fallback 1: dom-ready + 1.5s (page parsed, React likely mounted)
+    mainWindow.webContents.once('dom-ready', () => {
+      setTimeout(doShow, 1500);
     });
 
-    // Fallback: show after did-finish-load + small delay if React signal never comes
+    // Fallback 2: did-finish-load + 2s
     mainWindow.webContents.once('did-finish-load', () => {
-      setTimeout(() => {
-        if (!reactReady) {
-          reactReady = true;
-          clearTimeout(windowShowTimeout);
+      setTimeout(doShow, 2000);
+    });
           showMainWindow(mainWindow);
         }
       }, 800);

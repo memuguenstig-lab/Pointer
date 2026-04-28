@@ -39,8 +39,21 @@ export default defineConfig({
     }
   },
   optimizeDeps: {
-    include: ['monaco-editor', 'react', 'react-dom'],
+    include: [
+      'monaco-editor',
+      'react',
+      'react-dom',
+      'react-markdown',
+      'remark-gfm',
+      '@xterm/xterm',
+      '@xterm/addon-fit',
+      '@xterm/addon-web-links',
+      'zustand',
+      'uuid',
+    ],
     exclude: ['electron'],
+    // Force pre-bundling on first run so subsequent starts are fast
+    force: false,
   },
   build: {
     outDir: 'dist',

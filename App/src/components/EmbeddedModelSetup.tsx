@@ -231,6 +231,24 @@ export const EmbeddedModelSetup: React.FC<Props> = ({ onModelReady }) => {
 
   useEffect(() => {
     loadModels();
+    // Check if a download is already running in the background
+    llamaService.getDownloadStatus().then(state => {
+      if (state.active) {
+        setDownloadState(state);
+        setLoading(true);
+        // Resume polling
+        pollRef.current = setInterval(async () => {
+          const s = await llamaService.getDownloadStatus();
+          setDownloadState(s);
+          if (!s.active) {
+            clearInterval(pollRef.current!);
+            setLoading(false);
+            if (s.done && !s.error) await loadModels();
+            else if (s.error) setError('Download failed: ' + s.error);
+          }
+        }, 500);
+      }
+    }).catch(() => {});
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, []);
 
@@ -303,6 +321,24 @@ export const EmbeddedModelSetup: React.FC<Props> = ({ onModelReady }) => {
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
     if (bytes < 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
     return `${(bytes / 1024 / 1024 / 1024).toFixed(2)} GB`;
+  }
+
+  function formatEta(seconds: number) {
+    if (seconds < 60) return `${seconds}s`;
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
+    return `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m`;
+  }
+
+  async function handleCancel() {
+    try {
+      await fetch('http://127.0.0.1:23816/api/llama/download/cancel', { method: 'POST' });
+      if (pollRef.current) clearInterval(pollRef.current);
+      setLoading(false);
+      setDownloadState(null);
+      await loadModels();
+    } catch (e: any) {
+      setError('Cancel failed: ' + e.message);
+    }
   }
 
   const selectedModel = models.find(m => m.id === selected);
@@ -436,21 +472,48 @@ export const EmbeddedModelSetup: React.FC<Props> = ({ onModelReady }) => {
 
       {/* Download progress */}
       {downloadState?.active && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-secondary)' }}>
-            <span>Downloading {downloadState.fileName}…</span>
-            <span>
-              {downloadState.bytesTotal > 0
-                ? `${formatBytes(downloadState.bytesReceived)} / ${formatBytes(downloadState.bytesTotal)}`
-                : formatBytes(downloadState.bytesReceived)}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', color: 'var(--text-secondary)' }}>
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '60%' }}>
+              {downloadState.fileName}
             </span>
+            <div style={{ display: 'flex', gap: '10px', flexShrink: 0 }}>
+              {downloadState.speed > 0 && (
+                <span style={{ color: '#3fb950' }}>{formatBytes(downloadState.speed)}/s</span>
+              )}
+              {downloadState.eta != null && downloadState.eta > 0 && (
+                <span>{formatEta(downloadState.eta)}</span>
+              )}
+              <span>
+                {downloadState.bytesTotal > 0
+                  ? `${formatBytes(downloadState.bytesReceived)} / ${formatBytes(downloadState.bytesTotal)}`
+                  : formatBytes(downloadState.bytesReceived)}
+              </span>
+            </div>
           </div>
-          <div style={{ height: '3px', background: 'var(--bg-accent)', borderRadius: '2px', overflow: 'hidden' }}>
+          <div style={{ height: '4px', background: 'var(--bg-accent)', borderRadius: '2px', overflow: 'hidden' }}>
             <div style={{
-              height: '100%', width: `${downloadState.percent}%`,
-              background: 'var(--accent-color)', borderRadius: '2px',
-              transition: 'width 0.3s ease',
+              height: '100%',
+              width: `${downloadState.percent}%`,
+              background: 'linear-gradient(90deg, var(--accent-color), #3fb950)',
+              borderRadius: '2px',
+              transition: 'width 0.5s ease',
             }} />
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+              {downloadState.percent}% — downloading in background
+            </span>
+            <button
+              onClick={handleCancel}
+              style={{
+                padding: '2px 8px', fontSize: '11px',
+                background: 'rgba(248,81,73,0.1)', border: '1px solid rgba(248,81,73,0.3)',
+                borderRadius: '4px', color: '#f85149', cursor: 'pointer',
+              }}
+            >
+              Cancel
+            </button>
           </div>
         </div>
       )}
