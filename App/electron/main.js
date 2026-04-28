@@ -51,50 +51,29 @@ let discordRpcSettings = {
 };
 
 // Function to load settings from storage
+let settingsLoaded = false;
 async function loadSettings() {
   try {
-    // Use platform-specific path for settings
     const userDataPath = app.getPath('userData');
     const settingsPath = path.join(userDataPath, 'settings', 'discord_rpc.json');
     
-    console.log('Looking for Discord RPC settings at:', settingsPath);
-    
-    // Check if settings file exists
     if (fs.existsSync(settingsPath)) {
-      console.log('Loading Discord RPC settings from:', settingsPath);
       const settingsData = fs.readFileSync(settingsPath, 'utf8');
       const settings = JSON.parse(settingsData);
-      
-      // Update the settings
       if (settings && typeof settings === 'object') {
-        console.log('Discord RPC settings loaded successfully');
         discordRpcSettings = { ...discordRpcSettings, ...settings };
-        
-        // Log the current settings for debugging
-        console.log('Current Discord RPC settings:');
-        console.log('- Enabled:', discordRpcSettings.enabled);
-        console.log('- Details template:', discordRpcSettings.details);
-        console.log('- State template:', discordRpcSettings.state);
-        console.log('- Button 1:', discordRpcSettings.button1Label, discordRpcSettings.button1Url ? '(URL set)' : '(no URL)');
-        console.log('- Button 2:', discordRpcSettings.button2Label, discordRpcSettings.button2Url ? '(URL set)' : '(no URL)');
+        if (!settingsLoaded) console.log('[Discord RPC] Settings loaded.');
       }
     } else {
-      console.log('No saved Discord RPC settings found, using defaults');
-      
-      // Create the settings directory if it doesn't exist
       const settingsDir = path.dirname(settingsPath);
-      if (!fs.existsSync(settingsDir)) {
-        fs.mkdirSync(settingsDir, { recursive: true });
-      }
-      
-      // Save the default settings
+      if (!fs.existsSync(settingsDir)) fs.mkdirSync(settingsDir, { recursive: true });
       try {
         fs.writeFileSync(settingsPath, JSON.stringify(discordRpcSettings, null, 2));
-        console.log('Default Discord RPC settings saved to:', settingsPath);
       } catch (saveError) {
         console.error('Error saving default Discord RPC settings:', saveError);
       }
     }
+    settingsLoaded = true;
   } catch (error) {
     console.error('Error loading Discord RPC settings:', error);
   }
