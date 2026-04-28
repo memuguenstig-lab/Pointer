@@ -3619,122 +3619,287 @@ export function Settings({ isVisible, onClose, initialSettings }: SettingsProps)
 
                 {/* Terminal Settings */}
                 {activeCategory === 'terminal' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <h3 style={{ margin: '0 0 16px 0', fontSize: '16px' }}>Terminal Settings</h3>
-                    
-                    <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-                      Terminal settings will be available in a future update.
-                    </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <h3 style={{ margin: 0, fontSize: '16px' }}>Terminal Settings</h3>
+
+                    {/* Appearance */}
+                    <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-primary)' }}>
+                      <h4 style={{ margin: '0 0 14px 0', fontSize: '14px' }}>Appearance</h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                        <div>
+                          <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px' }}>Font Family</label>
+                          <input
+                            type="text"
+                            value={advanced.terminalFontFamily ?? 'Consolas, "Cascadia Code", "Courier New", monospace'}
+                            onChange={e => handleAdvancedSettingChange('terminalFontFamily', e.target.value)}
+                            style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '13px' }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px' }}>Font Size</label>
+                          <input
+                            type="number"
+                            min={8} max={32}
+                            value={advanced.terminalFontSize ?? 13}
+                            onChange={e => handleAdvancedSettingChange('terminalFontSize', parseInt(e.target.value))}
+                            style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '13px' }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px' }}>Line Height</label>
+                          <input
+                            type="number"
+                            min={1} max={3} step={0.1}
+                            value={advanced.terminalLineHeight ?? 1.3}
+                            onChange={e => handleAdvancedSettingChange('terminalLineHeight', parseFloat(e.target.value))}
+                            style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '13px' }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px' }}>Scrollback Lines</label>
+                          <input
+                            type="number"
+                            min={100} max={50000} step={100}
+                            value={advanced.terminalScrollback ?? 5000}
+                            onChange={e => handleAdvancedSettingChange('terminalScrollback', parseInt(e.target.value))}
+                            style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '13px' }}
+                          />
+                        </div>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginTop: '12px' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                          <input type="checkbox" checked={advanced.terminalCursorBlink ?? true} onChange={e => handleAdvancedSettingChange('terminalCursorBlink', e.target.checked)} />
+                          Cursor Blink
+                        </label>
+                        <div>
+                          <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px' }}>Cursor Style</label>
+                          <select
+                            value={advanced.terminalCursorStyle ?? 'block'}
+                            onChange={e => handleAdvancedSettingChange('terminalCursorStyle', e.target.value)}
+                            style={{ width: '100%', padding: '6px', background: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '13px' }}
+                          >
+                            <option value="block">Block</option>
+                            <option value="underline">Underline</option>
+                            <option value="bar">Bar</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Shell */}
+                    <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-primary)' }}>
+                      <h4 style={{ margin: '0 0 14px 0', fontSize: '14px' }}>Shell</h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                        <div>
+                          <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px' }}>Default Shell</label>
+                          <input
+                            type="text"
+                            value={advanced.terminalShell ?? ''}
+                            onChange={e => handleAdvancedSettingChange('terminalShell', e.target.value)}
+                            placeholder={navigator.platform.includes('Win') ? 'powershell.exe' : '/bin/zsh'}
+                            style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '13px' }}
+                          />
+                          <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>Leave empty to use system default</p>
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px' }}>Default Height (px)</label>
+                          <input
+                            type="number"
+                            min={100} max={800}
+                            value={advanced.terminalDefaultHeight ?? 260}
+                            onChange={e => handleAdvancedSettingChange('terminalDefaultHeight', parseInt(e.target.value))}
+                            style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '13px' }}
+                          />
+                        </div>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '12px' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                          <input type="checkbox" checked={advanced.terminalCopyOnSelect ?? false} onChange={e => handleAdvancedSettingChange('terminalCopyOnSelect', e.target.checked)} />
+                          Copy on Select
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                          <input type="checkbox" checked={advanced.terminalRightClickPaste ?? true} onChange={e => handleAdvancedSettingChange('terminalRightClickPaste', e.target.checked)} />
+                          Right-click to Paste
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Colors */}
+                    <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-primary)' }}>
+                      <h4 style={{ margin: '0 0 14px 0', fontSize: '14px' }}>Terminal Colors</h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+                        {[
+                          { key: 'terminalBg', label: 'Background', default: '#141414' },
+                          { key: 'terminalFg', label: 'Foreground', default: '#cccccc' },
+                          { key: 'terminalCursor', label: 'Cursor', default: '#ffffff' },
+                          { key: 'terminalRed', label: 'Red', default: '#f85149' },
+                          { key: 'terminalGreen', label: 'Green', default: '#3fb950' },
+                          { key: 'terminalYellow', label: 'Yellow', default: '#d29922' },
+                          { key: 'terminalBlue', label: 'Blue', default: '#58a6ff' },
+                          { key: 'terminalMagenta', label: 'Magenta', default: '#bc8cff' },
+                          { key: 'terminalCyan', label: 'Cyan', default: '#39c5cf' },
+                        ].map(({ key, label, default: def }) => (
+                          <div key={key}>
+                            <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'var(--text-secondary)' }}>{label}</label>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <input
+                                type="color"
+                                value={advanced[key] ?? def}
+                                onChange={e => handleAdvancedSettingChange(key, e.target.value)}
+                                style={{ width: '28px', height: '28px', padding: 0, border: '1px solid var(--border-primary)', borderRadius: '4px', cursor: 'pointer', background: 'transparent' }}
+                              />
+                              <input
+                                type="text"
+                                value={advanced[key] ?? def}
+                                onChange={e => handleAdvancedSettingChange(key, e.target.value)}
+                                style={{ flex: 1, padding: '5px 8px', background: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '12px', fontFamily: 'monospace' }}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <button
+                        onClick={() => {
+                          const defaults: Record<string, string> = { terminalBg: '#141414', terminalFg: '#cccccc', terminalCursor: '#ffffff', terminalRed: '#f85149', terminalGreen: '#3fb950', terminalYellow: '#d29922', terminalBlue: '#58a6ff', terminalMagenta: '#bc8cff', terminalCyan: '#39c5cf' };
+                          Object.entries(defaults).forEach(([k, v]) => handleAdvancedSettingChange(k, v));
+                        }}
+                        style={{ marginTop: '12px', padding: '6px 12px', background: 'var(--bg-accent)', border: '1px solid var(--border-primary)', borderRadius: '4px', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '12px' }}
+                      >
+                        Reset to Defaults
+                      </button>
+                    </div>
                   </div>
                 )}
 
                 {/* Advanced Settings */}
                 {activeCategory === 'advanced' && (
-                  <div className="settings-container">
-                    <h3>Advanced Settings</h3>
-                    <div className="settings-section">
-                      <div className="setting-item">
-                        <div className="setting-label">Title Bar Format</div>
-                        <div className="setting-description">
-                          Customize how the title bar displays information. Available placeholders:
-                          <ul>
-                            <li><code>{'{filename}'}</code> - Current file name</li>
-                            <li><code>{'{workspace}'}</code> - Workspace folder name</li>
-                          </ul>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <h3 style={{ margin: 0, fontSize: '16px' }}>Advanced Settings</h3>
+
+                    {/* Window & UI */}
+                    <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-primary)' }}>
+                      <h4 style={{ margin: '0 0 14px 0', fontSize: '14px' }}>Window & UI</h4>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <div>
+                          <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px' }}>Title Bar Format</label>
+                          <input
+                            type="text"
+                            value={advanced.titleFormat || '{filename} - {workspace} - Pointer'}
+                            onChange={e => handleAdvancedSettingChange('titleFormat', e.target.value)}
+                            style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '13px' }}
+                            placeholder="{filename} - {workspace} - Pointer"
+                          />
+                          <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                            Placeholders: <code>{'{filename}'}</code> <code>{'{workspace}'}</code>
+                          </p>
                         </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                            <input type="checkbox" checked={advanced.smoothScrolling ?? true} onChange={e => handleAdvancedSettingChange('smoothScrolling', e.target.checked)} />
+                            Smooth Scrolling
+                          </label>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                            <input type="checkbox" checked={advanced.showStatusBar ?? true} onChange={e => handleAdvancedSettingChange('showStatusBar', e.target.checked)} />
+                            Show Status Bar
+                          </label>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                            <input type="checkbox" checked={advanced.showBreadcrumbs ?? true} onChange={e => handleAdvancedSettingChange('showBreadcrumbs', e.target.checked)} />
+                            Show Breadcrumbs
+                          </label>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                            <input type="checkbox" checked={advanced.showMinimap ?? false} onChange={e => handleAdvancedSettingChange('showMinimap', e.target.checked)} />
+                            Show Minimap
+                          </label>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                            <input type="checkbox" checked={advanced.confirmOnClose ?? false} onChange={e => handleAdvancedSettingChange('confirmOnClose', e.target.checked)} />
+                            Confirm on Close
+                          </label>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                            <input type="checkbox" checked={advanced.restoreLastSession ?? true} onChange={e => handleAdvancedSettingChange('restoreLastSession', e.target.checked)} />
+                            Restore Last Session
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* File Handling */}
+                    <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-primary)' }}>
+                      <h4 style={{ margin: '0 0 14px 0', fontSize: '14px' }}>File Handling</h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                          <input type="checkbox" checked={advanced.trimTrailingWhitespace ?? false} onChange={e => handleAdvancedSettingChange('trimTrailingWhitespace', e.target.checked)} />
+                          Trim Trailing Whitespace on Save
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                          <input type="checkbox" checked={advanced.insertFinalNewline ?? true} onChange={e => handleAdvancedSettingChange('insertFinalNewline', e.target.checked)} />
+                          Insert Final Newline
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                          <input type="checkbox" checked={advanced.detectIndentation ?? true} onChange={e => handleAdvancedSettingChange('detectIndentation', e.target.checked)} />
+                          Auto-detect Indentation
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                          <input type="checkbox" checked={advanced.showHiddenFiles ?? false} onChange={e => handleAdvancedSettingChange('showHiddenFiles', e.target.checked)} />
+                          Show Hidden Files
+                        </label>
+                      </div>
+                      <div style={{ marginTop: '12px' }}>
+                        <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px' }}>Excluded File Patterns</label>
                         <input
                           type="text"
-                          value={advanced.titleFormat || '{filename} - {workspace} - Pointer'}
-                          onChange={(e) => {
-                            handleAdvancedSettingChange('titleFormat', e.target.value);
-                          }}
-                          className="text-input"
-                          placeholder="{filename} - {workspace} - Pointer"
+                          value={advanced.excludePatterns ?? 'node_modules, .git, dist, build'}
+                          onChange={e => handleAdvancedSettingChange('excludePatterns', e.target.value)}
+                          style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '13px' }}
+                          placeholder="node_modules, .git, dist"
+                        />
+                        <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>Comma-separated patterns to hide in the file explorer</p>
+                      </div>
+                    </div>
+
+                    {/* Performance */}
+                    <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-primary)' }}>
+                      <h4 style={{ margin: '0 0 14px 0', fontSize: '14px' }}>Performance</h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                          <input type="checkbox" checked={advanced.hardwareAcceleration ?? true} onChange={e => handleAdvancedSettingChange('hardwareAcceleration', e.target.checked)} />
+                          Hardware Acceleration
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                          <input type="checkbox" checked={advanced.backgroundThrottling ?? false} onChange={e => handleAdvancedSettingChange('backgroundThrottling', e.target.checked)} />
+                          Background Throttling
+                        </label>
+                      </div>
+                      <div style={{ marginTop: '12px' }}>
+                        <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px' }}>Max File Size to Open (MB)</label>
+                        <input
+                          type="number"
+                          min={1} max={100}
+                          value={advanced.maxFileSizeMb ?? 10}
+                          onChange={e => handleAdvancedSettingChange('maxFileSizeMb', parseInt(e.target.value))}
+                          style={{ width: '120px', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '13px' }}
                         />
                       </div>
-                      
-                      <div style={{ marginTop: '16px' }}>
-                        <button
-                          onClick={() => {
-                            if (confirm('Are you sure you want to reset all settings to default values?')) {
-                              setModelConfigs({ 'default': { ...defaultConfig } });
-                              setModelAssignments({...defaultModelAssignments});
-                              setEditorSettings({
-                                fontFamily: 'monospace',
-                                fontSize: 13,
-                                lineHeight: 1.5,
-                                tabSize: 2,
-                                insertSpaces: true,
-                                wordWrap: true,
-                                rulers: [],
-                                formatOnSave: true,
-                                formatOnPaste: false,
-                                autoSave: true,
-                                autoAcceptGhostText: false,
-                              });
-                              setThemeSettings({
-                                name: 'vs-dark',
-                                customColors: {
-                                  bgPrimary: '',
-                                  bgSecondary: '',
-                                  bgTertiary: '',
-                                  bgSelected: '',
-                                  bgHover: '',
-                                  bgAccent: '',
-                                  textPrimary: '',
-                                  textSecondary: '',
-                                  borderColor: '',
-                                  borderPrimary: '',
-                                  accentColor: '',
-                                  accentHover: '',
-                                  errorColor: '',
-                                  titlebarBg: '',
-                                  statusbarBg: '',
-                                  statusbarFg: '',
-                                  activityBarBg: '',
-                                  activityBarFg: '',
-                                  inlineCodeColor: '#cc0000',
-                                },
-                                editorColors: {
-                                  "editor.background": "#1e1e1e",
-                                  "editor.foreground": "#d4d4d4",
-                                  "editorLineNumber.foreground": "#858585",
-                                  "editorLineNumber.activeForeground": "#c6c6c6",
-                                  "editorCursor.foreground": "#d4d4d4",
-                                  "editor.selectionBackground": "#264f78",
-                                  "editor.lineHighlightBackground": "#2d2d2d50",
-                                },
-                                tokenColors: [
-                                  { token: 'keyword', foreground: '#569CD6', fontStyle: 'bold' },
-                                  { token: 'comment', foreground: '#6A9955', fontStyle: 'italic' },
-                                  { token: 'string', foreground: '#CE9178' },
-                                  { token: 'number', foreground: '#B5CEA8' },
-                                  { token: 'operator', foreground: '#D4D4D4' },
-                                  { token: 'type', foreground: '#4EC9B0' },
-                                  { token: 'function', foreground: '#DCDCAA' },
-                                  { token: 'variable', foreground: '#9CDCFE' }
-                                ]
-                              });
-                              setDiscordRpcSettings({...defaultDiscordRpcSettings});
-                              setAdvanced({}); // Reset advanced settings too
-                              
-                              setHasUnsavedChanges(true);
-                            }
-                          }}
-                          style={{
-                            padding: '8px 16px',
-                            background: 'var(--error-color)',
-                            border: 'none',
-                            borderRadius: '4px',
-                            color: 'white',
-                            cursor: 'pointer',
-                            fontSize: '13px',
-                            width: 'fit-content',
-                          }}
-                        >
-                          Reset All Settings
-                        </button>
-                      </div>
+                    </div>
+
+                    {/* Danger Zone */}
+                    <div style={{ padding: '16px', background: 'rgba(248,81,73,0.05)', borderRadius: '8px', border: '1px solid rgba(248,81,73,0.2)' }}>
+                      <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#f85149' }}>Danger Zone</h4>
+                      <button
+                        onClick={() => {
+                          if (confirm('Are you sure you want to reset ALL settings to default values? This cannot be undone.')) {
+                            setModelConfigs({ 'default': { ...defaultConfig } });
+                            setModelAssignments({...defaultModelAssignments});
+                            setEditorSettings({ fontFamily: 'monospace', fontSize: 13, lineHeight: 1.5, tabSize: 2, insertSpaces: true, wordWrap: true, rulers: [], formatOnSave: true, formatOnPaste: false, autoSave: true, autoAcceptGhostText: false });
+                            setThemeSettings({ name: 'vs-dark', customColors: { bgPrimary: '', bgSecondary: '', bgTertiary: '', bgSelected: '', bgHover: '', bgAccent: '', textPrimary: '', textSecondary: '', borderColor: '', borderPrimary: '', accentColor: '', accentHover: '', errorColor: '', titlebarBg: '', statusbarBg: '', statusbarFg: '', activityBarBg: '', activityBarFg: '', inlineCodeColor: '#cc0000' }, editorColors: { "editor.background": "#1e1e1e", "editor.foreground": "#d4d4d4", "editorLineNumber.foreground": "#858585", "editorLineNumber.activeForeground": "#c6c6c6", "editorCursor.foreground": "#d4d4d4", "editor.selectionBackground": "#264f78", "editor.lineHighlightBackground": "#2d2d2d50" }, tokenColors: [{ token: 'keyword', foreground: '#569CD6', fontStyle: 'bold' }, { token: 'comment', foreground: '#6A9955', fontStyle: 'italic' }, { token: 'string', foreground: '#CE9178' }, { token: 'number', foreground: '#B5CEA8' }, { token: 'operator', foreground: '#D4D4D4' }, { token: 'type', foreground: '#4EC9B0' }, { token: 'function', foreground: '#DCDCAA' }, { token: 'variable', foreground: '#9CDCFE' }] });
+                            setDiscordRpcSettings({...defaultDiscordRpcSettings});
+                            setAdvanced({});
+                            setHasUnsavedChanges(true);
+                          }
+                        }}
+                        style={{ padding: '8px 16px', background: '#f85149', border: 'none', borderRadius: '4px', color: 'white', cursor: 'pointer', fontSize: '13px' }}
+                      >
+                        Reset All Settings to Defaults
+                      </button>
                     </div>
                   </div>
                 )}
