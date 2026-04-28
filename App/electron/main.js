@@ -629,10 +629,6 @@ async function createWindow() {
     mainWindow.webContents.once('did-finish-load', () => {
       setTimeout(doShow, 2000);
     });
-          showMainWindow(mainWindow);
-        }
-      }, 800);
-    });
 
     // Once everything is loaded and rendered, show the main window and close the splash
     mainWindow.once('ready-to-show', () => {
