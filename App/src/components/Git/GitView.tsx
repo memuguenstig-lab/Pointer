@@ -427,6 +427,7 @@ const GitView: React.FC<GitViewProps> = ({ onBack }) => {
     }
 
     if (error) {
+      return (
         <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
           <span style={{ color: 'var(--error-color)', fontSize: 13 }}>{error}</span>
           <button
