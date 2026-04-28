@@ -210,7 +210,7 @@ async function testBackendHealth(port, maxRetries = 5) {
 }
 
 // Function to test server connection
-async function testServerHealth(port, maxRetries = 5) {
+async function testServerHealth(port, maxRetries = 15) {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       const inUse = await isPortInUse(port);
@@ -219,11 +219,11 @@ async function testServerHealth(port, maxRetries = 5) {
       }
       if (attempt < maxRetries) {
         console.log(chalk.yellow(`  ⏳ Server health check attempt ${attempt}/${maxRetries}...`));
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 2000));
       }
     } catch (error) {
       if (attempt < maxRetries) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 2000));
       }
     }
   }
