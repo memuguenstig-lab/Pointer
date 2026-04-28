@@ -916,17 +916,13 @@ button:active:not(:disabled) {
    GLASSMORPHISM SIDEBAR
    ══════════════════════════════════════════════════════════════════════════ */
 .resizable {
-  background: rgba(37, 37, 38, 0.85) !important;
-  backdrop-filter: blur(12px) saturate(1.4);
-  -webkit-backdrop-filter: blur(12px) saturate(1.4);
-  border-right: 1px solid rgba(255, 255, 255, 0.06) !important;
+  background: var(--bg-secondary) !important;
+  border-right: 1px solid var(--border-color) !important;
 }
 
 .sidebar-panel-header {
-  background: rgba(30, 30, 30, 0.6) !important;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  background: var(--bg-secondary) !important;
+  border-bottom: 1px solid var(--border-color) !important;
 }
 
 /* Activity bar glass */
