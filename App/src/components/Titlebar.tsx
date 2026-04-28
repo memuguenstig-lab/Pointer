@@ -229,19 +229,6 @@ const Titlebar: React.FC<TitlebarProps> = ({
                 </svg>
                 <span>Clone Repository</span>
               </button>
-              
-              <div className="file-menu-divider"></div>
-              
-              <button 
-                className="file-menu-item"
-                onClick={onOpenSettings}
-              >
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M6.5 14H9.5C10 14 10.5 13.6 10.5 13V11.5C10.8 11.4 11.1 11.2 11.4 11L12.7 11.7C13.2 11.9 13.7 11.7 14 11.3L15.5 8.6C15.7 8.1 15.6 7.6 15.1 7.3L13.8 6.7C13.8 6.5 13.8 6.3 13.8 6.1L15.1 5.5C15.6 5.2 15.8 4.7 15.5 4.2L14 1.5C13.7 1.1 13.2 0.9 12.7 1.1L11.4 1.8C11.1 1.6 10.8 1.4 10.5 1.3V-0.2C10.5 -0.8 10 -1.2 9.5 -1.2H6.5C6 -1.2 5.5 -0.8 5.5 -0.2V1.3C5.2 1.4 4.9 1.6 4.6 1.8L3.3 1.1C2.8 0.9 2.3 1.1 2 1.5L0.5 4.2C0.3 4.7 0.4 5.2 0.9 5.5L2.2 6.1C2.2 6.3 2.2 6.5 2.2 6.7L0.9 7.3C0.4 7.6 0.2 8.1 0.5 8.6L2 11.3C2.3 11.7 2.8 11.9 3.3 11.7L4.6 11C4.9 11.2 5.2 11.4 5.5 11.5V13C5.5 13.6 6 14 6.5 14ZM8 8.5C7.2 8.5 6.5 7.8 6.5 7C6.5 6.2 7.2 5.5 8 5.5C8.8 5.5 9.5 6.2 9.5 7C9.5 7.8 8.8 8.5 8 8.5Z" fill="currentColor"/>
-                </svg>
-                <span>Settings</span>
-                <span className="file-menu-shortcut">{isWindows ? "Ctrl+," : "⌘,"}</span>
-              </button>
             </div>
           )}
         </div>

@@ -412,6 +412,19 @@ const GitView: React.FC<GitViewProps> = ({ onBack }) => {
     }
 
     if (error) {
+      // "No current directory" is not a real error — show the standard no-repo screen
+      if (error === 'No current directory selected') {
+        return (
+          <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, textAlign: 'center' }}>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="1.5">
+              <circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="9" r="2.5"/>
+              <path d="M6 8.5v7"/><path d="M8.5 6.5C11 6.5 15.5 6.5 15.5 9" strokeLinecap="round"/>
+            </svg>
+            <span style={{ color: 'var(--text-secondary)', fontSize: 13 }}>No Git repository found</span>
+            <span style={{ color: 'var(--text-secondary)', fontSize: 12, opacity: 0.6 }}>Open a folder to get started</span>
+          </div>
+        );
+      }
       return (
         <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
           <span style={{ color: 'var(--error-color)', fontSize: 13 }}>{error}</span>
