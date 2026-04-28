@@ -590,9 +590,8 @@ async function createWindow() {
         contextIsolation: true,
         webSecurity: true,
         preload: path.join(__dirname, 'preload.js'),
-        backgroundThrottling: false,   // Don't throttle when window is in background
-        spellcheck: false,             // Disable spellcheck (not needed in code editor)
-        enableBlinkFeatures: 'CSSColorSchemeUARendering',
+        backgroundThrottling: false,
+        spellcheck: false,
       }
     });
 
