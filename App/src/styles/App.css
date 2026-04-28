@@ -1044,3 +1044,28 @@ button:active:not(:disabled) {
   flex-shrink: 0;
   margin: 0 1px;
 }
+
+/* ── Terminal theme CSS variables ───────────────────────────────────────── */
+/* Defaults match the built-in dark terminal theme.                          */
+/* These are overridden when an app theme is applied via applyThemeSettings. */
+:root {
+  --terminal-bg:            #141414;
+  --terminal-fg:            #cccccc;
+  --terminal-cursor:        #ffffff;
+  --terminal-black:         #1e1e1e;
+  --terminal-bright-black:  #666666;
+  --terminal-red:           #f85149;
+  --terminal-bright-red:    #ff7b72;
+  --terminal-green:         #3fb950;
+  --terminal-bright-green:  #56d364;
+  --terminal-yellow:        #d29922;
+  --terminal-bright-yellow: #e3b341;
+  --terminal-blue:          #58a6ff;
+  --terminal-bright-blue:   #79c0ff;
+  --terminal-magenta:       #bc8cff;
+  --terminal-bright-magenta:#d2a8ff;
+  --terminal-cyan:          #39c5cf;
+  --terminal-bright-cyan:   #56d4dd;
+  --terminal-white:         #b0b0b0;
+  --terminal-bright-white:  #ffffff;
+}

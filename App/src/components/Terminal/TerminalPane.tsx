@@ -1,4 +1,4 @@
-import { Terminal as XTerm } from '@xterm/xterm';
+import { Terminal as XTerm, ITheme } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
 import React, { useEffect, useRef, useCallback } from 'react';
@@ -8,6 +8,36 @@ import { parseCwd } from './utils';
 
 const WS_URL = 'ws://localhost:23816/ws/terminal';
 const RECONNECT_DELAYS = [1000, 2000, 4000, 8000];
+
+/** Read terminal theme from CSS variables (set by the active app theme) */
+function getTerminalTheme(): ITheme {
+  const s = getComputedStyle(document.documentElement);
+  const v = (name: string, fallback: string) => s.getPropertyValue(name).trim() || fallback;
+
+  return {
+    background:          v('--terminal-bg',      '#141414'),
+    foreground:          v('--terminal-fg',      '#cccccc'),
+    cursor:              v('--terminal-cursor',  '#ffffff'),
+    cursorAccent:        v('--terminal-bg',      '#141414'),
+    selectionBackground: 'rgba(88,166,255,0.25)',
+    black:               v('--terminal-black',   '#1e1e1e'),
+    brightBlack:         v('--terminal-bright-black', '#666666'),
+    red:                 v('--terminal-red',     '#f85149'),
+    brightRed:           v('--terminal-bright-red', '#ff7b72'),
+    green:               v('--terminal-green',   '#3fb950'),
+    brightGreen:         v('--terminal-bright-green', '#56d364'),
+    yellow:              v('--terminal-yellow',  '#d29922'),
+    brightYellow:        v('--terminal-bright-yellow', '#e3b341'),
+    blue:                v('--terminal-blue',    '#58a6ff'),
+    brightBlue:          v('--terminal-bright-blue', '#79c0ff'),
+    magenta:             v('--terminal-magenta', '#bc8cff'),
+    brightMagenta:       v('--terminal-bright-magenta', '#d2a8ff'),
+    cyan:                v('--terminal-cyan',    '#39c5cf'),
+    brightCyan:          v('--terminal-bright-cyan', '#56d4dd'),
+    white:               v('--terminal-white',   '#b0b0b0'),
+    brightWhite:         v('--terminal-bright-white', '#ffffff'),
+  };
+}
 
 interface Props {
   instance: TerminalInstance;
@@ -59,18 +89,7 @@ const TerminalPane: React.FC<Props> = ({ instance, isActive, onReady, onCwdChang
     initialized.current = true;
 
     const xterm = new XTerm({
-      theme: {
-        background: '#141414', foreground: '#cccccc', cursor: '#ffffff',
-        selectionBackground: 'rgba(88,166,255,0.25)',
-        black: '#1e1e1e', brightBlack: '#666666',
-        red: '#f85149', brightRed: '#ff7b72',
-        green: '#3fb950', brightGreen: '#56d364',
-        yellow: '#d29922', brightYellow: '#e3b341',
-        blue: '#58a6ff', brightBlue: '#79c0ff',
-        magenta: '#bc8cff', brightMagenta: '#d2a8ff',
-        cyan: '#39c5cf', brightCyan: '#56d4dd',
-        white: '#b0b0b0', brightWhite: '#ffffff',
-      },
+      theme: getTerminalTheme(),
       fontFamily: 'Consolas, "Cascadia Code", "Courier New", monospace',
       fontSize: 13, lineHeight: 1.3,
       cursorBlink: true, cursorStyle: 'block',
@@ -87,10 +106,17 @@ const TerminalPane: React.FC<Props> = ({ instance, isActive, onReady, onCwdChang
     instance.xterm = xterm;
     instance.fitAddon = fitAddon;
 
+    // Re-apply theme when app theme changes
+    const onThemeChange = () => {
+      xterm.options.theme = getTerminalTheme();
+    };
+    window.addEventListener('theme-changed', onThemeChange);
+
     connect(xterm, fitAddon);
     onReady(instance.id, xterm, fitAddon);
 
     return () => {
+      window.removeEventListener('theme-changed', onThemeChange);
       if (instance.reconnectTimer) clearTimeout(instance.reconnectTimer);
       instance.socket?.close();
       xterm.dispose();

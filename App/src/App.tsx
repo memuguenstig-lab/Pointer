@@ -346,6 +346,25 @@ const App: React.FC = () => {
                 document.documentElement.style.setProperty(cssVarName, value);
               }
             });
+
+            // Apply terminal colors from advanced settings
+            const advancedSettings = result.settings.advanced || {};
+            const terminalVars: Record<string, string> = {
+              '--terminal-bg':             advancedSettings.terminalBg      || '#141414',
+              '--terminal-fg':             advancedSettings.terminalFg      || '#cccccc',
+              '--terminal-cursor':         advancedSettings.terminalCursor  || '#ffffff',
+              '--terminal-red':            advancedSettings.terminalRed     || '#f85149',
+              '--terminal-green':          advancedSettings.terminalGreen   || '#3fb950',
+              '--terminal-yellow':         advancedSettings.terminalYellow  || '#d29922',
+              '--terminal-blue':           advancedSettings.terminalBlue    || '#58a6ff',
+              '--terminal-magenta':        advancedSettings.terminalMagenta || '#bc8cff',
+              '--terminal-cyan':           advancedSettings.terminalCyan    || '#39c5cf',
+            };
+            Object.entries(terminalVars).forEach(([k, v]) =>
+              document.documentElement.style.setProperty(k, v)
+            );
+            // Dispatch so TerminalPane picks up the new theme
+            window.dispatchEvent(new Event('theme-changed'));
             
             // Store customFileExtensions for file explorer to access
             if (themeSettings.customColors.customFileExtensions) {

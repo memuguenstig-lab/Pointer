@@ -834,6 +834,20 @@ export function Settings({ isVisible, onClose, initialSettings }: SettingsProps)
         document.documentElement.style.setProperty(cssVarName, value);
       }
     });
+
+    // Derive terminal colors from the active theme's accent/bg colors
+    const bg = themeSettings.customColors.bgPrimary || '#141414';
+    const fg = themeSettings.customColors.textPrimary || '#cccccc';
+    const accent = themeSettings.customColors.accentColor || '#58a6ff';
+    const err = themeSettings.customColors.errorColor || '#f85149';
+    // Only override if advanced settings don't have explicit terminal colors
+    const root = document.documentElement;
+    if (!advanced.terminalBg)      root.style.setProperty('--terminal-bg',      bg);
+    if (!advanced.terminalFg)      root.style.setProperty('--terminal-fg',      fg);
+    if (!advanced.terminalCursor)  root.style.setProperty('--terminal-cursor',  accent);
+    if (!advanced.terminalBlue)    root.style.setProperty('--terminal-blue',    accent);
+    if (!advanced.terminalRed)     root.style.setProperty('--terminal-red',     err);
+    window.dispatchEvent(new Event('theme-changed'));
   };
 
   useEffect(() => {
