@@ -1383,17 +1383,19 @@ const App: React.FC = () => {
           }
         }
         
-        // Connection is established
-        setTimeout(() => {
+        // Connection is established — no delay needed
+        if (mounted) {
           setIsConnecting(false);
-        }, 1000); // Small delay to ensure UI is ready
+          // Signal Electron that React is ready — closes splash and shows window
+          (window as any).electron?.signalReady?.();
+        }
       } catch (error) {
         console.error('Error initializing app:', error);
         setLoadingError('Failed to initialize app');
         setConnectionMessage('Failed to initialize application. Please try again.');
         setTimeout(() => {
-          setIsConnecting(false);
-        }, 3000);
+          if (mounted) setIsConnecting(false);
+        }, 2000);
       }
     };
 

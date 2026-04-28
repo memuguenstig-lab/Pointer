@@ -46,5 +46,9 @@ contextBridge.exposeInMainWorld(
     showOpenDialog: (options) => {
       return ipcRenderer.invoke('show-open-dialog', options);
     },
+    // Signal that React app is ready to show
+    signalReady: () => {
+      ipcRenderer.send('react-app-ready');
+    },
   }
 );

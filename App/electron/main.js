@@ -622,11 +622,30 @@ async function createWindow() {
       showMainWindow(mainWindow);
     }, 10000); // 10 second fallback timeout
 
+    // React signals when it's ready via IPC — show window then
+    let reactReady = false;
+    ipcMain.once('react-app-ready', () => {
+      if (!reactReady) {
+        reactReady = true;
+        clearTimeout(windowShowTimeout);
+        showMainWindow(mainWindow);
+      }
+    });
+
+    // Fallback: show after did-finish-load + small delay if React signal never comes
+    mainWindow.webContents.once('did-finish-load', () => {
+      setTimeout(() => {
+        if (!reactReady) {
+          reactReady = true;
+          clearTimeout(windowShowTimeout);
+          showMainWindow(mainWindow);
+        }
+      }, 800);
+    });
+
     // Once everything is loaded and rendered, show the main window and close the splash
     mainWindow.once('ready-to-show', () => {
-      console.log('Main window ready-to-show event triggered');
-      clearTimeout(windowShowTimeout); // Clear the timeout as we got the event
-      showMainWindow(mainWindow);
+      // Don't show yet — wait for React signal or did-finish-load fallback
     });
 
     // Load the app

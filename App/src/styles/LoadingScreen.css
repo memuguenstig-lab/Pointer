@@ -7,7 +7,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--bg-primary);
+  background-color: #1e1e1e;
   z-index: 9999;
 }
 
@@ -16,24 +16,39 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 24px;
+  gap: 20px;
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.97); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
 .animation-container {
   display: flex;
   justify-content: center;
   align-items: center;
+  animation: slowPulse 2.4s ease-in-out infinite;
+}
+
+@keyframes slowPulse {
+  0%   { opacity: 0.75; transform: scale(0.97); }
+  50%  { opacity: 1;    transform: scale(1.00); }
+  100% { opacity: 0.75; transform: scale(0.97); }
 }
 
 .loading-animation {
-  max-width: 20%;
-  max-height: 20%;
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
 }
 
 .loading-message {
-  color: var(--text-primary);
-  font-size: 18px;
-  font-weight: 500;
-  margin-top: 10px;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: 12px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 400;
   text-align: center;
+  letter-spacing: 0.02em;
 } 
