@@ -98,34 +98,48 @@ export class FileSystemService {
   } | null> {
     try {
       await this.refreshStructure();
-      // Reset file paths when opening a new directory
       this.filePaths.clear();
       this.currentDirectory = null;
 
-      const response = await fetch(`${this.API_URL}/open-directory`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
+      // Use Electron's native dialog if available
+      const electron = (window as any).electron;
+      let dirPath: string | null = null;
 
-      if (!response.ok) {
-        throw new Error(`Failed to open directory: ${response.statusText}`);
+      if (electron?.showOpenDialog) {
+        const result = await electron.showOpenDialog({
+          properties: ['openDirectory'],
+          title: 'Open Folder',
+        });
+        if (result.canceled || !result.filePaths.length) return null;
+        dirPath = result.filePaths[0];
+      } else {
+        // Fallback: ask backend to open dialog (non-Electron env)
+        const response = await fetch(`${this.API_URL}/open-directory`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        if (!response.ok) throw new Error(`Failed to open directory: ${response.statusText}`);
+        const data = await response.json();
+        this.setCurrentDirectory(data.path);
+        Object.values(data.items as Record<string, FileSystemItem>).forEach((item: FileSystemItem) => {
+          if (item.type === 'file') this.filePaths.set(item.id, this.normalizePath(item.path));
+        });
+        return data;
       }
 
-      const data = await response.json();
-      
-      // Set current directory
-      this.setCurrentDirectory(data.path);
-
-      // Store file paths
-      Object.values(data.items as Record<string, FileSystemItem>).forEach((item: FileSystemItem) => {
-        if (item.type === 'file') {
-          this.filePaths.set(item.id, this.normalizePath(item.path));
-        }
+      // Load the chosen directory via backend
+      const response = await fetch(`${this.API_URL}/open-specific-directory`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: dirPath }),
       });
-
-      return data;
+      if (!response.ok) throw new Error(`Failed to open directory: ${response.statusText}`);
+      const data = await response.json();
+      this.setCurrentDirectory(dirPath);
+      Object.values(data.items as Record<string, FileSystemItem>).forEach((item: FileSystemItem) => {
+        if (item.type === 'file') this.filePaths.set(item.id, this.normalizePath(item.path));
+      });
+      return { ...data, path: dirPath };
     } catch (error) {
       console.error('Error opening directory:', error);
       return null;
@@ -345,44 +359,58 @@ export class FileSystemService {
   static async openFile(): Promise<{ content: string, filename: string, fullPath: string, id: string } | null> {
     try {
       await this.refreshStructure();
-      const response = await fetch(`${this.API_URL}/open-file`, {
-        method: 'POST',
-        headers: {
-          'Accept': 'text/plain'
-        }
-      });
 
-      if (!response.ok) {
-        console.error('Failed to open file:', response.statusText);
-        return null;
-      }
+      // Use Electron's native dialog if available
+      const electron = (window as any).electron;
+      let filePath: string | null = null;
 
-      // Log all response headers for debugging
-      console.log('Response headers:', Array.from(response.headers.entries()));
-
-      const content = await response.text();
-      const filename = response.headers.get('X-Filename');
-      const fullPath = response.headers.get('X-Full-Path');
-      
-      console.log('Received headers:', { filename, fullPath });
-
-      if (!filename || !fullPath) {
-        console.error('Missing required headers:', {
-          filename: filename || 'missing',
-          fullPath: fullPath || 'missing'
+      if (electron?.showOpenDialog) {
+        const result = await electron.showOpenDialog({
+          properties: ['openFile'],
+          title: 'Open File',
+          filters: [
+            { name: 'All Files', extensions: ['*'] },
+            { name: 'Text Files', extensions: ['txt', 'md', 'json', 'js', 'ts', 'tsx', 'jsx', 'py', 'html', 'css', 'yaml', 'yml'] },
+          ],
         });
-        return null;
+        if (result.canceled || !result.filePaths.length) return null;
+        filePath = result.filePaths[0];
+      } else {
+        // Fallback to old backend endpoint
+        const response = await fetch(`${this.API_URL}/open-file`, {
+          method: 'POST',
+          headers: { 'Accept': 'text/plain' },
+        });
+        if (!response.ok) return null;
+        const content = await response.text();
+        const filename = response.headers.get('X-Filename');
+        const fullPath = response.headers.get('X-Full-Path');
+        if (!filename || !fullPath) return null;
+        const id = this.generateFileId(fullPath);
+        this.filePaths.set(id, fullPath);
+        return { content, filename, fullPath, id };
       }
 
-      // Generate a consistent file ID based on the path using our helper
-      const id = this.generateFileId(fullPath);
-      
-      // Store the original full path in our map
-      this.filePaths.set(id, fullPath);
-      
-      console.log('Stored file path:', { id, path: fullPath });
-      
-      return { content, filename, fullPath, id };
+      // Read the file content via backend
+      const fs = await import('fs').catch(() => null);
+      let content: string;
+      try {
+        // Try reading via backend read-text endpoint
+        const readRes = await fetch(`${this.API_URL}/read-text`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: filePath }),
+        });
+        content = await readRes.text();
+      } catch {
+        content = '';
+      }
+
+      const filename = filePath.split(/[/\\]/).pop() || filePath;
+      const id = this.generateFileId(filePath);
+      this.filePaths.set(id, filePath);
+
+      return { content, filename, fullPath: filePath, id };
     } catch (error) {
       console.error('Error opening file:', error);
       return null;

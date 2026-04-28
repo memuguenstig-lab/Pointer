@@ -934,3 +934,15 @@ ipcMain.handle('open-external', async (event, url) => {
     return { success: false, error: error.message };
   }
 });
+
+// Native file/folder dialog
+ipcMain.handle('show-open-dialog', async (event, options) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  try {
+    const result = await dialog.showOpenDialog(win, options);
+    return result; // { canceled, filePaths }
+  } catch (error) {
+    console.error('Error showing open dialog:', error);
+    return { canceled: true, filePaths: [] };
+  }
+});

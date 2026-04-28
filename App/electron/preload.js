@@ -41,6 +41,10 @@ contextBridge.exposeInMainWorld(
     // External link handling
     openExternal: (url) => {
       return ipcRenderer.invoke('open-external', url);
-    }
+    },
+    // Native file/folder dialogs
+    showOpenDialog: (options) => {
+      return ipcRenderer.invoke('show-open-dialog', options);
+    },
   }
 );
