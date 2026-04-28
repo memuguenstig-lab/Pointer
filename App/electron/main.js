@@ -800,41 +800,29 @@ ipcMain.handle('window-is-maximized', (event) => {
 });
 
 ipcMain.on('discord-settings-update', (event, settings) => {
-  // Update the global settings object
   discordRpcSettings = { ...discordRpcSettings, ...settings };
   
-  // Save the updated settings to file
   try {
     const userDataPath = app.getPath('userData');
     const settingsPath = path.join(userDataPath, 'settings', 'discord_rpc.json');
-    
-    // Create the settings directory if it doesn't exist
     const settingsDir = path.dirname(settingsPath);
-    if (!fs.existsSync(settingsDir)) {
-      fs.mkdirSync(settingsDir, { recursive: true });
-    }
-    
-    // Save the settings to file
+    if (!fs.existsSync(settingsDir)) fs.mkdirSync(settingsDir, { recursive: true });
     fs.writeFileSync(settingsPath, JSON.stringify(discordRpcSettings, null, 2));
-    console.log('Discord RPC settings saved to:', settingsPath);
   } catch (error) {
     console.error('Error saving Discord RPC settings:', error);
   }
   
-  // Reinitialize Discord RPC if enabled status changed
   if (settings.enabled !== undefined) {
     if (settings.enabled) {
-      if (!rpc) {
-        initDiscordRPC();
-      }
+      if (!rpc) initDiscordRPC();
     } else {
       if (rpc) {
-        rpc.destroy().catch(console.error);
+        // Safe destroy — ignore errors if socket already closed
+        try { rpc.destroy(); } catch (_) {}
         rpc = null;
       }
     }
   } else {
-    // Just update the presence with new settings
     updateRichPresence();
   }
 });
@@ -865,11 +853,9 @@ ipcMain.handle('update-discord-rpc-settings', async (event, newSettings) => {
     if (rpc && discordRpcSettings.enabled) {
       updateRichPresence();
     } else if (!discordRpcSettings.enabled && rpc) {
-      // Clear presence if disabled
-      rpc.clearActivity().catch(console.error);
-      console.log('Discord RPC disabled and activity cleared');
+      // Clear presence if disabled — safe call
+      try { rpc.clearActivity(); } catch (_) {}
     } else if (discordRpcSettings.enabled && !rpc) {
-      // Re-initialize if it was disabled before
       initDiscordRPC();
     }
     
@@ -882,19 +868,7 @@ ipcMain.handle('update-discord-rpc-settings', async (event, newSettings) => {
 
 // Get Discord Rich Presence settings
 ipcMain.handle('get-discord-rpc-settings', async () => {
-  // Force reload settings from disk to ensure we have the latest
   await loadSettings();
-  
-  console.log('Responding to get-discord-rpc-settings request with:', {
-    enabled: discordRpcSettings.enabled,
-    details: discordRpcSettings.details,
-    state: discordRpcSettings.state,
-    button1Label: discordRpcSettings.button1Label,
-    button1Url: discordRpcSettings.button1Url,
-    button2Label: discordRpcSettings.button2Label,
-    button2Url: discordRpcSettings.button2Url
-  });
-  
   return discordRpcSettings;
 });
 

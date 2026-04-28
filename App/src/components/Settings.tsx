@@ -1271,23 +1271,19 @@ export function Settings({ isVisible, onClose, initialSettings }: SettingsProps)
   useEffect(() => {
     const loadPasswordVisibility = async () => {
       try {
-        const response = await fetch('/api/settings');
+        const response = await fetch('http://localhost:23816/api/settings');
         if (response.ok) {
           const data = await response.json();
-          setShowPassword(data.show_password);
-          // Update the API key in the model config if it exists
+          setShowPassword(data.show_password ?? false);
           if (data.openai_api_key) {
             setModelConfigs(prev => ({
               ...prev,
-              [activeTab]: {
-                ...prev[activeTab],
-                apiKey: data.openai_api_key
-              }
+              [activeTab]: { ...prev[activeTab], apiKey: data.openai_api_key }
             }));
           }
         }
-      } catch (error) {
-        console.error('Error loading settings:', error);
+      } catch {
+        // Backend not available — ignore silently
       }
     };
     loadPasswordVisibility();
@@ -1379,25 +1375,17 @@ export function Settings({ isVisible, onClose, initialSettings }: SettingsProps)
     const newVisibility = !showPassword;
     setShowPassword(newVisibility);
     try {
-      const response = await fetch('/api/settings', {
+      await fetch('http://localhost:23816/api/settings', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${modelConfigs[activeTab].apiKey || ''}`
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           openai_api_key: modelConfigs[activeTab].apiKey || '',
           openai_api_endpoint: modelConfigs[activeTab].apiEndpoint || '',
           show_password: newVisibility,
         }),
       });
-      if (!response.ok) {
-        throw new Error('Failed to save settings');
-      }
-    } catch (error) {
-      console.error('Error saving settings:', error);
-      // Revert the visibility change if save failed
-      setShowPassword(!newVisibility);
+    } catch {
+      // Ignore — not critical
     }
   };
 
