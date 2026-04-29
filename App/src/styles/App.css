@@ -1103,3 +1103,251 @@ button:active:not(:disabled) {
   --terminal-white:         #b0b0b0;
   --terminal-bright-white:  #ffffff;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   THEME ANIMATION SYSTEM
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Default animation variables ── */
+:root {
+  --transition-speed: 0.15s;
+  --transition-easing: ease;
+  --glow-color: transparent;
+  --glow-intensity: 0 0 0 0;
+  --focus-glow: none;
+  --accent-glow: none;
+  --animations-enabled: 1;
+  --scanlines-opacity: 0.04;
+  --neon-pulse-color: #ff00ff;
+  --backdrop-blur: none;
+  --glass-bg: transparent;
+  --glass-border: none;
+  --titlebar-gradient: none;
+  --statusbar-gradient: none;
+  --activity-bar-gradient: none;
+  --sidebar-gradient: none;
+  --accent-gradient: none;
+  --chat-user-bubble-gradient: none;
+}
+
+/* ── Respect animations-enabled flag ── */
+html[style*="--animations-enabled: 0"] * {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* ── Apply gradients when set ── */
+.titlebar {
+  background: var(--titlebar-gradient, var(--titlebar-bg, var(--bg-primary)));
+}
+.statusbar {
+  background: var(--statusbar-gradient, var(--statusbar-bg, var(--bg-primary)));
+}
+.activity-bar {
+  background: var(--activity-bar-gradient, var(--activity-bar-bg, var(--bg-primary)));
+}
+
+/* ── Glassmorphism panels ── */
+html.theme-glassmorphism .panel,
+html.theme-glassmorphism .sidebar,
+html.theme-glassmorphism .modal-content {
+  background: var(--glass-bg) !important;
+  backdrop-filter: var(--backdrop-blur);
+  -webkit-backdrop-filter: var(--backdrop-blur);
+  border: var(--glass-border) !important;
+}
+
+/* ── Smooth transitions on interactive elements ── */
+button, a, input, .file-item, .tab-item, .sidebar-item {
+  transition:
+    background var(--transition-speed) var(--transition-easing),
+    color var(--transition-speed) var(--transition-easing),
+    border-color var(--transition-speed) var(--transition-easing),
+    box-shadow var(--transition-speed) var(--transition-easing),
+    opacity var(--transition-speed) var(--transition-easing);
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   KEYFRAMES
+   ════════════════════════════════════════════════════════════════════════════ */
+
+@keyframes neon-pulse {
+  0%, 100% { text-shadow: 0 0 4px var(--neon-pulse-color), 0 0 10px var(--neon-pulse-color); opacity: 1; }
+  50%       { text-shadow: 0 0 2px var(--neon-pulse-color), 0 0 20px var(--neon-pulse-color), 0 0 40px var(--neon-pulse-color); opacity: 0.9; }
+}
+
+@keyframes neon-border-pulse {
+  0%, 100% { box-shadow: 0 0 4px var(--neon-pulse-color), inset 0 0 4px rgba(0,0,0,0.2); }
+  50%       { box-shadow: 0 0 12px var(--neon-pulse-color), 0 0 24px var(--neon-pulse-color), inset 0 0 4px rgba(0,0,0,0.2); }
+}
+
+@keyframes aurora-shift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes scanline-scroll {
+  0%   { transform: translateY(0); }
+  100% { transform: translateY(4px); }
+}
+
+@keyframes starfield-drift {
+  from { transform: translateY(0px); }
+  to   { transform: translateY(-2000px); }
+}
+
+@keyframes matrix-char-fall {
+  0%   { opacity: 0; transform: translateY(-20px); }
+  10%  { opacity: 1; }
+  90%  { opacity: 0.8; }
+  100% { opacity: 0; transform: translateY(100vh); }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: var(--accent-glow, none); }
+  50%       { box-shadow: var(--glow-intensity, 0 0 0 0) var(--glow-color, transparent); }
+}
+
+@keyframes flicker {
+  0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% { opacity: 1; }
+  20%, 24%, 55% { opacity: 0.6; }
+}
+
+@keyframes crt-flicker {
+  0%   { opacity: 0.97; }
+  5%   { opacity: 0.95; }
+  10%  { opacity: 0.97; }
+  15%  { opacity: 0.94; }
+  20%  { opacity: 0.98; }
+  50%  { opacity: 0.96; }
+  80%  { opacity: 0.97; }
+  100% { opacity: 0.98; }
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   PRESET: SCANLINES  (CRT / retro effect)
+   ════════════════════════════════════════════════════════════════════════════ */
+html.theme-scanlines::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 99999;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, var(--scanlines-opacity, 0.04)) 2px,
+    rgba(0, 0, 0, var(--scanlines-opacity, 0.04)) 4px
+  );
+  animation: scanline-scroll 0.1s linear infinite;
+}
+html.theme-scanlines {
+  animation: crt-flicker 8s infinite;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   PRESET: NEON-PULSE  (Cyberpunk / Synthwave)
+   ════════════════════════════════════════════════════════════════════════════ */
+html.theme-neon-pulse .titlebar,
+html.theme-neon-pulse .statusbar {
+  animation: neon-border-pulse 3s ease-in-out infinite;
+}
+html.theme-neon-pulse button:focus,
+html.theme-neon-pulse input:focus,
+html.theme-neon-pulse textarea:focus {
+  box-shadow: 0 0 0 2px var(--neon-pulse-color), 0 0 12px var(--neon-pulse-color) !important;
+  outline: none;
+}
+html.theme-neon-pulse .accent-text,
+html.theme-neon-pulse [data-accent] {
+  animation: neon-pulse 2.5s ease-in-out infinite;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   PRESET: AURORA  (Northern lights gradient background)
+   ════════════════════════════════════════════════════════════════════════════ */
+html.theme-aurora body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: linear-gradient(
+    135deg,
+    var(--aurora-color-1, rgba(0,255,128,0.04)),
+    var(--aurora-color-2, rgba(0,128,255,0.04)),
+    var(--aurora-color-3, rgba(128,0,255,0.04)),
+    var(--aurora-color-1, rgba(0,255,128,0.04))
+  );
+  background-size: 400% 400%;
+  animation: aurora-shift 12s ease infinite;
+}
+html.theme-aurora .app-container {
+  position: relative;
+  z-index: 1;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   PRESET: STARFIELD
+   ════════════════════════════════════════════════════════════════════════════ */
+html.theme-starfield body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.6) 0%, transparent 100%),
+    radial-gradient(1px 1px at 25% 40%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 40% 10%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 55% 60%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 70% 25%, rgba(255,255,255,0.6) 0%, transparent 100%),
+    radial-gradient(1px 1px at 80% 75%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 90% 45%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 15% 80%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 35% 90%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 60% 85%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(2px 2px at 5%  30%, rgba(255,255,255,0.2) 0%, transparent 100%),
+    radial-gradient(2px 2px at 45% 55%, rgba(255,255,255,0.15) 0%, transparent 100%),
+    radial-gradient(2px 2px at 75% 10%, rgba(255,255,255,0.2) 0%, transparent 100%);
+  animation: starfield-drift 120s linear infinite;
+}
+html.theme-starfield .app-container {
+  position: relative;
+  z-index: 1;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   PRESET: MATRIX-RAIN  (green glow + scanlines)
+   ════════════════════════════════════════════════════════════════════════════ */
+html.theme-matrix-rain::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 99999;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(0, 255, 65, 0.015) 3px,
+    rgba(0, 255, 65, 0.015) 4px
+  );
+}
+html.theme-matrix-rain * {
+  text-shadow: 0 0 6px rgba(0, 255, 65, 0.3);
+}
+html.theme-matrix-rain button:hover,
+html.theme-matrix-rain a:hover {
+  text-shadow: 0 0 10px rgba(0, 255, 65, 0.8), 0 0 20px rgba(0, 255, 65, 0.4);
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   GLOW EFFECTS  (used by neon/cyberpunk themes)
+   ════════════════════════════════════════════════════════════════════════════ */
+html[style*="--accent-glow"] .active-item,
+html[style*="--accent-glow"] [data-active="true"] {
+  box-shadow: var(--accent-glow);
+}

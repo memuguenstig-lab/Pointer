@@ -260,6 +260,54 @@ export interface ThemeSettings {
     
     // Custom file extension colors - key is the extension, value is the color
     customFileExtensions?: Record<string, string>;
+
+    // ── Animation & Effects ───────────────────────────────────────────────
+    /** Enable CSS animations/transitions for this theme */
+    animationsEnabled?: boolean;
+    /** Transition duration for hover/focus effects, e.g. "0.15s" */
+    transitionSpeed?: string;
+    /** Transition easing, e.g. "ease", "cubic-bezier(0.4,0,0.2,1)" */
+    transitionEasing?: string;
+
+    // Glow effects
+    /** Glow color for accent elements, e.g. "rgba(0,255,65,0.5)" */
+    glowColor?: string;
+    /** Glow intensity (box-shadow spread), e.g. "0 0 8px 2px" */
+    glowIntensity?: string;
+    /** Glow on focused inputs/buttons */
+    focusGlow?: string;
+    /** Glow on active sidebar items */
+    accentGlow?: string;
+
+    // Gradient backgrounds
+    /** Gradient for titlebar, e.g. "linear-gradient(135deg, #0d0d1a, #1a0d2e)" */
+    titlebarGradient?: string;
+    /** Gradient for statusbar */
+    statusbarGradient?: string;
+    /** Gradient for activity bar */
+    activityBarGradient?: string;
+    /** Gradient for sidebar background */
+    sidebarGradient?: string;
+    /** Gradient for chat user bubble */
+    chatUserBubbleGradient?: string;
+    /** Gradient for buttons/accent elements */
+    accentGradient?: string;
+
+    // Glassmorphism
+    /** Backdrop blur for panels, e.g. "blur(12px)" */
+    backdropBlur?: string;
+    /** Glass background for panels, e.g. "rgba(255,255,255,0.05)" */
+    glassBg?: string;
+    /** Glass border, e.g. "1px solid rgba(255,255,255,0.1)" */
+    glassBorder?: string;
+
+    // Special animated effects (applied via CSS class on <html>)
+    /** Name of a built-in animation preset: "scanlines" | "matrix-rain" | "neon-pulse" | "aurora" | "none" */
+    animationPreset?: 'scanlines' | 'matrix-rain' | 'neon-pulse' | 'aurora' | 'starfield' | 'none';
+    /** Scanline opacity (0–1) for scanlines preset */
+    scanlinesOpacity?: string;
+    /** Neon pulse color */
+    neonPulseColor?: string;
   };
   // Monaco Editor Colors
   editorColors: {

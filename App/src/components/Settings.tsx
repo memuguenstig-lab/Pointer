@@ -922,6 +922,38 @@ export function Settings({ isVisible, onClose, initialSettings }: SettingsProps)
       }
     });
 
+    // ── Animation & Effects ──────────────────────────────────────────────
+    set('--transition-speed',   c.transitionSpeed  || '0.15s');
+    set('--transition-easing',  c.transitionEasing || 'ease');
+    set('--glow-color',         c.glowColor);
+    set('--glow-intensity',     c.glowIntensity);
+    set('--focus-glow',         c.focusGlow);
+    set('--accent-glow',        c.accentGlow);
+
+    // Gradients
+    set('--titlebar-gradient',        c.titlebarGradient);
+    set('--statusbar-gradient',       c.statusbarGradient);
+    set('--activity-bar-gradient',    c.activityBarGradient);
+    set('--sidebar-gradient',         c.sidebarGradient);
+    set('--chat-user-bubble-gradient',c.chatUserBubbleGradient);
+    set('--accent-gradient',          c.accentGradient);
+
+    // Glassmorphism
+    set('--backdrop-blur', c.backdropBlur);
+    set('--glass-bg',      c.glassBg);
+    set('--glass-border',  c.glassBorder);
+
+    // Animation preset — toggle CSS classes on <html>
+    const html = document.documentElement;
+    const allPresets = ['theme-scanlines','theme-neon-pulse','theme-aurora','theme-starfield','theme-matrix-rain'];
+    allPresets.forEach(p => html.classList.remove(p));
+    if (c.animationPreset && c.animationPreset !== 'none') {
+      html.classList.add(`theme-${c.animationPreset}`);
+    }
+    if (c.scanlinesOpacity) root.style.setProperty('--scanlines-opacity', c.scanlinesOpacity);
+    if (c.neonPulseColor)   root.style.setProperty('--neon-pulse-color',  c.neonPulseColor);
+    root.style.setProperty('--animations-enabled', c.animationsEnabled === false ? '0' : '1');
+
     window.dispatchEvent(new Event('theme-changed'));
   };
 
