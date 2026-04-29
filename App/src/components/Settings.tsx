@@ -1526,9 +1526,9 @@ export function Settings({ isVisible, onClose, initialSettings }: SettingsProps)
       zIndex: 9999,
     }}>
       <div className="modal-content" style={{ 
-        width: '850px', 
+        width: '1100px', 
         height: '80vh',
-        maxWidth: '90vw',
+        maxWidth: '95vw',
         maxHeight: '90vh',
         background: 'var(--bg-primary)',
         borderRadius: '8px',
