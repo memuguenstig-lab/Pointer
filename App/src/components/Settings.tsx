@@ -923,25 +923,49 @@ export function Settings({ isVisible, onClose, initialSettings }: SettingsProps)
     });
 
     // ── Animation & Effects ──────────────────────────────────────────────
-    set('--transition-speed',   c.transitionSpeed  || '0.15s');
-    set('--transition-easing',  c.transitionEasing || 'ease');
-    set('--glow-color',         c.glowColor);
-    set('--glow-intensity',     c.glowIntensity);
-    set('--focus-glow',         c.focusGlow);
-    set('--accent-glow',        c.accentGlow);
+    // Always reset effect variables first so switching themes clears old values
+    const resetVar = (v: string, fallback: string) => root.style.setProperty(v, fallback);
+    resetVar('--transition-speed',            '0.15s');
+    resetVar('--transition-easing',           'ease');
+    resetVar('--glow-color',                  'transparent');
+    resetVar('--glow-intensity',              '0 0 0 0');
+    resetVar('--focus-glow',                  'none');
+    resetVar('--accent-glow',                 'none');
+    resetVar('--titlebar-gradient',           'none');
+    resetVar('--statusbar-gradient',          'none');
+    resetVar('--activity-bar-gradient',       'none');
+    resetVar('--sidebar-gradient',            'none');
+    resetVar('--chat-user-bubble-gradient',   'none');
+    resetVar('--accent-gradient',             'none');
+    resetVar('--backdrop-blur',               'none');
+    resetVar('--glass-bg',                    'transparent');
+    resetVar('--glass-border',                'none');
+    resetVar('--scanlines-opacity',           '0.04');
+    resetVar('--neon-pulse-color',            '#ffffff');
+    resetVar('--animations-enabled',          '1');
 
-    // Gradients
-    set('--titlebar-gradient',        c.titlebarGradient);
-    set('--statusbar-gradient',       c.statusbarGradient);
-    set('--activity-bar-gradient',    c.activityBarGradient);
-    set('--sidebar-gradient',         c.sidebarGradient);
-    set('--chat-user-bubble-gradient',c.chatUserBubbleGradient);
-    set('--accent-gradient',          c.accentGradient);
+    // Now apply theme-specific values
+    if (c.transitionSpeed)  root.style.setProperty('--transition-speed',  c.transitionSpeed);
+    if (c.transitionEasing) root.style.setProperty('--transition-easing', c.transitionEasing);
+    if (c.glowColor)        root.style.setProperty('--glow-color',        c.glowColor);
+    if (c.glowIntensity)    root.style.setProperty('--glow-intensity',    c.glowIntensity);
+    if (c.focusGlow)        root.style.setProperty('--focus-glow',        c.focusGlow);
+    if (c.accentGlow)       root.style.setProperty('--accent-glow',       c.accentGlow);
 
-    // Glassmorphism
-    set('--backdrop-blur', c.backdropBlur);
-    set('--glass-bg',      c.glassBg);
-    set('--glass-border',  c.glassBorder);
+    if (c.titlebarGradient)          root.style.setProperty('--titlebar-gradient',          c.titlebarGradient);
+    if (c.statusbarGradient)         root.style.setProperty('--statusbar-gradient',         c.statusbarGradient);
+    if (c.activityBarGradient)       root.style.setProperty('--activity-bar-gradient',      c.activityBarGradient);
+    if (c.sidebarGradient)           root.style.setProperty('--sidebar-gradient',           c.sidebarGradient);
+    if (c.chatUserBubbleGradient)    root.style.setProperty('--chat-user-bubble-gradient',  c.chatUserBubbleGradient);
+    if (c.accentGradient)            root.style.setProperty('--accent-gradient',            c.accentGradient);
+
+    if (c.backdropBlur) root.style.setProperty('--backdrop-blur', c.backdropBlur);
+    if (c.glassBg)      root.style.setProperty('--glass-bg',      c.glassBg);
+    if (c.glassBorder)  root.style.setProperty('--glass-border',  c.glassBorder);
+
+    if (c.scanlinesOpacity) root.style.setProperty('--scanlines-opacity', c.scanlinesOpacity);
+    if (c.neonPulseColor)   root.style.setProperty('--neon-pulse-color',  c.neonPulseColor);
+    if (c.animationsEnabled === false) root.style.setProperty('--animations-enabled', '0');
 
     // Animation preset — toggle CSS classes on <html>
     const html = document.documentElement;
@@ -949,10 +973,25 @@ export function Settings({ isVisible, onClose, initialSettings }: SettingsProps)
     allPresets.forEach(p => html.classList.remove(p));
     if (c.animationPreset && c.animationPreset !== 'none') {
       html.classList.add(`theme-${c.animationPreset}`);
+
+      // Set aurora colors derived from the theme's accent palette
+      if (c.animationPreset === 'aurora') {
+        const a1 = c.accentColor   || '#7aa2f7';
+        const a2 = c.accentHover   || '#bb9af7';
+        const a3 = c.terminalCyan  || c.successColor || '#2ac3de';
+        const toRgba = (hex: string, alpha: number) => {
+          const r = parseInt(hex.slice(1,3),16);
+          const g = parseInt(hex.slice(3,5),16);
+          const b = parseInt(hex.slice(5,7),16);
+          return `rgba(${r},${g},${b},${alpha})`;
+        };
+        try {
+          root.style.setProperty('--aurora-color-1', toRgba(a1, 0.06));
+          root.style.setProperty('--aurora-color-2', toRgba(a2, 0.05));
+          root.style.setProperty('--aurora-color-3', toRgba(a3, 0.04));
+        } catch(_) {}
+      }
     }
-    if (c.scanlinesOpacity) root.style.setProperty('--scanlines-opacity', c.scanlinesOpacity);
-    if (c.neonPulseColor)   root.style.setProperty('--neon-pulse-color',  c.neonPulseColor);
-    root.style.setProperty('--animations-enabled', c.animationsEnabled === false ? '0' : '1');
 
     window.dispatchEvent(new Event('theme-changed'));
   };

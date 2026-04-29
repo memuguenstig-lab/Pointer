@@ -1130,55 +1130,18 @@ button:active:not(:disabled) {
   --chat-user-bubble-gradient: none;
 }
 
-/* ── Respect animations-enabled flag ── */
-html[style*="--animations-enabled: 0"] * {
-  animation: none !important;
-  transition: none !important;
-}
-
-/* ── Apply gradients when set ── */
-.titlebar {
-  background: var(--titlebar-gradient, var(--titlebar-bg, var(--bg-primary)));
-}
-.statusbar {
-  background: var(--statusbar-gradient, var(--statusbar-bg, var(--bg-primary)));
-}
-.activity-bar {
-  background: var(--activity-bar-gradient, var(--activity-bar-bg, var(--bg-primary)));
-}
-
-/* ── Glassmorphism panels ── */
-html.theme-glassmorphism .panel,
-html.theme-glassmorphism .sidebar,
-html.theme-glassmorphism .modal-content {
-  background: var(--glass-bg) !important;
-  backdrop-filter: var(--backdrop-blur);
-  -webkit-backdrop-filter: var(--backdrop-blur);
-  border: var(--glass-border) !important;
-}
-
-/* ── Smooth transitions on interactive elements ── */
-button, a, input, .file-item, .tab-item, .sidebar-item {
-  transition:
-    background var(--transition-speed) var(--transition-easing),
-    color var(--transition-speed) var(--transition-easing),
-    border-color var(--transition-speed) var(--transition-easing),
-    box-shadow var(--transition-speed) var(--transition-easing),
-    opacity var(--transition-speed) var(--transition-easing);
-}
-
 /* ════════════════════════════════════════════════════════════════════════════
    KEYFRAMES
    ════════════════════════════════════════════════════════════════════════════ */
 
-@keyframes neon-pulse {
-  0%, 100% { text-shadow: 0 0 4px var(--neon-pulse-color), 0 0 10px var(--neon-pulse-color); opacity: 1; }
-  50%       { text-shadow: 0 0 2px var(--neon-pulse-color), 0 0 20px var(--neon-pulse-color), 0 0 40px var(--neon-pulse-color); opacity: 0.9; }
+@keyframes neon-border-pulse {
+  0%, 100% { box-shadow: 0 0 6px var(--neon-pulse-color), 0 0 2px var(--neon-pulse-color) inset; }
+  50%       { box-shadow: 0 0 18px var(--neon-pulse-color), 0 0 40px var(--neon-pulse-color), 0 0 4px var(--neon-pulse-color) inset; }
 }
 
-@keyframes neon-border-pulse {
-  0%, 100% { box-shadow: 0 0 4px var(--neon-pulse-color), inset 0 0 4px rgba(0,0,0,0.2); }
-  50%       { box-shadow: 0 0 12px var(--neon-pulse-color), 0 0 24px var(--neon-pulse-color), inset 0 0 4px rgba(0,0,0,0.2); }
+@keyframes neon-text-pulse {
+  0%, 100% { text-shadow: 0 0 4px var(--neon-pulse-color), 0 0 8px var(--neon-pulse-color); }
+  50%       { text-shadow: 0 0 8px var(--neon-pulse-color), 0 0 20px var(--neon-pulse-color), 0 0 40px var(--neon-pulse-color); }
 }
 
 @keyframes aurora-shift {
@@ -1188,30 +1151,8 @@ button, a, input, .file-item, .tab-item, .sidebar-item {
 }
 
 @keyframes scanline-scroll {
-  0%   { transform: translateY(0); }
-  100% { transform: translateY(4px); }
-}
-
-@keyframes starfield-drift {
-  from { transform: translateY(0px); }
-  to   { transform: translateY(-2000px); }
-}
-
-@keyframes matrix-char-fall {
-  0%   { opacity: 0; transform: translateY(-20px); }
-  10%  { opacity: 1; }
-  90%  { opacity: 0.8; }
-  100% { opacity: 0; transform: translateY(100vh); }
-}
-
-@keyframes glow-pulse {
-  0%, 100% { box-shadow: var(--accent-glow, none); }
-  50%       { box-shadow: var(--glow-intensity, 0 0 0 0) var(--glow-color, transparent); }
-}
-
-@keyframes flicker {
-  0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% { opacity: 1; }
-  20%, 24%, 55% { opacity: 0.6; }
+  0%   { background-position: 0 0; }
+  100% { background-position: 0 4px; }
 }
 
 @keyframes crt-flicker {
@@ -1225,49 +1166,50 @@ button, a, input, .file-item, .tab-item, .sidebar-item {
   100% { opacity: 0.98; }
 }
 
-/* ════════════════════════════════════════════════════════════════════════════
-   PRESET: SCANLINES  (CRT / retro effect)
-   ════════════════════════════════════════════════════════════════════════════ */
-html.theme-scanlines::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 99999;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(0, 0, 0, var(--scanlines-opacity, 0.04)) 2px,
-    rgba(0, 0, 0, var(--scanlines-opacity, 0.04)) 4px
-  );
-  animation: scanline-scroll 0.1s linear infinite;
-}
-html.theme-scanlines {
-  animation: crt-flicker 8s infinite;
+@keyframes starfield-drift {
+  from { background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0; }
+  to   { background-position: 0 2000px, 0 1500px, 0 1000px, 0 800px, 0 600px, 0 400px, 0 300px, 0 200px, 0 150px, 0 100px, 0 80px, 0 60px, 0 40px; }
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
-   PRESET: NEON-PULSE  (Cyberpunk / Synthwave)
+   PRESET: NEON-PULSE  (Cyberpunk / Synthwave / Hell)
    ════════════════════════════════════════════════════════════════════════════ */
-html.theme-neon-pulse .titlebar,
-html.theme-neon-pulse .statusbar {
+
+/* Titlebar gets a glowing bottom border */
+html.theme-neon-pulse .titlebar {
+  border-bottom: 1px solid var(--neon-pulse-color) !important;
+  box-shadow: 0 1px 12px var(--neon-pulse-color), 0 1px 4px var(--neon-pulse-color);
   animation: neon-border-pulse 3s ease-in-out infinite;
 }
-html.theme-neon-pulse button:focus,
-html.theme-neon-pulse input:focus,
-html.theme-neon-pulse textarea:focus {
-  box-shadow: 0 0 0 2px var(--neon-pulse-color), 0 0 12px var(--neon-pulse-color) !important;
-  outline: none;
+
+/* Accent-colored text elements pulse */
+html.theme-neon-pulse .titlebar-title,
+html.theme-neon-pulse [data-neon] {
+  animation: neon-text-pulse 3s ease-in-out infinite;
 }
-html.theme-neon-pulse .accent-text,
-html.theme-neon-pulse [data-accent] {
-  animation: neon-pulse 2.5s ease-in-out infinite;
+
+/* Focus glow on inputs */
+html.theme-neon-pulse input:focus,
+html.theme-neon-pulse textarea:focus,
+html.theme-neon-pulse button:focus-visible {
+  outline: none !important;
+  box-shadow: 0 0 0 2px var(--neon-pulse-color), 0 0 12px var(--neon-pulse-color) !important;
+}
+
+/* Sidebar active item glow */
+html.theme-neon-pulse [style*="accent-color"],
+html.theme-neon-pulse [style*="accentColor"] {
+  text-shadow: 0 0 8px var(--neon-pulse-color);
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
-   PRESET: AURORA  (Northern lights gradient background)
+   PRESET: AURORA  (Northern lights — Tokyo Night, Nord, Night Owl, Ayu Dark)
    ════════════════════════════════════════════════════════════════════════════ */
+
+html.theme-aurora body {
+  position: relative;
+}
+
 html.theme-aurora body::before {
   content: '';
   position: fixed;
@@ -1276,22 +1218,26 @@ html.theme-aurora body::before {
   z-index: 0;
   background: linear-gradient(
     135deg,
-    var(--aurora-color-1, rgba(0,255,128,0.04)),
-    var(--aurora-color-2, rgba(0,128,255,0.04)),
-    var(--aurora-color-3, rgba(128,0,255,0.04)),
-    var(--aurora-color-1, rgba(0,255,128,0.04))
+    var(--aurora-color-1, rgba(122,162,247,0.05)),
+    var(--aurora-color-2, rgba(187,154,247,0.05)),
+    var(--aurora-color-3, rgba(42,195,222,0.05)),
+    var(--aurora-color-1, rgba(122,162,247,0.05))
   );
   background-size: 400% 400%;
-  animation: aurora-shift 12s ease infinite;
+  animation: aurora-shift 14s ease infinite;
 }
+
+/* Make sure app content sits above the aurora */
+html.theme-aurora #root,
 html.theme-aurora .app-container {
   position: relative;
   z-index: 1;
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
-   PRESET: STARFIELD
+   PRESET: STARFIELD  (Deep Ocean, Moonlight)
    ════════════════════════════════════════════════════════════════════════════ */
+
 html.theme-starfield body::before {
   content: '';
   position: fixed;
@@ -1299,30 +1245,72 @@ html.theme-starfield body::before {
   pointer-events: none;
   z-index: 0;
   background-image:
-    radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.6) 0%, transparent 100%),
-    radial-gradient(1px 1px at 25% 40%, rgba(255,255,255,0.4) 0%, transparent 100%),
-    radial-gradient(1px 1px at 40% 10%, rgba(255,255,255,0.5) 0%, transparent 100%),
-    radial-gradient(1px 1px at 55% 60%, rgba(255,255,255,0.3) 0%, transparent 100%),
-    radial-gradient(1px 1px at 70% 25%, rgba(255,255,255,0.6) 0%, transparent 100%),
-    radial-gradient(1px 1px at 80% 75%, rgba(255,255,255,0.4) 0%, transparent 100%),
-    radial-gradient(1px 1px at 90% 45%, rgba(255,255,255,0.5) 0%, transparent 100%),
-    radial-gradient(1px 1px at 15% 80%, rgba(255,255,255,0.3) 0%, transparent 100%),
-    radial-gradient(1px 1px at 35% 90%, rgba(255,255,255,0.4) 0%, transparent 100%),
-    radial-gradient(1px 1px at 60% 85%, rgba(255,255,255,0.5) 0%, transparent 100%),
-    radial-gradient(2px 2px at 5%  30%, rgba(255,255,255,0.2) 0%, transparent 100%),
-    radial-gradient(2px 2px at 45% 55%, rgba(255,255,255,0.15) 0%, transparent 100%),
-    radial-gradient(2px 2px at 75% 10%, rgba(255,255,255,0.2) 0%, transparent 100%);
-  animation: starfield-drift 120s linear infinite;
+    radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.55) 0%, transparent 100%),
+    radial-gradient(1px 1px at 25% 40%, rgba(255,255,255,0.35) 0%, transparent 100%),
+    radial-gradient(1px 1px at 40% 10%, rgba(255,255,255,0.45) 0%, transparent 100%),
+    radial-gradient(1px 1px at 55% 60%, rgba(255,255,255,0.25) 0%, transparent 100%),
+    radial-gradient(1px 1px at 70% 25%, rgba(255,255,255,0.55) 0%, transparent 100%),
+    radial-gradient(1px 1px at 80% 75%, rgba(255,255,255,0.35) 0%, transparent 100%),
+    radial-gradient(1px 1px at 90% 45%, rgba(255,255,255,0.45) 0%, transparent 100%),
+    radial-gradient(1px 1px at 15% 80%, rgba(255,255,255,0.25) 0%, transparent 100%),
+    radial-gradient(1px 1px at 35% 90%, rgba(255,255,255,0.35) 0%, transparent 100%),
+    radial-gradient(1px 1px at 60% 85%, rgba(255,255,255,0.45) 0%, transparent 100%),
+    radial-gradient(2px 2px at 5%  30%, rgba(255,255,255,0.15) 0%, transparent 100%),
+    radial-gradient(2px 2px at 45% 55%, rgba(255,255,255,0.12) 0%, transparent 100%),
+    radial-gradient(2px 2px at 75% 10%, rgba(255,255,255,0.15) 0%, transparent 100%);
+  animation: starfield-drift 90s linear infinite;
 }
+
+html.theme-starfield #root,
 html.theme-starfield .app-container {
   position: relative;
   z-index: 1;
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
-   PRESET: MATRIX-RAIN  (green glow + scanlines)
+   PRESET: MATRIX-RAIN  (Matrix theme)
    ════════════════════════════════════════════════════════════════════════════ */
-html.theme-matrix-rain::after {
+
+/* Scanline overlay */
+html.theme-matrix-rain body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 99998;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    transparent 3px,
+    rgba(0, 255, 65, 0.018) 3px,
+    rgba(0, 255, 65, 0.018) 4px
+  );
+  animation: scanline-scroll 0.08s linear infinite;
+}
+
+/* Green glow on all text */
+html.theme-matrix-rain * {
+  text-shadow: 0 0 5px rgba(0, 255, 65, 0.25) !important;
+}
+
+/* Stronger glow on hover */
+html.theme-matrix-rain button:hover,
+html.theme-matrix-rain a:hover,
+html.theme-matrix-rain [role="button"]:hover {
+  text-shadow: 0 0 10px rgba(0, 255, 65, 0.9), 0 0 20px rgba(0, 255, 65, 0.5) !important;
+}
+
+/* Borders glow green */
+html.theme-matrix-rain .titlebar,
+html.theme-matrix-rain [style*="border"] {
+  box-shadow: 0 0 4px rgba(0, 255, 65, 0.2);
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   PRESET: SCANLINES  (CRT retro — can combine with others)
+   ════════════════════════════════════════════════════════════════════════════ */
+
+html.theme-scanlines body::after {
   content: '';
   position: fixed;
   inset: 0;
@@ -1330,24 +1318,33 @@ html.theme-matrix-rain::after {
   z-index: 99999;
   background: repeating-linear-gradient(
     0deg,
-    transparent,
-    transparent 3px,
-    rgba(0, 255, 65, 0.015) 3px,
-    rgba(0, 255, 65, 0.015) 4px
+    transparent 0px,
+    transparent 2px,
+    rgba(0, 0, 0, var(--scanlines-opacity, 0.04)) 2px,
+    rgba(0, 0, 0, var(--scanlines-opacity, 0.04)) 4px
   );
+  animation: scanline-scroll 0.12s linear infinite;
 }
-html.theme-matrix-rain * {
-  text-shadow: 0 0 6px rgba(0, 255, 65, 0.3);
-}
-html.theme-matrix-rain button:hover,
-html.theme-matrix-rain a:hover {
-  text-shadow: 0 0 10px rgba(0, 255, 65, 0.8), 0 0 20px rgba(0, 255, 65, 0.4);
+
+html.theme-scanlines {
+  animation: crt-flicker 10s ease-in-out infinite;
 }
 
 /* ════════════════════════════════════════════════════════════════════════════
-   GLOW EFFECTS  (used by neon/cyberpunk themes)
+   GRADIENT BACKGROUNDS  (applied via CSS vars set by theme)
    ════════════════════════════════════════════════════════════════════════════ */
-html[style*="--accent-glow"] .active-item,
-html[style*="--accent-glow"] [data-active="true"] {
-  box-shadow: var(--accent-glow);
+
+/* Titlebar gradient — only active when var is not 'none' */
+.titlebar:not([style]) {
+  background: var(--titlebar-gradient, var(--titlebar-bg, var(--bg-primary)));
+}
+
+/* Smooth transitions on interactive elements */
+button, a, input, select, textarea {
+  transition:
+    background-color var(--transition-speed, 0.15s) var(--transition-easing, ease),
+    color var(--transition-speed, 0.15s) var(--transition-easing, ease),
+    border-color var(--transition-speed, 0.15s) var(--transition-easing, ease),
+    box-shadow var(--transition-speed, 0.15s) var(--transition-easing, ease),
+    opacity var(--transition-speed, 0.15s) var(--transition-easing, ease);
 }
