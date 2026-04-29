@@ -46,7 +46,7 @@ const activeFileStyle = {
 
 const hoverFileStyle = {
   backgroundColor: 'var(--bg-hover)',
-  boxShadow: 'inset 2px 0 0 var(--border-color)',
+  boxShadow: 'inset 3px 0 0 var(--accent-color)',
 };
 
 const FileExplorerItem: React.FC<{
@@ -149,15 +149,18 @@ const FileExplorerItem: React.FC<{
           height: '22px',
           cursor: 'pointer',
           backgroundColor: item.id === currentFileId
-            ? 'var(--accent-color)'
+            ? 'color-mix(in srgb, var(--accent-color) 25%, transparent)'
             : isHovered ? 'var(--bg-hover)' : 'transparent',
-          color: item.id === currentFileId ? '#ffffff' : 'var(--text-primary)',
+          color: 'var(--text-primary)',
           fontSize: '13px',
           paddingRight: '8px',
           userSelect: 'none',
           whiteSpace: 'nowrap',
           overflow: 'hidden',
           borderRadius: '3px',
+          boxShadow: item.id === currentFileId
+            ? 'inset 3px 0 0 var(--accent-color)'
+            : isHovered ? 'inset 3px 0 0 var(--accent-color)' : 'none',
         }}
         onClick={() => {
           if (item.type === 'file') {
@@ -202,7 +205,7 @@ const FileExplorerItem: React.FC<{
           display: 'flex',
           alignItems: 'center',
           flexShrink: 0,
-          color: item.id === currentFileId ? '#ffffff' : isHovered ? 'var(--text-primary)' : 'var(--text-secondary)',
+          color: item.id === currentFileId ? 'var(--accent-color)' : isHovered ? 'var(--text-primary)' : 'var(--text-secondary)',
         }}>
           {item.type === 'directory' ? (
             <FolderIcon isOpen={isExpanded} />
@@ -212,7 +215,7 @@ const FileExplorerItem: React.FC<{
         </div>
         <span style={{
           marginLeft: '4px',
-          color: item.id === currentFileId ? '#ffffff' : item.type === 'directory' ? 'var(--text-primary)' : 'var(--text-primary)',
+          color: item.id === currentFileId ? 'var(--text-primary)' : item.type === 'directory' ? 'var(--text-primary)' : 'var(--text-primary)',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',
@@ -438,13 +441,104 @@ const handleDelete = (item: FileSystemItem, onDeleteItem: (item: FileSystemItem)
 
 const getFileColor = (filename: string): string => {
   const ext = filename.split('.').pop()?.toLowerCase() || '';
-  
+  const base = filename.toLowerCase();
+
+  // Custom theme extensions take priority
   const customExtensions = window.appSettings?.theme?.customColors?.customFileExtensions || {};
-  
-  if (ext && customExtensions[ext]) {
-    return customExtensions[ext];
-  }
-  
+  if (ext && customExtensions[ext]) return customExtensions[ext];
+
+  // Built-in color map
+  const colors: Record<string, string> = {
+    // JavaScript / TypeScript
+    js: '#f1c40f', jsx: '#f1c40f', mjs: '#f1c40f', cjs: '#f1c40f',
+    ts: '#3178c6', tsx: '#3178c6', dts: '#3178c6',
+    // Web
+    html: '#e34c26', htm: '#e34c26',
+    css: '#1572b6', scss: '#c6538c', sass: '#c6538c', less: '#1d365d',
+    // Data
+    json: '#f1c40f', jsonc: '#f1c40f', json5: '#f1c40f',
+    yaml: '#cb171e', yml: '#cb171e',
+    toml: '#9c4221', ini: '#6d8086', env: '#ecd53f',
+    xml: '#e34c26', svg: '#ff9900',
+    csv: '#89e051', tsv: '#89e051',
+    // Docs
+    md: '#519aba', mdx: '#519aba', markdown: '#519aba',
+    txt: '#bbbbbb', rst: '#bbbbbb',
+    pdf: '#ff0000',
+    // Config
+    dockerfile: '#384d54', docker: '#384d54',
+    gitignore: '#f1502f', gitattributes: '#f1502f',
+    editorconfig: '#fff2a7', prettierrc: '#56b3b4', eslintrc: '#4b32c3',
+    babelrc: '#f5da55', nvmrc: '#89e051',
+    // Build
+    makefile: '#427819', cmake: '#064f8c',
+    gradle: '#02303a', 'build.gradle': '#02303a',
+    lock: '#bbbbbb', 'package.json': '#cb3837', 'package-lock.json': '#cb3837',
+    // Languages
+    py: '#3776ab', pyw: '#3776ab', ipynb: '#f37626',
+    rb: '#cc342d', rake: '#cc342d',
+    php: '#777bb4',
+    java: '#ed8b00', kt: '#7f52ff', kts: '#7f52ff',
+    cs: '#239120', vb: '#945db7',
+    c: '#a8b9cc', h: '#a8b9cc',
+    cpp: '#00599c', cc: '#00599c', cxx: '#00599c', hpp: '#00599c',
+    go: '#00add8',
+    rs: '#dea584',
+    swift: '#fa7343',
+    dart: '#0175c2',
+    lua: '#000080',
+    r: '#198ce7',
+    jl: '#9558b2',
+    ex: '#6e4a7e', exs: '#6e4a7e',
+    elm: '#60b5cc',
+    hs: '#5e5086', lhs: '#5e5086',
+    clj: '#5881d8', cljs: '#5881d8',
+    scala: '#dc322f',
+    groovy: '#4298b8',
+    pl: '#0298c3', pm: '#0298c3',
+    sh: '#89e051', bash: '#89e051', zsh: '#89e051', fish: '#89e051',
+    ps1: '#012456', psm1: '#012456', psd1: '#012456',
+    bat: '#c1f12e', cmd: '#c1f12e',
+    // Vue / Svelte / Astro
+    vue: '#4fc08d', svelte: '#ff3e00', astro: '#ff5a03',
+    // Images
+    png: '#a074c4', jpg: '#a074c4', jpeg: '#a074c4',
+    gif: '#a074c4', webp: '#a074c4', ico: '#a074c4',
+    bmp: '#a074c4', tiff: '#a074c4', tif: '#a074c4',
+    psd: '#31a8ff', ai: '#ff9a00', sketch: '#f7b500',
+    // Fonts
+    ttf: '#d0bf91', otf: '#d0bf91', woff: '#d0bf91', woff2: '#d0bf91',
+    // Archives
+    zip: '#ffe066', rar: '#ffe066', '7z': '#ffe066',
+    tar: '#ffe066', gz: '#ffe066', bz2: '#ffe066', xz: '#ffe066',
+    // Office
+    doc: '#2b579a', docx: '#2b579a',
+    xls: '#217346', xlsx: '#217346',
+    ppt: '#d24726', pptx: '#d24726',
+    // DB
+    sql: '#e38c00', db: '#e38c00', sqlite: '#e38c00', sqlite3: '#e38c00',
+    // Video / Audio
+    mp4: '#ff6b6b', mov: '#ff6b6b', avi: '#ff6b6b', mkv: '#ff6b6b',
+    mp3: '#ff6b6b', wav: '#ff6b6b', ogg: '#ff6b6b', flac: '#ff6b6b',
+    // Misc
+    log: '#bbbbbb', diff: '#f8c555', patch: '#f8c555',
+    cert: '#ecd53f', pem: '#ecd53f', key: '#ecd53f',
+    wasm: '#654ff0',
+  };
+
+  // Special filenames
+  const specialNames: Record<string, string> = {
+    'readme.md': '#519aba', 'readme': '#519aba',
+    'license': '#d0bf91', 'licence': '#d0bf91',
+    'changelog': '#87ceeb', 'changelog.md': '#87ceeb',
+    'dockerfile': '#384d54',
+    'makefile': '#427819',
+    '.gitignore': '#f1502f', '.gitattributes': '#f1502f',
+    '.env': '#ecd53f', '.env.local': '#ecd53f', '.env.example': '#ecd53f',
+  };
+
+  if (specialNames[base]) return specialNames[base];
+  if (ext && colors[ext]) return colors[ext];
   return 'var(--explorer-file-fg, #CCCCCC)';
 };
 
@@ -728,13 +822,17 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
             display: 'flex',
             alignItems: 'center',
             height: '24px',
-            color: isSelected ? '#ffffff' : 'var(--text-primary)',
+            color: isSelected ? 'var(--text-primary)' : 'var(--text-primary)',
             userSelect: 'none',
             fontSize: '13px',
             position: 'relative',
             borderBottom: '1px solid var(--border-subtle)',
             transition: 'background 0.15s ease, padding-left 0.15s ease, box-shadow 0.15s ease',
-            ...(isSelected ? { ...activeFileStyle, backgroundColor: 'var(--accent-color)', borderLeft: 'none', borderRadius: '3px' } : {}),
+            ...(isSelected ? {
+              backgroundColor: 'color-mix(in srgb, var(--accent-color) 25%, transparent)',
+              boxShadow: 'inset 3px 0 0 var(--accent-color)',
+              borderRadius: '3px',
+            } : {}),
             ...(isHovered && !isSelected ? hoverFileStyle : {}),
           }}
         >
@@ -769,7 +867,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
             alignItems: 'center',
             flexShrink: 0,
             color: isSelected 
-              ? '#ffffff' 
+              ? 'var(--accent-color)' 
               : item.type === 'directory' 
                 ? isExpanded
                   ? 'var(--explorer-folder-expanded-fg, #C8C8C8)'
@@ -785,7 +883,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
           <span style={{
             marginLeft: '4px',
             color: isSelected 
-              ? '#ffffff' 
+              ? 'var(--text-primary)' 
               : item.type === 'directory' 
                 ? isExpanded
                   ? 'var(--explorer-folder-expanded-fg, #C8C8C8)'
