@@ -829,25 +829,99 @@ export function Settings({ isVisible, onClose, initialSettings }: SettingsProps)
       colors: processedEditorColors
     });
     monaco.editor.setTheme('custom-theme');
-    Object.entries(themeSettings.customColors).forEach(([key, value]) => {
+
+    const root = document.documentElement;
+    const c = themeSettings.customColors;
+
+    // Apply all string customColors as CSS variables (camelCase → kebab-case)
+    Object.entries(c).forEach(([key, value]) => {
       if (value && typeof value === 'string') {
         const cssVarName = `--${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`;
-        document.documentElement.style.setProperty(cssVarName, value);
+        root.style.setProperty(cssVarName, value);
       }
     });
 
-    // Derive terminal colors from the active theme's accent/bg colors
-    const bg = themeSettings.customColors.bgPrimary || '#141414';
-    const fg = themeSettings.customColors.textPrimary || '#cccccc';
-    const accent = themeSettings.customColors.accentColor || '#58a6ff';
-    const err = themeSettings.customColors.errorColor || '#f85149';
-    // Only override if advanced settings don't have explicit terminal colors
-    const root = document.documentElement;
-    if (!advanced.terminalBg)      root.style.setProperty('--terminal-bg',      bg);
-    if (!advanced.terminalFg)      root.style.setProperty('--terminal-fg',      fg);
-    if (!advanced.terminalCursor)  root.style.setProperty('--terminal-cursor',  accent);
-    if (!advanced.terminalBlue)    root.style.setProperty('--terminal-blue',    accent);
-    if (!advanced.terminalRed)     root.style.setProperty('--terminal-red',     err);
+    // Explicit mappings for new grouped fields
+    const set = (v: string, val: string | undefined) => { if (val) root.style.setProperty(v, val); };
+
+    // UI Shape
+    set('--border-radius',    c.borderRadius);
+    set('--border-radius-lg', c.borderRadiusLg);
+    set('--shadow-color',     c.shadowColor);
+    set('--shadow-sm',        c.shadowSm);
+    set('--shadow-md',        c.shadowMd);
+    set('--shadow-lg',        c.shadowLg);
+
+    // Typography
+    set('--font-ui',       c.fontUi);
+    set('--font-mono',     c.fontMono);
+    set('--font-size-ui',  c.fontSizeUi);
+
+    // Scrollbar
+    set('--scrollbar-width',       c.scrollbarWidth);
+    set('--scrollbar-thumb',       c.scrollbarThumb);
+    set('--scrollbar-thumb-hover', c.scrollbarThumbHover);
+    set('--scrollbar-track',       c.scrollbarTrack);
+
+    // Chat
+    set('--chat-bg',               c.chatBg);
+    set('--chat-user-bubble-bg',   c.chatUserBubbleBg);
+    set('--chat-user-bubble-fg',   c.chatUserBubbleFg);
+    set('--chat-ai-bubble-bg',     c.chatAiBubbleBg);
+    set('--chat-ai-bubble-fg',     c.chatAiBubbleFg);
+    set('--chat-input-bg',         c.chatInputBg);
+    set('--chat-input-border',     c.chatInputBorder);
+    set('--chat-code-block-bg',    c.chatCodeBlockBg);
+
+    // Diff
+    set('--diff-added-bg',       c.diffAddedBg);
+    set('--diff-removed-bg',     c.diffRemovedBg);
+    set('--diff-modified-bg',    c.diffModifiedBg);
+    set('--diff-added-gutter',   c.diffAddedGutter);
+    set('--diff-removed-gutter', c.diffRemovedGutter);
+    set('--diff-modified-gutter',c.diffModifiedGutter);
+
+    // Terminal — derive from theme if not explicitly set
+    const bg     = c.bgPrimary     || '#141414';
+    const fg     = c.textPrimary   || '#cccccc';
+    const accent = c.accentColor   || '#58a6ff';
+    const err    = c.errorColor    || '#f85149';
+
+    const termMap: [string, keyof typeof c][] = [
+      ['--terminal-bg',             'terminalBg'],
+      ['--terminal-fg',             'terminalFg'],
+      ['--terminal-cursor',         'terminalCursor'],
+      ['--terminal-black',          'terminalBlack'],
+      ['--terminal-bright-black',   'terminalBrightBlack'],
+      ['--terminal-red',            'terminalRed'],
+      ['--terminal-bright-red',     'terminalBrightRed'],
+      ['--terminal-green',          'terminalGreen'],
+      ['--terminal-bright-green',   'terminalBrightGreen'],
+      ['--terminal-yellow',         'terminalYellow'],
+      ['--terminal-bright-yellow',  'terminalBrightYellow'],
+      ['--terminal-blue',           'terminalBlue'],
+      ['--terminal-bright-blue',    'terminalBrightBlue'],
+      ['--terminal-magenta',        'terminalMagenta'],
+      ['--terminal-bright-magenta', 'terminalBrightMagenta'],
+      ['--terminal-cyan',           'terminalCyan'],
+      ['--terminal-bright-cyan',    'terminalBrightCyan'],
+      ['--terminal-white',          'terminalWhite'],
+      ['--terminal-bright-white',   'terminalBrightWhite'],
+    ];
+    termMap.forEach(([cssVar, key]) => {
+      const val = c[key] as string | undefined;
+      if (val) {
+        root.style.setProperty(cssVar, val);
+      } else {
+        // Derive sensible defaults from theme colors
+        if (cssVar === '--terminal-bg')     root.style.setProperty(cssVar, bg);
+        if (cssVar === '--terminal-fg')     root.style.setProperty(cssVar, fg);
+        if (cssVar === '--terminal-cursor') root.style.setProperty(cssVar, accent);
+        if (cssVar === '--terminal-blue')   root.style.setProperty(cssVar, accent);
+        if (cssVar === '--terminal-red')    root.style.setProperty(cssVar, err);
+      }
+    });
+
     window.dispatchEvent(new Event('theme-changed'));
   };
 
@@ -3080,6 +3154,150 @@ export function Settings({ isVisible, onClose, initialSettings }: SettingsProps)
                         </button>
                       </div>
                         </div>
+
+                    {/* ── Terminal Colors ── */}
+                    <CollapsibleSection title="Terminal Colors" defaultOpen={false}>
+                      <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
+                        Full 16-color ANSI palette for the integrated terminal. Leave blank to auto-derive from theme.
+                      </p>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                        <div>
+                          <ColorInput label="Background"    value={themeSettings.customColors.terminalBg || ''} onChange={v => handleCustomColorChange('terminalBg', v)} variable="--terminal-bg" />
+                          <ColorInput label="Foreground"    value={themeSettings.customColors.terminalFg || ''} onChange={v => handleCustomColorChange('terminalFg', v)} variable="--terminal-fg" />
+                          <ColorInput label="Cursor"        value={themeSettings.customColors.terminalCursor || ''} onChange={v => handleCustomColorChange('terminalCursor', v)} variable="--terminal-cursor" />
+                          <ColorInput label="Black"         value={themeSettings.customColors.terminalBlack || ''} onChange={v => handleCustomColorChange('terminalBlack', v)} variable="--terminal-black" />
+                          <ColorInput label="Bright Black"  value={themeSettings.customColors.terminalBrightBlack || ''} onChange={v => handleCustomColorChange('terminalBrightBlack', v)} variable="--terminal-bright-black" />
+                          <ColorInput label="Red"           value={themeSettings.customColors.terminalRed || ''} onChange={v => handleCustomColorChange('terminalRed', v)} variable="--terminal-red" />
+                          <ColorInput label="Bright Red"    value={themeSettings.customColors.terminalBrightRed || ''} onChange={v => handleCustomColorChange('terminalBrightRed', v)} variable="--terminal-bright-red" />
+                          <ColorInput label="Green"         value={themeSettings.customColors.terminalGreen || ''} onChange={v => handleCustomColorChange('terminalGreen', v)} variable="--terminal-green" />
+                          <ColorInput label="Bright Green"  value={themeSettings.customColors.terminalBrightGreen || ''} onChange={v => handleCustomColorChange('terminalBrightGreen', v)} variable="--terminal-bright-green" />
+                        </div>
+                        <div>
+                          <ColorInput label="Yellow"         value={themeSettings.customColors.terminalYellow || ''} onChange={v => handleCustomColorChange('terminalYellow', v)} variable="--terminal-yellow" />
+                          <ColorInput label="Bright Yellow"  value={themeSettings.customColors.terminalBrightYellow || ''} onChange={v => handleCustomColorChange('terminalBrightYellow', v)} variable="--terminal-bright-yellow" />
+                          <ColorInput label="Blue"           value={themeSettings.customColors.terminalBlue || ''} onChange={v => handleCustomColorChange('terminalBlue', v)} variable="--terminal-blue" />
+                          <ColorInput label="Bright Blue"    value={themeSettings.customColors.terminalBrightBlue || ''} onChange={v => handleCustomColorChange('terminalBrightBlue', v)} variable="--terminal-bright-blue" />
+                          <ColorInput label="Magenta"        value={themeSettings.customColors.terminalMagenta || ''} onChange={v => handleCustomColorChange('terminalMagenta', v)} variable="--terminal-magenta" />
+                          <ColorInput label="Bright Magenta" value={themeSettings.customColors.terminalBrightMagenta || ''} onChange={v => handleCustomColorChange('terminalBrightMagenta', v)} variable="--terminal-bright-magenta" />
+                          <ColorInput label="Cyan"           value={themeSettings.customColors.terminalCyan || ''} onChange={v => handleCustomColorChange('terminalCyan', v)} variable="--terminal-cyan" />
+                          <ColorInput label="Bright Cyan"    value={themeSettings.customColors.terminalBrightCyan || ''} onChange={v => handleCustomColorChange('terminalBrightCyan', v)} variable="--terminal-bright-cyan" />
+                          <ColorInput label="White"          value={themeSettings.customColors.terminalWhite || ''} onChange={v => handleCustomColorChange('terminalWhite', v)} variable="--terminal-white" />
+                          <ColorInput label="Bright White"   value={themeSettings.customColors.terminalBrightWhite || ''} onChange={v => handleCustomColorChange('terminalBrightWhite', v)} variable="--terminal-bright-white" />
+                        </div>
+                      </div>
+                    </CollapsibleSection>
+
+                    {/* ── Chat UI Colors ── */}
+                    <CollapsibleSection title="Chat UI Colors" defaultOpen={false}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                        <div>
+                          <ColorInput label="Chat Background"     value={themeSettings.customColors.chatBg || ''} onChange={v => handleCustomColorChange('chatBg', v)} variable="--chat-bg" />
+                          <ColorInput label="User Bubble BG"      value={themeSettings.customColors.chatUserBubbleBg || ''} onChange={v => handleCustomColorChange('chatUserBubbleBg', v)} variable="--chat-user-bubble-bg" />
+                          <ColorInput label="User Bubble Text"    value={themeSettings.customColors.chatUserBubbleFg || ''} onChange={v => handleCustomColorChange('chatUserBubbleFg', v)} variable="--chat-user-bubble-fg" />
+                          <ColorInput label="AI Bubble BG"        value={themeSettings.customColors.chatAiBubbleBg || ''} onChange={v => handleCustomColorChange('chatAiBubbleBg', v)} variable="--chat-ai-bubble-bg" />
+                        </div>
+                        <div>
+                          <ColorInput label="AI Bubble Text"      value={themeSettings.customColors.chatAiBubbleFg || ''} onChange={v => handleCustomColorChange('chatAiBubbleFg', v)} variable="--chat-ai-bubble-fg" />
+                          <ColorInput label="Input Background"    value={themeSettings.customColors.chatInputBg || ''} onChange={v => handleCustomColorChange('chatInputBg', v)} variable="--chat-input-bg" />
+                          <ColorInput label="Input Border"        value={themeSettings.customColors.chatInputBorder || ''} onChange={v => handleCustomColorChange('chatInputBorder', v)} variable="--chat-input-border" />
+                          <ColorInput label="Code Block BG"       value={themeSettings.customColors.chatCodeBlockBg || ''} onChange={v => handleCustomColorChange('chatCodeBlockBg', v)} variable="--chat-code-block-bg" />
+                        </div>
+                      </div>
+                    </CollapsibleSection>
+
+                    {/* ── Diff & Git Colors ── */}
+                    <CollapsibleSection title="Diff & Git Colors" defaultOpen={false}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                        <div>
+                          <ColorInput label="Added Background"    value={themeSettings.customColors.diffAddedBg || ''} onChange={v => handleCustomColorChange('diffAddedBg', v)} variable="--diff-added-bg" />
+                          <ColorInput label="Removed Background"  value={themeSettings.customColors.diffRemovedBg || ''} onChange={v => handleCustomColorChange('diffRemovedBg', v)} variable="--diff-removed-bg" />
+                          <ColorInput label="Modified Background" value={themeSettings.customColors.diffModifiedBg || ''} onChange={v => handleCustomColorChange('diffModifiedBg', v)} variable="--diff-modified-bg" />
+                        </div>
+                        <div>
+                          <ColorInput label="Added Gutter"        value={themeSettings.customColors.diffAddedGutter || ''} onChange={v => handleCustomColorChange('diffAddedGutter', v)} variable="--diff-added-gutter" />
+                          <ColorInput label="Removed Gutter"      value={themeSettings.customColors.diffRemovedGutter || ''} onChange={v => handleCustomColorChange('diffRemovedGutter', v)} variable="--diff-removed-gutter" />
+                          <ColorInput label="Modified Gutter"     value={themeSettings.customColors.diffModifiedGutter || ''} onChange={v => handleCustomColorChange('diffModifiedGutter', v)} variable="--diff-modified-gutter" />
+                        </div>
+                      </div>
+                    </CollapsibleSection>
+
+                    {/* ── UI Shape & Typography ── */}
+                    <CollapsibleSection title="UI Shape & Typography" defaultOpen={false}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                        <div>
+                          <h5 style={{ margin: '0 0 8px 0', fontSize: '13px' }}>Border Radius</h5>
+                          {[
+                            { label: 'Small (buttons, inputs)', key: 'borderRadius', cssVar: '--border-radius', placeholder: '4px' },
+                            { label: 'Large (modals, panels)', key: 'borderRadiusLg', cssVar: '--border-radius-lg', placeholder: '8px' },
+                          ].map(({ label, key, cssVar, placeholder }) => (
+                            <div key={key} style={{ marginBottom: '10px' }}>
+                              <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px', color: 'var(--text-secondary)' }}>{label}</label>
+                              <input
+                                type="text"
+                                placeholder={placeholder}
+                                value={(themeSettings.customColors as any)[key] || ''}
+                                onChange={e => handleCustomColorChange(key as any, e.target.value)}
+                                style={{ width: '100%', padding: '6px 8px', background: 'var(--bg-secondary)', border: '1px solid var(--border-primary)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '12px' }}
+                              />
+                            </div>
+                          ))}
+                          <h5 style={{ margin: '12px 0 8px 0', fontSize: '13px' }}>Scrollbar</h5>
+                          {[
+                            { label: 'Width', key: 'scrollbarWidth', placeholder: '8px' },
+                          ].map(({ label, key, placeholder }) => (
+                            <div key={key} style={{ marginBottom: '10px' }}>
+                              <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px', color: 'var(--text-secondary)' }}>{label}</label>
+                              <input
+                                type="text"
+                                placeholder={placeholder}
+                                value={(themeSettings.customColors as any)[key] || ''}
+                                onChange={e => handleCustomColorChange(key as any, e.target.value)}
+                                style={{ width: '100%', padding: '6px 8px', background: 'var(--bg-secondary)', border: '1px solid var(--border-primary)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '12px' }}
+                              />
+                            </div>
+                          ))}
+                          <ColorInput label="Scrollbar Thumb"       value={themeSettings.customColors.scrollbarThumb || ''} onChange={v => handleCustomColorChange('scrollbarThumb', v)} variable="--scrollbar-thumb" />
+                          <ColorInput label="Scrollbar Thumb Hover" value={themeSettings.customColors.scrollbarThumbHover || ''} onChange={v => handleCustomColorChange('scrollbarThumbHover', v)} variable="--scrollbar-thumb-hover" />
+                          <ColorInput label="Scrollbar Track"       value={themeSettings.customColors.scrollbarTrack || ''} onChange={v => handleCustomColorChange('scrollbarTrack', v)} variable="--scrollbar-track" />
+                        </div>
+                        <div>
+                          <h5 style={{ margin: '0 0 8px 0', fontSize: '13px' }}>Typography</h5>
+                          {[
+                            { label: 'UI Font', key: 'fontUi', placeholder: 'Segoe UI, system-ui, sans-serif' },
+                            { label: 'Mono Font', key: 'fontMono', placeholder: 'Consolas, Courier New, monospace' },
+                            { label: 'UI Font Size', key: 'fontSizeUi', placeholder: '13px' },
+                          ].map(({ label, key, placeholder }) => (
+                            <div key={key} style={{ marginBottom: '10px' }}>
+                              <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px', color: 'var(--text-secondary)' }}>{label}</label>
+                              <input
+                                type="text"
+                                placeholder={placeholder}
+                                value={(themeSettings.customColors as any)[key] || ''}
+                                onChange={e => handleCustomColorChange(key as any, e.target.value)}
+                                style={{ width: '100%', padding: '6px 8px', background: 'var(--bg-secondary)', border: '1px solid var(--border-primary)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '12px' }}
+                              />
+                            </div>
+                          ))}
+                          <h5 style={{ margin: '12px 0 8px 0', fontSize: '13px' }}>Shadows</h5>
+                          {[
+                            { label: 'Small Shadow', key: 'shadowSm', placeholder: '0 2px 6px rgba(0,0,0,0.25)' },
+                            { label: 'Medium Shadow', key: 'shadowMd', placeholder: '0 4px 16px rgba(0,0,0,0.35)' },
+                            { label: 'Large Shadow', key: 'shadowLg', placeholder: '0 8px 32px rgba(0,0,0,0.5)' },
+                          ].map(({ label, key, placeholder }) => (
+                            <div key={key} style={{ marginBottom: '10px' }}>
+                              <label style={{ display: 'block', fontSize: '12px', marginBottom: '4px', color: 'var(--text-secondary)' }}>{label}</label>
+                              <input
+                                type="text"
+                                placeholder={placeholder}
+                                value={(themeSettings.customColors as any)[key] || ''}
+                                onChange={e => handleCustomColorChange(key as any, e.target.value)}
+                                style={{ width: '100%', padding: '6px 8px', background: 'var(--bg-secondary)', border: '1px solid var(--border-primary)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '12px' }}
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </CollapsibleSection>
 
                     {/* Editor Behavior Settings Section */}
                         <div>

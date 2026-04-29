@@ -17,6 +17,8 @@ export const presetThemes: Record<string, ThemeSettings> = {
       accentColor: '#0e639c',
       accentHover: '#1177bb',
       errorColor: '#f14c4c',
+      successColor: '#3fb950',
+      warningColor: '#d29922',
       titlebarBg: '#1e1e1e',
       statusbarBg: '#007acc',
       statusbarFg: '#ffffff',
@@ -24,7 +26,59 @@ export const presetThemes: Record<string, ThemeSettings> = {
       activityBarFg: '#ffffff',
       inlineCodeColor: '#cc0000',
       textMuted: '#2a2a2a',
-      
+
+      // UI Shape
+      borderRadius: '4px',
+      borderRadiusLg: '8px',
+      shadowSm: '0 2px 6px rgba(0,0,0,0.25)',
+      shadowMd: '0 4px 16px rgba(0,0,0,0.35)',
+      shadowLg: '0 8px 32px rgba(0,0,0,0.5)',
+
+      // Scrollbar
+      scrollbarWidth: '8px',
+      scrollbarThumb: '#424242',
+      scrollbarThumbHover: '#007acc',
+      scrollbarTrack: 'transparent',
+
+      // Chat UI
+      chatBg: '#1e1e1e',
+      chatUserBubbleBg: '#0e639c',
+      chatUserBubbleFg: '#ffffff',
+      chatAiBubbleBg: '#252526',
+      chatAiBubbleFg: '#d4d4d4',
+      chatInputBg: '#3c3c3c',
+      chatInputBorder: '#3e3e42',
+      chatCodeBlockBg: '#1a1a1a',
+
+      // Diff
+      diffAddedBg: 'rgba(63,185,80,0.15)',
+      diffRemovedBg: 'rgba(248,81,73,0.15)',
+      diffModifiedBg: 'rgba(227,179,65,0.15)',
+      diffAddedGutter: '#3fb950',
+      diffRemovedGutter: '#f85149',
+      diffModifiedGutter: '#e3b341',
+
+      // Terminal
+      terminalBg: '#1e1e1e',
+      terminalFg: '#d4d4d4',
+      terminalCursor: '#007acc',
+      terminalBlack: '#1e1e1e',
+      terminalBrightBlack: '#666666',
+      terminalRed: '#f14c4c',
+      terminalBrightRed: '#ff7b72',
+      terminalGreen: '#3fb950',
+      terminalBrightGreen: '#56d364',
+      terminalYellow: '#d29922',
+      terminalBrightYellow: '#e3b341',
+      terminalBlue: '#007acc',
+      terminalBrightBlue: '#79c0ff',
+      terminalMagenta: '#bc8cff',
+      terminalBrightMagenta: '#d2a8ff',
+      terminalCyan: '#39c5cf',
+      terminalBrightCyan: '#56d4dd',
+      terminalWhite: '#d4d4d4',
+      terminalBrightWhite: '#ffffff',
+
       // Explorer colors
       explorerFolderFg: '#cccccc',
       explorerFolderExpandedFg: '#cccccc',

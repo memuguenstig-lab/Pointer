@@ -153,6 +153,8 @@ export interface ThemeSettings {
     accentColor?: string;
     accentHover?: string;
     errorColor?: string;
+    successColor?: string;
+    warningColor?: string;
     titlebarBg?: string;
     statusbarBg?: string;
     statusbarFg?: string;
@@ -160,7 +162,65 @@ export interface ThemeSettings {
     activityBarFg?: string;
     inlineCodeColor?: string;
     textMuted?: string;
-    
+
+    // UI Shape
+    borderRadius?: string;       // e.g. "4px"
+    borderRadiusLg?: string;     // e.g. "8px"
+    shadowColor?: string;        // e.g. "rgba(0,0,0,0.4)"
+    shadowSm?: string;           // e.g. "0 2px 6px rgba(0,0,0,0.3)"
+    shadowMd?: string;           // e.g. "0 4px 16px rgba(0,0,0,0.4)"
+    shadowLg?: string;           // e.g. "0 8px 32px rgba(0,0,0,0.5)"
+
+    // Typography
+    fontUi?: string;             // UI font stack
+    fontMono?: string;           // Monospace font stack
+    fontSizeUi?: string;         // e.g. "13px"
+
+    // Scrollbar
+    scrollbarWidth?: string;     // e.g. "8px"
+    scrollbarThumb?: string;
+    scrollbarThumbHover?: string;
+    scrollbarTrack?: string;
+
+    // Chat UI Colors
+    chatBg?: string;
+    chatUserBubbleBg?: string;
+    chatUserBubbleFg?: string;
+    chatAiBubbleBg?: string;
+    chatAiBubbleFg?: string;
+    chatInputBg?: string;
+    chatInputBorder?: string;
+    chatCodeBlockBg?: string;
+
+    // Diff / Git Colors
+    diffAddedBg?: string;
+    diffRemovedBg?: string;
+    diffModifiedBg?: string;
+    diffAddedGutter?: string;
+    diffRemovedGutter?: string;
+    diffModifiedGutter?: string;
+
+    // Terminal Colors (full 16-color palette)
+    terminalBg?: string;
+    terminalFg?: string;
+    terminalCursor?: string;
+    terminalBlack?: string;
+    terminalBrightBlack?: string;
+    terminalRed?: string;
+    terminalBrightRed?: string;
+    terminalGreen?: string;
+    terminalBrightGreen?: string;
+    terminalYellow?: string;
+    terminalBrightYellow?: string;
+    terminalBlue?: string;
+    terminalBrightBlue?: string;
+    terminalMagenta?: string;
+    terminalBrightMagenta?: string;
+    terminalCyan?: string;
+    terminalBrightCyan?: string;
+    terminalWhite?: string;
+    terminalBrightWhite?: string;
+
     // Explorer Colors
     explorerFolderFg?: string;
     explorerFolderExpandedFg?: string;

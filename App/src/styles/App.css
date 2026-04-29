@@ -13,15 +13,53 @@
   --border-primary: #3c3c3c;
   
   --accent-color: #0e639c;
+  --accent-hover: #1177bb;
   --error-color: #f48771;
+  --success-color: #3fb950;
+  --warning-color: #d29922;
   
   --titlebar-bg: #1e1e1e;
   --statusbar-bg: #1e1e1e;
+  --statusbar-fg: #cccccc;
+  --activity-bar-bg: #1e1e1e;
   --activity-bar-fg: #ffffff;
-  
+
+  /* UI Shape */
+  --border-radius: 4px;
+  --border-radius-lg: 8px;
+  --shadow-color: rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+
   /* Typography */
   --font-mono: 'Consolas', 'Courier New', monospace;
   --font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  --font-size-ui: 13px;
+
+  /* Scrollbar */
+  --scrollbar-width: 8px;
+  --scrollbar-thumb: #37373d;
+  --scrollbar-thumb-hover: #0e639c;
+  --scrollbar-track: transparent;
+
+  /* Chat UI */
+  --chat-bg: #1e1e1e;
+  --chat-user-bubble-bg: #0e639c;
+  --chat-user-bubble-fg: #ffffff;
+  --chat-ai-bubble-bg: #252526;
+  --chat-ai-bubble-fg: #cccccc;
+  --chat-input-bg: #252526;
+  --chat-input-border: #3c3c3c;
+  --chat-code-block-bg: #1a1a1a;
+
+  /* Diff / Git */
+  --diff-added-bg: rgba(63, 185, 80, 0.15);
+  --diff-removed-bg: rgba(248, 81, 73, 0.15);
+  --diff-modified-bg: rgba(227, 179, 65, 0.15);
+  --diff-added-gutter: #3fb950;
+  --diff-removed-gutter: #f85149;
+  --diff-modified-gutter: #e3b341;
 }
 
 /* Global styles */
@@ -245,23 +283,23 @@ body {
 
 /* Scrollbar styles */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: var(--scrollbar-width, 8px);
+  height: var(--scrollbar-width, 8px);
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: var(--scrollbar-track, transparent);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--bg-accent);
+  background: var(--scrollbar-thumb, #37373d);
   border: 2px solid var(--bg-primary);
   border-radius: 10px;
   background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--accent-color);
+  background: var(--scrollbar-thumb-hover, var(--accent-color));
   border: 2px solid var(--bg-primary);
 }
 
@@ -796,12 +834,12 @@ input:focus {
 }
 
 /* ── Inline Diff Decorations ─────────────────────────────────────────────── */
-.inline-diff-added { background: rgba(63, 185, 80, 0.15) !important; }
-.inline-diff-modified { background: rgba(227, 179, 65, 0.15) !important; }
-.inline-diff-added-gutter { background: #3fb950; width: 3px !important; margin-left: 3px; }
-.inline-diff-modified-gutter { background: #e3b341; width: 3px !important; margin-left: 3px; }
-.inline-diff-deleted-gutter { background: #f85149; width: 3px !important; margin-left: 3px; }
-.inline-diff-deleted-text { color: #f85149; text-decoration: line-through; opacity: 0.7; font-size: 11px; }
+.inline-diff-added { background: var(--diff-added-bg, rgba(63, 185, 80, 0.15)) !important; }
+.inline-diff-modified { background: var(--diff-modified-bg, rgba(227, 179, 65, 0.15)) !important; }
+.inline-diff-added-gutter { background: var(--diff-added-gutter, #3fb950); width: 3px !important; margin-left: 3px; }
+.inline-diff-modified-gutter { background: var(--diff-modified-gutter, #e3b341); width: 3px !important; margin-left: 3px; }
+.inline-diff-deleted-gutter { background: var(--diff-removed-gutter, #f85149); width: 3px !important; margin-left: 3px; }
+.inline-diff-deleted-text { color: var(--diff-removed-gutter, #f85149); text-decoration: line-through; opacity: 0.7; font-size: 11px; }
 
 /* ── Inline Diff Toolbar ─────────────────────────────────────────────────── */
 .inline-diff-toolbar {
