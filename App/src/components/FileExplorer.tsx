@@ -901,12 +901,10 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
           {isLoading && <span style={{ marginLeft: '4px', opacity: 0.5 }}>...</span>}
           {isHovered && (
             <div style={{
-              position: 'absolute',
-              right: '4px',
               display: 'flex',
-              gap: '4px',
-              background: 'var(--bg-hover)',
-              padding: '0 4px',
+              gap: '2px',
+              flexShrink: 0,
+              marginLeft: 4,
             }}>
               {item.type === 'directory' && (
                 <>
