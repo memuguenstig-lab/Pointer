@@ -9,32 +9,31 @@ import { parseCwd } from './utils';
 const WS_URL = 'ws://localhost:23816/ws/terminal';
 const RECONNECT_DELAYS = [1000, 2000, 4000, 8000];
 
-/** Read terminal theme from CSS variables (set by the active app theme) */
+/** Read terminal theme from CSS variables set by the active app theme */
 function getTerminalTheme(): ITheme {
   const s = getComputedStyle(document.documentElement);
   const v = (name: string, fallback: string) => s.getPropertyValue(name).trim() || fallback;
-
   return {
-    background:          v('--terminal-bg',      '#141414'),
-    foreground:          v('--terminal-fg',      '#cccccc'),
-    cursor:              v('--terminal-cursor',  '#ffffff'),
-    cursorAccent:        v('--terminal-bg',      '#141414'),
+    background:          v('--terminal-bg',           '#141414'),
+    foreground:          v('--terminal-fg',           '#cccccc'),
+    cursor:              v('--terminal-cursor',       '#ffffff'),
+    cursorAccent:        v('--terminal-bg',           '#141414'),
     selectionBackground: 'rgba(88,166,255,0.25)',
-    black:               v('--terminal-black',   '#1e1e1e'),
+    black:               v('--terminal-black',        '#1e1e1e'),
     brightBlack:         v('--terminal-bright-black', '#666666'),
-    red:                 v('--terminal-red',     '#f85149'),
-    brightRed:           v('--terminal-bright-red', '#ff7b72'),
-    green:               v('--terminal-green',   '#3fb950'),
+    red:                 v('--terminal-red',          '#f85149'),
+    brightRed:           v('--terminal-bright-red',   '#ff7b72'),
+    green:               v('--terminal-green',        '#3fb950'),
     brightGreen:         v('--terminal-bright-green', '#56d364'),
-    yellow:              v('--terminal-yellow',  '#d29922'),
-    brightYellow:        v('--terminal-bright-yellow', '#e3b341'),
-    blue:                v('--terminal-blue',    '#58a6ff'),
-    brightBlue:          v('--terminal-bright-blue', '#79c0ff'),
-    magenta:             v('--terminal-magenta', '#bc8cff'),
-    brightMagenta:       v('--terminal-bright-magenta', '#d2a8ff'),
-    cyan:                v('--terminal-cyan',    '#39c5cf'),
-    brightCyan:          v('--terminal-bright-cyan', '#56d4dd'),
-    white:               v('--terminal-white',   '#b0b0b0'),
+    yellow:              v('--terminal-yellow',       '#d29922'),
+    brightYellow:        v('--terminal-bright-yellow','#e3b341'),
+    blue:                v('--terminal-blue',         '#58a6ff'),
+    brightBlue:          v('--terminal-bright-blue',  '#79c0ff'),
+    magenta:             v('--terminal-magenta',      '#bc8cff'),
+    brightMagenta:       v('--terminal-bright-magenta','#d2a8ff'),
+    cyan:                v('--terminal-cyan',         '#39c5cf'),
+    brightCyan:          v('--terminal-bright-cyan',  '#56d4dd'),
+    white:               v('--terminal-white',        '#b0b0b0'),
     brightWhite:         v('--terminal-bright-white', '#ffffff'),
   };
 }
@@ -50,29 +49,39 @@ const TerminalPane: React.FC<Props> = ({ instance, isActive, onReady, onCwdChang
   const initialized = useRef(false);
   const retryCount = useRef(0);
 
+  /** Safe fit — only runs when the container has real pixel dimensions */
+  const safeFit = useCallback((fitAddon: FitAddon) => {
+    const el = instance.containerRef.current;
+    if (!el) return;
+    if (el.offsetWidth > 0 && el.offsetHeight > 0) {
+      try { fitAddon.fit(); } catch (_) { /* ignore dimensions error */ }
+    }
+  }, [instance]);
+
   const connect = useCallback((xterm: XTerm, fitAddon: FitAddon) => {
     const socket = new WebSocket(WS_URL);
     instance.socket = socket;
+    let didClose = false;
 
     socket.onopen = () => {
       retryCount.current = 0;
-      fitAddon.fit();
+      safeFit(fitAddon);
       socket.send(JSON.stringify({ type: 'resize', cols: xterm.cols, rows: xterm.rows }));
     };
 
     socket.onmessage = (e) => {
-      // data can be string or ArrayBuffer (node-pty sends strings, but handle both)
-      const text = typeof e.data === 'string' ? e.data : new TextDecoder().decode(e.data);
+      const text = typeof e.data === 'string' ? e.data : new TextDecoder().decode(e.data as ArrayBuffer);
       requestAnimationFrame(() => xterm.write(text));
       const cwd = parseCwd(text);
       if (cwd) onCwdChange(instance.id, cwd);
     };
 
-    socket.onerror = (err) => {
-      console.error('[Terminal] WebSocket error:', err);
-    };
+    // onerror is always followed by onclose — let onclose handle reconnect
+    socket.onerror = () => {};
 
     socket.onclose = () => {
+      if (didClose) return;
+      didClose = true;
       instance.socket = null;
       const delay = RECONNECT_DELAYS[Math.min(retryCount.current, RECONNECT_DELAYS.length - 1)];
       retryCount.current++;
@@ -88,7 +97,7 @@ const TerminalPane: React.FC<Props> = ({ instance, isActive, onReady, onCwdChang
       if (socket.readyState === WebSocket.OPEN)
         socket.send(JSON.stringify({ type: 'resize', cols, rows }));
     });
-  }, [instance, onCwdChange]);
+  }, [instance, onCwdChange, safeFit]);
 
   useEffect(() => {
     if (initialized.current || !instance.containerRef.current) return;
@@ -97,25 +106,28 @@ const TerminalPane: React.FC<Props> = ({ instance, isActive, onReady, onCwdChang
     const xterm = new XTerm({
       theme: getTerminalTheme(),
       fontFamily: 'Consolas, "Cascadia Code", "Courier New", monospace',
-      fontSize: 13, lineHeight: 1.3,
-      cursorBlink: true, cursorStyle: 'block',
-      convertEol: true, scrollback: 5000,
-      allowProposedApi: true, allowTransparency: false,
+      fontSize: 13,
+      lineHeight: 1.3,
+      cursorBlink: true,
+      cursorStyle: 'block',
+      convertEol: true,
+      scrollback: 5000,
+      allowProposedApi: true,
+      allowTransparency: false,
     });
 
     const fitAddon = new FitAddon();
     xterm.loadAddon(fitAddon);
     xterm.loadAddon(new WebLinksAddon());
     xterm.open(instance.containerRef.current);
-    fitAddon.fit();
+
+    // Only fit if the container is visible at mount time
+    safeFit(fitAddon);
 
     instance.xterm = xterm;
     instance.fitAddon = fitAddon;
 
-    // Re-apply theme when app theme changes
-    const onThemeChange = () => {
-      xterm.options.theme = getTerminalTheme();
-    };
+    const onThemeChange = () => { xterm.options.theme = getTerminalTheme(); };
     window.addEventListener('theme-changed', onThemeChange);
 
     connect(xterm, fitAddon);
@@ -127,13 +139,22 @@ const TerminalPane: React.FC<Props> = ({ instance, isActive, onReady, onCwdChang
       instance.socket?.close();
       xterm.dispose();
     };
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (isActive && instance.fitAddon) {
-      requestAnimationFrame(() => { instance.fitAddon?.fit(); instance.xterm?.focus(); });
+      // Use rAF to ensure the container is visible before fitting
+      requestAnimationFrame(() => {
+        if (instance.fitAddon) {
+          const el = instance.containerRef.current;
+          if (el && el.offsetWidth > 0 && el.offsetHeight > 0) {
+            try { instance.fitAddon.fit(); } catch (_) {}
+          }
+        }
+        instance.xterm?.focus();
+      });
     }
-  }, [isActive]);
+  }, [isActive, instance]);
 
   return (
     <div
