@@ -861,14 +861,56 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
   };
 
   return (
-    <div style={{
-      width: '100%',
-      background: 'var(--bg-secondary)',
-      height: '100%',
-      overflowY: 'auto',
-      overflowX: 'hidden',
-      borderRight: '1px solid var(--border-color)',
-    }}>
+    <div
+      style={{
+        width: '100%',
+        background: 'var(--bg-secondary)',
+        height: '100%',
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        borderRight: '1px solid var(--border-color)',
+      }}
+      onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }}
+      onDrop={async (e) => {
+        e.preventDefault();
+        const files = Array.from(e.dataTransfer.files);
+        if (!files.length) return;
+
+        const currentDir = FileSystemService.getCurrentDirectory();
+
+        for (const file of files) {
+          const filePath = (file as any).path as string | undefined;
+          if (!filePath) continue;
+
+          const isDir = (await fetch('http://localhost:23816/stat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ path: filePath }),
+          }).then(r => r.json()).catch(() => ({ isDirectory: false }))).isDirectory;
+
+          if (isDir) {
+            // Open as new project
+            const result = await FileSystemService.openSpecificDirectory(filePath);
+            if (result) onFolderContentsLoaded(result.items);
+          } else {
+            // Copy file into current workspace
+            if (!currentDir) continue;
+            try {
+              await fetch('http://localhost:23816/copy-file', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ src: filePath, destDir: currentDir }),
+              });
+              // Refresh
+              const result = await FileSystemService.openSpecificDirectory(currentDir);
+              if (result) onFolderContentsLoaded(result.items);
+            } catch (err) {
+              console.error('Drop copy failed:', err);
+            }
+          }
+        }
+      }}
+    >
       <div style={{
         padding: '8px 0 4px 20px',
         fontSize: '11px',

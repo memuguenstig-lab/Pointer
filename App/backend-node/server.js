@@ -258,6 +258,39 @@ app.post('/rename', (req, res) => {
   } catch(e) { res.status(500).json({ success: false, error: e.message }); }
 });
 
+// ── Drag & drop helpers ────────────────────────────────────────────────────
+app.post('/stat', (req, res) => {
+  const { path: p } = req.body;
+  if (!p) return res.status(400).json({ error: 'No path' });
+  try {
+    const stat = fs.statSync(p);
+    res.json({ isDirectory: stat.isDirectory(), isFile: stat.isFile(), size: stat.size });
+  } catch(e) { res.status(404).json({ error: e.message }); }
+});
+
+app.post('/copy-file', (req, res) => {
+  const { src, destDir } = req.body;
+  if (!src || !destDir) return res.status(400).json({ error: 'src and destDir required' });
+  try {
+    if (!fs.existsSync(src)) return res.status(404).json({ error: 'Source not found' });
+    if (!fs.existsSync(destDir)) return res.status(404).json({ error: 'Destination directory not found' });
+    const fileName = path.basename(src);
+    let dest = path.join(destDir, fileName);
+    // Auto-rename if file already exists
+    if (fs.existsSync(dest)) {
+      const ext = path.extname(fileName);
+      const base = path.basename(fileName, ext);
+      let i = 1;
+      while (fs.existsSync(dest)) {
+        dest = path.join(destDir, `${base} (${i})${ext}`);
+        i++;
+      }
+    }
+    fs.copyFileSync(src, dest);
+    res.json({ success: true, dest });
+  } catch(e) { res.status(500).json({ error: e.message }); }
+});
+
 app.get('/files', (req, res) => {
   const dir = req.query.currentDir || baseDirectory;
   if (!dir) return res.status(400).json({ detail: 'No directory opened' });

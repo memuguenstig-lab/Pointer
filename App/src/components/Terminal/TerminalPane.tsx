@@ -61,9 +61,15 @@ const TerminalPane: React.FC<Props> = ({ instance, isActive, onReady, onCwdChang
     };
 
     socket.onmessage = (e) => {
-      requestAnimationFrame(() => xterm.write(e.data));
-      const cwd = parseCwd(e.data);
+      // data can be string or ArrayBuffer (node-pty sends strings, but handle both)
+      const text = typeof e.data === 'string' ? e.data : new TextDecoder().decode(e.data);
+      requestAnimationFrame(() => xterm.write(text));
+      const cwd = parseCwd(text);
       if (cwd) onCwdChange(instance.id, cwd);
+    };
+
+    socket.onerror = (err) => {
+      console.error('[Terminal] WebSocket error:', err);
     };
 
     socket.onclose = () => {
