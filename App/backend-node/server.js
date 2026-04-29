@@ -559,62 +559,99 @@ app.post('/fetch_webpage', async (req, res) => {
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server, path: '/ws/terminal' });
 
+// Try to load node-pty for proper PTY support
+let pty = null;
+try { pty = require('node-pty'); } catch (_) {}
+
 wss.on('connection', (ws) => {
   const cwd = getWorkingDirectory();
   const isWin = process.platform === 'win32';
 
-  let proc;
-  if (isWin) {
-    // PowerShell with OSC 7 prompt for CWD tracking
-    const initScript = [
-      '$OutputEncoding = [Console]::OutputEncoding = [Text.Encoding]::UTF8',
-      // Emit OSC 7 on every prompt so the frontend can track cwd
-      'function prompt { $p = $PWD.Path; Write-Host -NoNewline "`e]7;file://localhost/$($p.Replace(\'\\\',$\'/\'))$([char]7)"; "PS $p> " }',
-    ].join('; ');
-    proc = spawn('powershell.exe', ['-NoLogo', '-NoExit', '-NoProfile', '-Command', initScript], {
-      cwd, stdio: 'pipe', shell: false,
-      env: { ...process.env, TERM: 'xterm-256color' }
-    });
-  } else {
-    // bash/zsh: inject OSC 7 via PROMPT_COMMAND
-    proc = spawn('bash', ['--login'], {
-      cwd, stdio: 'pipe', shell: false,
+  if (pty) {
+    // ── node-pty: full PTY (interactive, colors, arrow keys, etc.) ──────
+    const shell = isWin ? 'powershell.exe' : (process.env.SHELL || 'bash');
+    const args  = isWin ? ['-NoLogo', '-NoExit'] : ['--login'];
+
+    const term = pty.spawn(shell, args, {
+      name: 'xterm-256color',
+      cols: 80, rows: 24,
+      cwd,
       env: {
         ...process.env,
         TERM: 'xterm-256color',
-        PROMPT_COMMAND: 'printf "\\e]7;file://localhost%s\\007" "$PWD"',
-      }
+        COLORTERM: 'truecolor',
+        ...(isWin ? {} : {
+          PROMPT_COMMAND: 'printf "\\e]7;file://localhost%s\\007" "$PWD"',
+        }),
+      },
     });
+
+    term.onData(data => {
+      if (ws.readyState === WebSocket.OPEN) ws.send(data);
+    });
+
+    term.onExit(() => {
+      if (ws.readyState === WebSocket.OPEN) ws.close();
+    });
+
+    ws.on('message', data => {
+      try {
+        const str = data.toString();
+        if (str.startsWith('{')) {
+          try {
+            const msg = JSON.parse(str);
+            if (msg.type === 'resize') {
+              term.resize(Math.max(1, msg.cols), Math.max(1, msg.rows));
+            }
+            return;
+          } catch {}
+        }
+        term.write(str);
+      } catch (_) {}
+    });
+
+    ws.on('close', () => { try { term.kill(); } catch (_) {} });
+
+  } else {
+    // ── Fallback: pipe-based (no PTY) ────────────────────────────────────
+    let proc;
+    if (isWin) {
+      const initScript = [
+        '$OutputEncoding = [Console]::OutputEncoding = [Text.Encoding]::UTF8',
+        'function prompt { $p = $PWD.Path; Write-Host -NoNewline "`e]7;file://localhost/$($p.Replace(\'\\\',$\'/\'))$([char]7)"; "PS $p> " }',
+      ].join('; ');
+      proc = spawn('powershell.exe', ['-NoLogo', '-NoExit', '-NoProfile', '-Command', initScript], {
+        cwd, stdio: 'pipe', shell: false,
+        env: { ...process.env, TERM: 'xterm-256color' }
+      });
+    } else {
+      proc = spawn('bash', ['--login'], {
+        cwd, stdio: 'pipe', shell: false,
+        env: { ...process.env, TERM: 'xterm-256color',
+          PROMPT_COMMAND: 'printf "\\e]7;file://localhost%s\\007" "$PWD"' },
+      });
+    }
+
+    const enc = new (require('string_decoder').StringDecoder)('utf8');
+    proc.stdout.on('data', d => { if (ws.readyState === WebSocket.OPEN) ws.send(enc.write(d)); });
+    proc.stderr.on('data', d => { if (ws.readyState === WebSocket.OPEN) ws.send(enc.write(d)); });
+    proc.on('close', () => { if (ws.readyState === WebSocket.OPEN) ws.close(); });
+
+    ws.on('message', data => {
+      try {
+        const str = data.toString();
+        if (str.startsWith('{')) {
+          try {
+            const msg = JSON.parse(str);
+            if (msg.type === 'resize') { /* no-op without PTY */ }
+            return;
+          } catch {}
+        }
+        proc.stdin.write(str);
+      } catch (_) {}
+    });
+    ws.on('close', () => { try { proc.kill('SIGTERM'); } catch (_) {} });
   }
-
-  const enc = new (require('string_decoder').StringDecoder)('utf8');
-  proc.stdout.on('data', d => { if (ws.readyState === WebSocket.OPEN) ws.send(enc.write(d)); });
-  proc.stderr.on('data', d => { if (ws.readyState === WebSocket.OPEN) ws.send(enc.write(d)); });
-  proc.on('close', () => { if (ws.readyState === WebSocket.OPEN) ws.close(); });
-
-  ws.on('message', data => {
-    try {
-      const str = data.toString();
-      // Check for JSON control messages (resize, etc.)
-      if (str.startsWith('{')) {
-        try {
-          const msg = JSON.parse(str);
-          if (msg.type === 'resize' && proc.pid) {
-            // Resize PTY — best-effort via stty if available
-            try {
-              const { execSync } = require('child_process');
-              if (process.platform !== 'win32') {
-                execSync(`stty rows ${msg.rows} cols ${msg.cols}`, { stdio: 'inherit' });
-              }
-            } catch {}
-          }
-          return;
-        } catch {}
-      }
-      proc.stdin.write(str);
-    } catch(e) {}
-  });
-  ws.on('close', () => { try { proc.kill('SIGTERM'); } catch(e) {} });
 });
 
 server.listen(PORT, '127.0.0.1', () => console.log(`Backend running on http://127.0.0.1:${PORT}`));

@@ -297,6 +297,22 @@ router.get('/download/status', (req, res) => {
   res.json(downloadState);
 });
 
+// Delete a downloaded model
+router.delete('/models/:modelId', (req, res) => {
+  const model = MODELS.find(m => m.id === req.params.modelId);
+  if (!model) return res.status(404).json({ error: 'Unknown model' });
+  const dest = path.join(getModelsDir(), model.file);
+  const part = dest + '.part';
+  try {
+    if (fs.existsSync(dest)) fs.unlinkSync(dest);
+    if (fs.existsSync(part)) fs.unlinkSync(part);
+    console.log(`[llama] Deleted model: ${model.file}`);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.post('/load', (req, res) => {
   res.status(503).json({ error: 'Embedded inference not available in this build. Use the downloaded model with Ollama or LM Studio.' });
 });

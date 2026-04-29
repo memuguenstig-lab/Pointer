@@ -96,6 +96,16 @@ class LlamaService {
     await fetch(`${BACKEND}/api/llama/unload`, { method: 'POST' });
   }
 
+  async deleteModel(modelId: string): Promise<void> {
+    const res = await fetch(`${BACKEND}/api/llama/models/${modelId}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const text = await res.text();
+      let msg = 'Delete failed';
+      try { msg = JSON.parse(text).error || msg; } catch (_) {}
+      throw new Error(msg);
+    }
+  }
+
   /** Streaming chat — calls onChunk for each token, returns full response */
   async chat(
     messages: { role: string; content: string }[],

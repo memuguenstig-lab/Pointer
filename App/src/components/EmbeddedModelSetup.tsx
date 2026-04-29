@@ -341,6 +341,18 @@ export const EmbeddedModelSetup: React.FC<Props> = ({ onModelReady }) => {
     }
   }
 
+  async function handleDelete(modelId: string, e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!confirm('Delete this model from disk?')) return;
+    setError(null);
+    try {
+      await llamaService.deleteModel(modelId);
+      await loadModels();
+    } catch (e: any) {
+      setError('Delete failed: ' + e.message);
+    }
+  }
+
   const selectedModel = models.find(m => m.id === selected);
   const isDownloaded = selectedModel?.downloaded ?? false;
   const isLoaded = selectedModel?.loaded ?? false;
@@ -457,6 +469,21 @@ export const EmbeddedModelSetup: React.FC<Props> = ({ onModelReady }) => {
               <span style={{ marginLeft: 'auto', fontSize: '11px', color: 'var(--text-secondary)', flexShrink: 0 }}>
                 ~{model.sizeGb} GB
               </span>
+              {model.downloaded && (
+                <button
+                  onClick={(e) => handleDelete(model.id, e)}
+                  title="Delete model from disk"
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    color: 'rgba(248,81,73,0.5)', padding: '0 2px', flexShrink: 0,
+                    fontSize: '13px', lineHeight: 1,
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#f85149'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(248,81,73,0.5)'; }}
+                >
+                  🗑
+                </button>
+              )}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ fontSize: '11px', color: 'var(--text-secondary)', flex: 1 }}>
