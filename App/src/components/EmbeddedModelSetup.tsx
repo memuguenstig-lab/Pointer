@@ -210,6 +210,163 @@ export const BUILTIN_MODELS: ModelEntry[] = [
     contextLength: 131072,
     recommended: false,
   },
+  // ── Extra Code models ──────────────────────────────────────────────────
+  {
+    id: 'qwen2.5-coder-14b',
+    name: 'Qwen 2.5 Coder 14B',
+    description: 'Top-tier code model. Needs 10GB+ RAM.',
+    category: 'Code',
+    repo: 'Qwen/Qwen2.5-Coder-14B-Instruct-GGUF',
+    file: 'qwen2.5-coder-14b-instruct-q4_k_m.gguf',
+    sizeGb: 8.7,
+    contextLength: 131072,
+    recommended: false,
+  },
+  {
+    id: 'codegemma-7b',
+    name: 'CodeGemma 7B',
+    description: 'Google code model. Fast and accurate.',
+    category: 'Code',
+    repo: 'bartowski/codegemma-7b-it-GGUF',
+    file: 'codegemma-7b-it-Q4_K_M.gguf',
+    sizeGb: 4.5,
+    contextLength: 8192,
+    recommended: false,
+  },
+  {
+    id: 'deepseek-coder-6.7b',
+    name: 'DeepSeek Coder 6.7B',
+    description: 'Strong at code completion and generation.',
+    category: 'Code',
+    repo: 'TheBloke/deepseek-coder-6.7B-instruct-GGUF',
+    file: 'deepseek-coder-6.7b-instruct.Q4_K_M.gguf',
+    sizeGb: 4.1,
+    contextLength: 16384,
+    recommended: false,
+  },
+  // ── Extra General models ───────────────────────────────────────────────
+  {
+    id: 'llama-3.2-1b',
+    name: 'Llama 3.2 1B',
+    description: 'Tiny but capable. Runs on anything.',
+    category: 'General',
+    repo: 'bartowski/Llama-3.2-1B-Instruct-GGUF',
+    file: 'Llama-3.2-1B-Instruct-Q4_K_M.gguf',
+    sizeGb: 0.8,
+    contextLength: 131072,
+    recommended: false,
+  },
+  {
+    id: 'llama-3.3-70b',
+    name: 'Llama 3.3 70B',
+    description: 'Meta flagship. Best quality, needs 40GB+ RAM.',
+    category: 'General',
+    repo: 'bartowski/Llama-3.3-70B-Instruct-GGUF',
+    file: 'Llama-3.3-70B-Instruct-Q4_K_M.gguf',
+    sizeGb: 42.5,
+    contextLength: 131072,
+    recommended: false,
+  },
+  {
+    id: 'mistral-nemo-12b',
+    name: 'Mistral Nemo 12B',
+    description: 'Mistral + NVIDIA. 128K context window.',
+    category: 'General',
+    repo: 'bartowski/Mistral-Nemo-Instruct-2407-GGUF',
+    file: 'Mistral-Nemo-Instruct-2407-Q4_K_M.gguf',
+    sizeGb: 7.1,
+    contextLength: 131072,
+    recommended: false,
+  },
+  {
+    id: 'gemma-3-4b',
+    name: 'Gemma 3 4B',
+    description: 'Google latest. Great reasoning, 128K context.',
+    category: 'General',
+    repo: 'bartowski/gemma-3-4b-it-GGUF',
+    file: 'gemma-3-4b-it-Q4_K_M.gguf',
+    sizeGb: 3.3,
+    contextLength: 131072,
+    recommended: false,
+  },
+  {
+    id: 'gemma-3-12b',
+    name: 'Gemma 3 12B',
+    description: 'Google Gemma 3 12B. Strong all-rounder.',
+    category: 'General',
+    repo: 'bartowski/gemma-3-12b-it-GGUF',
+    file: 'gemma-3-12b-it-Q4_K_M.gguf',
+    sizeGb: 8.1,
+    contextLength: 131072,
+    recommended: false,
+  },
+  {
+    id: 'qwen2.5-14b',
+    name: 'Qwen 2.5 14B',
+    description: 'Alibaba 14B. Excellent multilingual and reasoning.',
+    category: 'General',
+    repo: 'Qwen/Qwen2.5-14B-Instruct-GGUF',
+    file: 'qwen2.5-14b-instruct-q4_k_m.gguf',
+    sizeGb: 8.9,
+    contextLength: 131072,
+    recommended: false,
+  },
+  {
+    id: 'qwen2.5-32b',
+    name: 'Qwen 2.5 32B',
+    description: 'Alibaba 32B. Near GPT-4 quality locally.',
+    category: 'General',
+    repo: 'Qwen/Qwen2.5-32B-Instruct-GGUF',
+    file: 'qwen2.5-32b-instruct-q4_k_m.gguf',
+    sizeGb: 19.8,
+    contextLength: 131072,
+    recommended: false,
+  },
+  {
+    id: 'smollm2-1.7b',
+    name: 'SmolLM2 1.7B',
+    description: 'HuggingFace tiny model. Extremely fast.',
+    category: 'General',
+    repo: 'bartowski/SmolLM2-1.7B-Instruct-GGUF',
+    file: 'SmolLM2-1.7B-Instruct-Q4_K_M.gguf',
+    sizeGb: 1.1,
+    contextLength: 8192,
+    recommended: false,
+  },
+  // ── Extra Reasoning models ─────────────────────────────────────────────
+  {
+    id: 'deepseek-r1-14b',
+    name: 'DeepSeek R1 14B',
+    description: 'Strong reasoning and math. Needs 10GB+ RAM.',
+    category: 'Reasoning',
+    repo: 'bartowski/DeepSeek-R1-Distill-Qwen-14B-GGUF',
+    file: 'DeepSeek-R1-Distill-Qwen-14B-Q4_K_M.gguf',
+    sizeGb: 8.9,
+    contextLength: 131072,
+    recommended: false,
+  },
+  {
+    id: 'deepseek-r1-32b',
+    name: 'DeepSeek R1 32B',
+    description: 'Very strong reasoning. Needs 20GB+ RAM.',
+    category: 'Reasoning',
+    repo: 'bartowski/DeepSeek-R1-Distill-Qwen-32B-GGUF',
+    file: 'DeepSeek-R1-Distill-Qwen-32B-Q4_K_M.gguf',
+    sizeGb: 19.8,
+    contextLength: 131072,
+    recommended: false,
+  },
+  {
+    id: 'phi-4',
+    name: 'Phi 4 14B',
+    description: 'Microsoft Phi 4. Exceptional reasoning and math.',
+    category: 'Reasoning',
+    repo: 'bartowski/phi-4-GGUF',
+    file: 'phi-4-Q4_K_M.gguf',
+    sizeGb: 8.9,
+    contextLength: 16384,
+    recommended: false,
+  },
 ];
 
 const CATEGORIES = ['All', 'Code', 'General', 'Reasoning'];
@@ -474,14 +631,18 @@ export const EmbeddedModelSetup: React.FC<Props> = ({ onModelReady }) => {
                   onClick={(e) => handleDelete(model.id, e)}
                   title="Delete model from disk"
                   style={{
-                    background: 'none', border: 'none', cursor: 'pointer',
-                    color: 'rgba(248,81,73,0.5)', padding: '0 2px', flexShrink: 0,
-                    fontSize: '13px', lineHeight: 1,
+                    background: 'rgba(248,81,73,0.1)', border: '1px solid rgba(248,81,73,0.3)',
+                    borderRadius: '4px', cursor: 'pointer',
+                    color: '#f85149', padding: '2px 6px', flexShrink: 0,
+                    display: 'flex', alignItems: 'center', gap: '3px', fontSize: '10px',
                   }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#f85149'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(248,81,73,0.5)'; }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(248,81,73,0.22)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(248,81,73,0.1)'; }}
                 >
-                  🗑
+                  <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M11 1.75V3h2.25a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1 0-1.5H5V1.75C5 .784 5.784 0 6.75 0h2.5C10.216 0 11 .784 11 1.75zM4.496 6.675l.66 6.6a.25.25 0 0 0 .249.225h5.19a.25.25 0 0 0 .249-.225l.66-6.6a.75.75 0 0 1 1.492.149l-.66 6.6A1.748 1.748 0 0 1 10.595 15h-5.19a1.75 1.75 0 0 1-1.741-1.575l-.66-6.6a.75.75 0 1 1 1.492-.15z"/>
+                  </svg>
+                  Delete
                 </button>
               )}
             </div>

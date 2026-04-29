@@ -53,6 +53,21 @@ const MODELS = [
   { id: 'deepseek-r1-1.5b',   file: 'DeepSeek-R1-Distill-Qwen-1.5B-Q4_K_M.gguf', repo: 'bartowski/DeepSeek-R1-Distill-Qwen-1.5B-GGUF' },
   { id: 'deepseek-r1-7b',     file: 'DeepSeek-R1-Distill-Qwen-7B-Q4_K_M.gguf',   repo: 'bartowski/DeepSeek-R1-Distill-Qwen-7B-GGUF' },
   { id: 'qwq-32b',            file: 'QwQ-32B-Q4_K_M.gguf',                     repo: 'bartowski/QwQ-32B-GGUF' },
+  // Extra models
+  { id: 'qwen2.5-coder-14b',  file: 'qwen2.5-coder-14b-instruct-q4_k_m.gguf',  repo: 'Qwen/Qwen2.5-Coder-14B-Instruct-GGUF' },
+  { id: 'codegemma-7b',       file: 'codegemma-7b-it-Q4_K_M.gguf',             repo: 'bartowski/codegemma-7b-it-GGUF' },
+  { id: 'deepseek-coder-6.7b',file: 'deepseek-coder-6.7b-instruct.Q4_K_M.gguf',repo: 'TheBloke/deepseek-coder-6.7B-instruct-GGUF' },
+  { id: 'llama-3.2-1b',       file: 'Llama-3.2-1B-Instruct-Q4_K_M.gguf',      repo: 'bartowski/Llama-3.2-1B-Instruct-GGUF' },
+  { id: 'llama-3.3-70b',      file: 'Llama-3.3-70B-Instruct-Q4_K_M.gguf',     repo: 'bartowski/Llama-3.3-70B-Instruct-GGUF' },
+  { id: 'mistral-nemo-12b',   file: 'Mistral-Nemo-Instruct-2407-Q4_K_M.gguf', repo: 'bartowski/Mistral-Nemo-Instruct-2407-GGUF' },
+  { id: 'gemma-3-4b',         file: 'gemma-3-4b-it-Q4_K_M.gguf',              repo: 'bartowski/gemma-3-4b-it-GGUF' },
+  { id: 'gemma-3-12b',        file: 'gemma-3-12b-it-Q4_K_M.gguf',             repo: 'bartowski/gemma-3-12b-it-GGUF' },
+  { id: 'qwen2.5-14b',        file: 'qwen2.5-14b-instruct-q4_k_m.gguf',       repo: 'Qwen/Qwen2.5-14B-Instruct-GGUF' },
+  { id: 'qwen2.5-32b',        file: 'qwen2.5-32b-instruct-q4_k_m.gguf',       repo: 'Qwen/Qwen2.5-32B-Instruct-GGUF' },
+  { id: 'smollm2-1.7b',       file: 'SmolLM2-1.7B-Instruct-Q4_K_M.gguf',     repo: 'bartowski/SmolLM2-1.7B-Instruct-GGUF' },
+  { id: 'deepseek-r1-14b',    file: 'DeepSeek-R1-Distill-Qwen-14B-Q4_K_M.gguf', repo: 'bartowski/DeepSeek-R1-Distill-Qwen-14B-GGUF' },
+  { id: 'deepseek-r1-32b',    file: 'DeepSeek-R1-Distill-Qwen-32B-Q4_K_M.gguf', repo: 'bartowski/DeepSeek-R1-Distill-Qwen-32B-GGUF' },
+  { id: 'phi-4',              file: 'phi-4-Q4_K_M.gguf',                      repo: 'bartowski/phi-4-GGUF' },
 ];
 
 function modelStatus() {
@@ -65,8 +80,8 @@ function modelStatus() {
 }
 
 // ── Parallel chunk downloader ──────────────────────────────────────────────
-const PARALLEL_CHUNKS = 4;   // simultaneous connections
-const CHUNK_SIZE = 8 * 1024 * 1024; // 8 MB per chunk
+const PARALLEL_CHUNKS = 8;
+const CHUNK_SIZE = 16 * 1024 * 1024; // 16 MB per chunk
 
 /**
  * Fetch a byte range from a URL.

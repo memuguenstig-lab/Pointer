@@ -8,6 +8,7 @@ import { presetThemes } from '../themes/presetThemes';
 import { PathConfig } from '../config/paths';
 import { ModelDiscoveryService, ModelInfo } from '../services/ModelDiscoveryService';
 import EmbeddedModelSetup from './EmbeddedModelSetup';
+import CollapsibleSection from './CollapsibleSection';
 // Add electron API import with proper typing
 // @ts-ignore
 const electron = window.require ? window.require('electron') : null;
@@ -1552,9 +1553,8 @@ export function Settings({ isVisible, onClose, initialSettings }: SettingsProps)
                     </div>
 
                     {/* Model assignments section */}
-                    <div style={{ marginBottom: '24px', padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
-                      <h3 style={{ margin: '0 0 16px 0', fontSize: '16px' }}>Model Assignments</h3>
-                      <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px' }}>
+                    <CollapsibleSection title="Model Assignments" defaultOpen={false}>
+                      <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
                         Assign specific models to different purposes in the application
                       </p>
                       
@@ -1694,7 +1694,7 @@ export function Settings({ isVisible, onClose, initialSettings }: SettingsProps)
                           </select>
                         </div>
                       </div>
-                    </div>
+                    </CollapsibleSection>
 
                     {/* Model configuration form */}
                     {activeTab && modelConfigs[activeTab] && (
@@ -1949,6 +1949,7 @@ export function Settings({ isVisible, onClose, initialSettings }: SettingsProps)
                         )}
 
 
+                        <CollapsibleSection title="Advanced Parameters" defaultOpen={false}>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                           <div>
                             <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px' }}>
@@ -1980,6 +1981,7 @@ export function Settings({ isVisible, onClose, initialSettings }: SettingsProps)
                             />
                           </div>
                         </div>
+                        </CollapsibleSection>
                       </div>
                     )}
                   </div>
