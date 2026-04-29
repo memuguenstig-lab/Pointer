@@ -83,6 +83,8 @@ body {
   height: 100vh;
   display: flex;
   flex-direction: column;
+  position: relative;
+  z-index: 0;
 }
 
 /* Titlebar */
@@ -1196,40 +1198,29 @@ html.theme-neon-pulse button:focus-visible {
   box-shadow: 0 0 0 2px var(--neon-pulse-color), 0 0 12px var(--neon-pulse-color) !important;
 }
 
-/* Sidebar active item glow */
-html.theme-neon-pulse [style*="accent-color"],
-html.theme-neon-pulse [style*="accentColor"] {
-  text-shadow: 0 0 8px var(--neon-pulse-color);
-}
-
 /* ════════════════════════════════════════════════════════════════════════════
    PRESET: AURORA  (Northern lights — Tokyo Night, Nord, Night Owl, Ayu Dark)
    ════════════════════════════════════════════════════════════════════════════ */
 
-html.theme-aurora body {
-  position: relative;
-}
-
-html.theme-aurora body::before {
+html.theme-aurora .app-container::before {
   content: '';
-  position: fixed;
+  position: absolute;
   inset: 0;
   pointer-events: none;
   z-index: 0;
   background: linear-gradient(
     135deg,
-    var(--aurora-color-1, rgba(122,162,247,0.05)),
+    var(--aurora-color-1, rgba(122,162,247,0.06)),
     var(--aurora-color-2, rgba(187,154,247,0.05)),
     var(--aurora-color-3, rgba(42,195,222,0.05)),
-    var(--aurora-color-1, rgba(122,162,247,0.05))
+    var(--aurora-color-1, rgba(122,162,247,0.06))
   );
   background-size: 400% 400%;
   animation: aurora-shift 14s ease infinite;
 }
 
-/* Make sure app content sits above the aurora */
-html.theme-aurora #root,
-html.theme-aurora .app-container {
+/* All direct children of app-container sit above the aurora */
+html.theme-aurora .app-container > * {
   position: relative;
   z-index: 1;
 }
@@ -1238,9 +1229,9 @@ html.theme-aurora .app-container {
    PRESET: STARFIELD  (Deep Ocean, Moonlight)
    ════════════════════════════════════════════════════════════════════════════ */
 
-html.theme-starfield body::before {
+html.theme-starfield .app-container::before {
   content: '';
-  position: fixed;
+  position: absolute;
   inset: 0;
   pointer-events: none;
   z-index: 0;
@@ -1261,8 +1252,7 @@ html.theme-starfield body::before {
   animation: starfield-drift 90s linear infinite;
 }
 
-html.theme-starfield #root,
-html.theme-starfield .app-container {
+html.theme-starfield .app-container > * {
   position: relative;
   z-index: 1;
 }
@@ -1272,9 +1262,9 @@ html.theme-starfield .app-container {
    ════════════════════════════════════════════════════════════════════════════ */
 
 /* Scanline overlay */
-html.theme-matrix-rain body::after {
+html.theme-matrix-rain .app-container::after {
   content: '';
-  position: fixed;
+  position: absolute;
   inset: 0;
   pointer-events: none;
   z-index: 99998;
@@ -1301,8 +1291,7 @@ html.theme-matrix-rain [role="button"]:hover {
 }
 
 /* Borders glow green */
-html.theme-matrix-rain .titlebar,
-html.theme-matrix-rain [style*="border"] {
+html.theme-matrix-rain .titlebar {
   box-shadow: 0 0 4px rgba(0, 255, 65, 0.2);
 }
 
@@ -1310,9 +1299,9 @@ html.theme-matrix-rain [style*="border"] {
    PRESET: SCANLINES  (CRT retro — can combine with others)
    ════════════════════════════════════════════════════════════════════════════ */
 
-html.theme-scanlines body::after {
+html.theme-scanlines .app-container::after {
   content: '';
-  position: fixed;
+  position: absolute;
   inset: 0;
   pointer-events: none;
   z-index: 99999;
@@ -1334,8 +1323,8 @@ html.theme-scanlines {
    GRADIENT BACKGROUNDS  (applied via CSS vars set by theme)
    ════════════════════════════════════════════════════════════════════════════ */
 
-/* Titlebar gradient — only active when var is not 'none' */
-.titlebar:not([style]) {
+/* Titlebar gradient */
+.titlebar {
   background: var(--titlebar-gradient, var(--titlebar-bg, var(--bg-primary)));
 }
 

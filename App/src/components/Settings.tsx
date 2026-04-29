@@ -9,6 +9,7 @@ import { PathConfig } from '../config/paths';
 import { ModelDiscoveryService, ModelInfo } from '../services/ModelDiscoveryService';
 import EmbeddedModelSetup from './EmbeddedModelSetup';
 import CollapsibleSection from './CollapsibleSection';
+import ThemeEditor from './ThemeEditor';
 // Add electron API import with proper typing
 // @ts-ignore
 const electron = window.require ? window.require('electron') : null;
@@ -329,6 +330,7 @@ export function Settings({ isVisible, onClose, initialSettings }: SettingsProps)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const [isThemeLibraryVisible, setIsThemeLibraryVisible] = useState(false);
+  const [isThemeEditorVisible, setIsThemeEditorVisible] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [availableModels, setAvailableModels] = useState<ModelInfo[]>([]);
   const [availableModelsError, setAvailableModelsError] = useState<string | null>(null);
@@ -2549,9 +2551,21 @@ export function Settings({ isVisible, onClose, initialSettings }: SettingsProps)
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="7" height="7" rx="1"/><rect x="15" y="2" width="7" height="7" rx="1"/><rect x="2" y="15" width="7" height="7" rx="1"/><rect x="15" y="15" width="7" height="7" rx="1"/></svg>
                         Browse Themes
                       </button>
+                      <button onClick={() => setIsThemeEditorVisible(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: '6px', border: '1px solid var(--border-primary)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                        Edit Theme
+                      </button>
                     </div>
 
                     <ThemeLibraryModal isVisible={isThemeLibraryVisible} onClose={() => setIsThemeLibraryVisible(false)} onSelectTheme={(theme) => { setThemeSettings(theme); setHasUnsavedChanges(true); }} />
+
+                    {/* Theme Editor */}
+                    <ThemeEditor
+                      isVisible={isThemeEditorVisible}
+                      theme={themeSettings}
+                      onClose={() => setIsThemeEditorVisible(false)}
+                      onChange={(t) => { setThemeSettings(t); setHasUnsavedChanges(true); }}
+                    />
 
                     {/* Quick preset + export/import */}
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
