@@ -1,6 +1,16 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { FitAddon } from '@xterm/addon-fit';
 import { TerminalProps, TerminalInstance, PanelTab, TAB_DEFS, actionBtn } from './types';
 import { createInstance } from './utils';
+
+/** Safe fit — guards against the FitAddon 'dimensions' crash when container is hidden/zero-size */
+function safeFit(fitAddon: FitAddon | null, containerRef: React.RefObject<HTMLDivElement>) {
+  if (!fitAddon || !containerRef.current) return;
+  const el = containerRef.current;
+  if (el.offsetWidth > 0 && el.offsetHeight > 0) {
+    try { fitAddon.fit(); } catch (_) {}
+  }
+}
 import TerminalPane from './TerminalPane';
 import TerminalBreadcrumb from './TerminalBreadcrumb';
 import OutputPanel from './OutputPanel';
@@ -59,7 +69,7 @@ const Terminal: React.FC<TerminalProps> = ({ isVisible, errorCount = 0, warningC
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
       const active = instances.find(i => i.id === activeId);
-      if (active?.fitAddon) requestAnimationFrame(() => active.fitAddon?.fit());
+      if (active?.fitAddon) requestAnimationFrame(() => safeFit(active.fitAddon, active.containerRef));
     };
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
@@ -69,7 +79,10 @@ const Terminal: React.FC<TerminalProps> = ({ isVisible, errorCount = 0, warningC
     if (isVisible && activeTab === 'terminal') {
       const active = instances.find(i => i.id === activeId);
       if (active?.fitAddon) {
-        requestAnimationFrame(() => { active.fitAddon?.fit(); active.xterm?.focus(); });
+        requestAnimationFrame(() => {
+          safeFit(active.fitAddon, active.containerRef);
+          active.xterm?.focus();
+        });
       }
     }
   }, [isVisible, activeId, activeTab, instances]);

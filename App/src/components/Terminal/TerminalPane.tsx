@@ -14,27 +14,27 @@ function getTerminalTheme(): ITheme {
   const s = getComputedStyle(document.documentElement);
   const v = (name: string, fallback: string) => s.getPropertyValue(name).trim() || fallback;
   return {
-    background:          v('--terminal-bg',           '#141414'),
-    foreground:          v('--terminal-fg',           '#cccccc'),
-    cursor:              v('--terminal-cursor',       '#ffffff'),
-    cursorAccent:        v('--terminal-bg',           '#141414'),
-    selectionBackground: 'rgba(88,166,255,0.25)',
-    black:               v('--terminal-black',        '#1e1e1e'),
-    brightBlack:         v('--terminal-bright-black', '#666666'),
-    red:                 v('--terminal-red',          '#f85149'),
-    brightRed:           v('--terminal-bright-red',   '#ff7b72'),
-    green:               v('--terminal-green',        '#3fb950'),
-    brightGreen:         v('--terminal-bright-green', '#56d364'),
-    yellow:              v('--terminal-yellow',       '#d29922'),
-    brightYellow:        v('--terminal-bright-yellow','#e3b341'),
-    blue:                v('--terminal-blue',         '#58a6ff'),
-    brightBlue:          v('--terminal-bright-blue',  '#79c0ff'),
-    magenta:             v('--terminal-magenta',      '#bc8cff'),
-    brightMagenta:       v('--terminal-bright-magenta','#d2a8ff'),
-    cyan:                v('--terminal-cyan',         '#39c5cf'),
-    brightCyan:          v('--terminal-bright-cyan',  '#56d4dd'),
-    white:               v('--terminal-white',        '#b0b0b0'),
-    brightWhite:         v('--terminal-bright-white', '#ffffff'),
+    background:           v('--terminal-bg',            '#141414'),
+    foreground:           v('--terminal-fg',            '#cccccc'),
+    cursor:               v('--terminal-cursor',        '#ffffff'),
+    cursorAccent:         v('--terminal-bg',            '#141414'),
+    selectionBackground:  'rgba(88,166,255,0.25)',
+    black:                v('--terminal-black',         '#1e1e1e'),
+    brightBlack:          v('--terminal-bright-black',  '#666666'),
+    red:                  v('--terminal-red',           '#f85149'),
+    brightRed:            v('--terminal-bright-red',    '#ff7b72'),
+    green:                v('--terminal-green',         '#3fb950'),
+    brightGreen:          v('--terminal-bright-green',  '#56d364'),
+    yellow:               v('--terminal-yellow',        '#d29922'),
+    brightYellow:         v('--terminal-bright-yellow', '#e3b341'),
+    blue:                 v('--terminal-blue',          '#58a6ff'),
+    brightBlue:           v('--terminal-bright-blue',   '#79c0ff'),
+    magenta:              v('--terminal-magenta',       '#bc8cff'),
+    brightMagenta:        v('--terminal-bright-magenta','#d2a8ff'),
+    cyan:                 v('--terminal-cyan',          '#39c5cf'),
+    brightCyan:           v('--terminal-bright-cyan',   '#56d4dd'),
+    white:                v('--terminal-white',         '#b0b0b0'),
+    brightWhite:          v('--terminal-bright-white',  '#ffffff'),
   };
 }
 
@@ -49,15 +49,6 @@ const TerminalPane: React.FC<Props> = ({ instance, isActive, onReady, onCwdChang
   const initialized = useRef(false);
   const retryCount = useRef(0);
 
-  /** Safe fit — only runs when the container has real pixel dimensions */
-  const safeFit = useCallback((fitAddon: FitAddon) => {
-    const el = instance.containerRef.current;
-    if (!el) return;
-    if (el.offsetWidth > 0 && el.offsetHeight > 0) {
-      try { fitAddon.fit(); } catch (_) { /* ignore dimensions error */ }
-    }
-  }, [instance]);
-
   const connect = useCallback((xterm: XTerm, fitAddon: FitAddon) => {
     const socket = new WebSocket(WS_URL);
     instance.socket = socket;
@@ -65,7 +56,11 @@ const TerminalPane: React.FC<Props> = ({ instance, isActive, onReady, onCwdChang
 
     socket.onopen = () => {
       retryCount.current = 0;
-      safeFit(fitAddon);
+      // Safe fit on open
+      const el = instance.containerRef.current;
+      if (el && el.offsetWidth > 0 && el.offsetHeight > 0) {
+        try { fitAddon.fit(); } catch (_) {}
+      }
       socket.send(JSON.stringify({ type: 'resize', cols: xterm.cols, rows: xterm.rows }));
     };
 
@@ -76,7 +71,6 @@ const TerminalPane: React.FC<Props> = ({ instance, isActive, onReady, onCwdChang
       if (cwd) onCwdChange(instance.id, cwd);
     };
 
-    // onerror is always followed by onclose — let onclose handle reconnect
     socket.onerror = () => {};
 
     socket.onclose = () => {
@@ -97,11 +91,13 @@ const TerminalPane: React.FC<Props> = ({ instance, isActive, onReady, onCwdChang
       if (socket.readyState === WebSocket.OPEN)
         socket.send(JSON.stringify({ type: 'resize', cols, rows }));
     });
-  }, [instance, onCwdChange, safeFit]);
+  }, [instance, onCwdChange]);
 
   useEffect(() => {
     if (initialized.current || !instance.containerRef.current) return;
     initialized.current = true;
+
+    const container = instance.containerRef.current;
 
     const xterm = new XTerm({
       theme: getTerminalTheme(),
@@ -119,41 +115,54 @@ const TerminalPane: React.FC<Props> = ({ instance, isActive, onReady, onCwdChang
     const fitAddon = new FitAddon();
     xterm.loadAddon(fitAddon);
     xterm.loadAddon(new WebLinksAddon());
-    xterm.open(instance.containerRef.current);
-
-    // Only fit if the container is visible at mount time
-    safeFit(fitAddon);
+    xterm.open(container);
 
     instance.xterm = xterm;
     instance.fitAddon = fitAddon;
 
-    const onThemeChange = () => { xterm.options.theme = getTerminalTheme(); };
+    // Use ResizeObserver to fit as soon as the container gets real dimensions.
+    // This is the only reliable way to avoid the FitAddon 'dimensions' crash
+    // which happens when fit() is called while the element is hidden or zero-size.
+    let connected = false;
+    const ro = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) return;
+      const { width, height } = entry.contentRect;
+      if (width > 0 && height > 0) {
+        try { fitAddon.fit(); } catch (_) {}
+        if (!connected) {
+          connected = true;
+          connect(xterm, fitAddon);
+          onReady(instance.id, xterm, fitAddon);
+        }
+      }
+    });
+    ro.observe(container);
+
+    const onThemeChange = () => {
+      try { xterm.options.theme = getTerminalTheme(); } catch (_) {}
+    };
     window.addEventListener('theme-changed', onThemeChange);
 
-    connect(xterm, fitAddon);
-    onReady(instance.id, xterm, fitAddon);
-
     return () => {
+      ro.disconnect();
       window.removeEventListener('theme-changed', onThemeChange);
       if (instance.reconnectTimer) clearTimeout(instance.reconnectTimer);
-      instance.socket?.close();
-      xterm.dispose();
+      try { instance.socket?.close(); } catch (_) {}
+      try { xterm.dispose(); } catch (_) {}
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // When this pane becomes active, refit and focus
   useEffect(() => {
-    if (isActive && instance.fitAddon) {
-      // Use rAF to ensure the container is visible before fitting
-      requestAnimationFrame(() => {
-        if (instance.fitAddon) {
-          const el = instance.containerRef.current;
-          if (el && el.offsetWidth > 0 && el.offsetHeight > 0) {
-            try { instance.fitAddon.fit(); } catch (_) {}
-          }
-        }
-        instance.xterm?.focus();
-      });
-    }
+    if (!isActive || !instance.fitAddon || !instance.containerRef.current) return;
+    const el = instance.containerRef.current;
+    requestAnimationFrame(() => {
+      if (el.offsetWidth > 0 && el.offsetHeight > 0) {
+        try { instance.fitAddon!.fit(); } catch (_) {}
+      }
+      instance.xterm?.focus();
+    });
   }, [isActive, instance]);
 
   return (
