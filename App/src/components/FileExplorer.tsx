@@ -148,14 +148,16 @@ const FileExplorerItem: React.FC<{
           alignItems: 'center',
           height: '22px',
           cursor: 'pointer',
-          backgroundColor: item.id === currentFileId ? 'var(--bg-selected)' : 
-                         isHovered ? 'var(--bg-hover)' : 'transparent',
-          color: 'var(--text-primary)',
+          backgroundColor: item.id === currentFileId
+            ? 'var(--accent-color)'
+            : isHovered ? 'var(--bg-hover)' : 'transparent',
+          color: item.id === currentFileId ? '#ffffff' : 'var(--text-primary)',
           fontSize: '13px',
           paddingRight: '8px',
           userSelect: 'none',
           whiteSpace: 'nowrap',
           overflow: 'hidden',
+          borderRadius: '3px',
         }}
         onClick={() => {
           if (item.type === 'file') {
@@ -200,7 +202,7 @@ const FileExplorerItem: React.FC<{
           display: 'flex',
           alignItems: 'center',
           flexShrink: 0,
-          color: item.id === currentFileId ? 'var(--accent-color)' : isHovered ? 'var(--border-color)' : 'var(--text-primary)',
+          color: item.id === currentFileId ? '#ffffff' : isHovered ? 'var(--text-primary)' : 'var(--text-secondary)',
         }}>
           {item.type === 'directory' ? (
             <FolderIcon isOpen={isExpanded} />
@@ -210,7 +212,7 @@ const FileExplorerItem: React.FC<{
         </div>
         <span style={{
           marginLeft: '4px',
-          color: item.type === 'directory' ? '#C8C8C8' : '#CCCCCC',
+          color: item.id === currentFileId ? '#ffffff' : item.type === 'directory' ? 'var(--text-primary)' : 'var(--text-primary)',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',
@@ -726,13 +728,13 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
             display: 'flex',
             alignItems: 'center',
             height: '24px',
-            color: isSelected ? 'var(--accent-color)' : 'var(--text-primary)',
+            color: isSelected ? '#ffffff' : 'var(--text-primary)',
             userSelect: 'none',
             fontSize: '13px',
             position: 'relative',
             borderBottom: '1px solid var(--border-subtle)',
             transition: 'background 0.15s ease, padding-left 0.15s ease, box-shadow 0.15s ease',
-            ...(isSelected ? activeFileStyle : {}),
+            ...(isSelected ? { ...activeFileStyle, backgroundColor: 'var(--accent-color)', borderLeft: 'none', borderRadius: '3px' } : {}),
             ...(isHovered && !isSelected ? hoverFileStyle : {}),
           }}
         >
@@ -767,7 +769,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
             alignItems: 'center',
             flexShrink: 0,
             color: isSelected 
-              ? 'var(--accent-color)' 
+              ? '#ffffff' 
               : item.type === 'directory' 
                 ? isExpanded
                   ? 'var(--explorer-folder-expanded-fg, #C8C8C8)'
@@ -783,7 +785,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
           <span style={{
             marginLeft: '4px',
             color: isSelected 
-              ? 'var(--accent-color)' 
+              ? '#ffffff' 
               : item.type === 'directory' 
                 ? isExpanded
                   ? 'var(--explorer-folder-expanded-fg, #C8C8C8)'
