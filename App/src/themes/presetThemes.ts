@@ -55,26 +55,6 @@ export const presetThemes: Record<string, ThemeSettings> = {
       {token:'function',foreground:'#DCDCAA'},{token:'variable',foreground:'#9CDCFE'},
     ],
   },
-  'VS Code Dark': {
-    name: 'vs-dark',
-    customColors: {
-      bgPrimary:'#1e1e1e',bgSecondary:'#252526',bgTertiary:'#2d2d30',bgSelected:'#264f78',bgHover:'#2a2d2e',
-      textPrimary:'#d4d4d4',textSecondary:'#858585',borderColor:'#3e3e42',borderPrimary:'#3e3e42',
-      accentColor:'#0e639c',accentHover:'#1177bb',errorColor:'#f14c4c',successColor:'#3fb950',warningColor:'#d29922',
-      titlebarBg:'#1e1e1e',statusbarBg:'#007acc',statusbarFg:'#ffffff',activityBarBg:'#333333',activityBarFg:'#ffffff',
-      inlineCodeColor:'#cc0000',textMuted:'#2a2a2a',borderRadius:'4px',borderRadiusLg:'8px',
-      shadowSm:'0 2px 6px rgba(0,0,0,0.25)',shadowMd:'0 4px 16px rgba(0,0,0,0.35)',shadowLg:'0 8px 32px rgba(0,0,0,0.5)',
-      scrollbarWidth:'8px',scrollbarThumb:'#424242',scrollbarThumbHover:'#007acc',scrollbarTrack:'transparent',
-      chatBg:'#1e1e1e',chatUserBubbleBg:'#0e639c',chatUserBubbleFg:'#ffffff',chatAiBubbleBg:'#252526',chatAiBubbleFg:'#d4d4d4',chatInputBg:'#3c3c3c',chatInputBorder:'#3e3e42',chatCodeBlockBg:'#1a1a1a',
-      diffAddedBg:'rgba(63,185,80,0.15)',diffRemovedBg:'rgba(248,81,73,0.15)',diffModifiedBg:'rgba(227,179,65,0.15)',diffAddedGutter:'#3fb950',diffRemovedGutter:'#f85149',diffModifiedGutter:'#e3b341',
-      terminalBg:'#1e1e1e',terminalFg:'#d4d4d4',terminalCursor:'#007acc',terminalBlack:'#1e1e1e',terminalBrightBlack:'#666666',terminalRed:'#f14c4c',terminalBrightRed:'#ff7b72',terminalGreen:'#3fb950',terminalBrightGreen:'#56d364',terminalYellow:'#d29922',terminalBrightYellow:'#e3b341',terminalBlue:'#007acc',terminalBrightBlue:'#79c0ff',terminalMagenta:'#bc8cff',terminalBrightMagenta:'#d2a8ff',terminalCyan:'#39c5cf',terminalBrightCyan:'#56d4dd',terminalWhite:'#d4d4d4',terminalBrightWhite:'#ffffff',
-      explorerFolderFg:'#cccccc',explorerFolderExpandedFg:'#cccccc',explorerFileFg:'#cccccc',
-      animationsEnabled:true,transitionSpeed:'0.15s',transitionEasing:'ease',animationPreset:'none',
-      customFileExtensions:{js:'#f1c40f',jsx:'#f1c40f',ts:'#007acc',tsx:'#007acc',json:'#f1c40f',html:'#e34c26',css:'#1572b6',scss:'#c6538c',md:'#519aba',yml:'#cb171e',yaml:'#cb171e',py:'#3776ab',rs:'#dea584',go:'#00add8',rb:'#cc342d',php:'#777bb4',java:'#ed8b00',c:'#a8b9cc',cpp:'#00599c',sh:'#89e051',svg:'#ff9900',png:'#a074c4'},
-    },
-    editorColors:{'editor.background':'#1e1e1e','editor.foreground':'#d4d4d4','editorLineNumber.foreground':'#858585','editorLineNumber.activeForeground':'#c6c6c6','editorCursor.foreground':'#d4d4d4','editor.selectionBackground':'#264f78','editor.lineHighlightBackground':'#2d2d2d50'},
-    tokenColors:[{token:'keyword',foreground:'#569CD6',fontStyle:'bold'},{token:'comment',foreground:'#6A9955',fontStyle:'italic'},{token:'string',foreground:'#CE9178'},{token:'number',foreground:'#B5CEA8'},{token:'operator',foreground:'#D4D4D4'},{token:'type',foreground:'#4EC9B0'},{token:'function',foreground:'#DCDCAA'},{token:'variable',foreground:'#9CDCFE'}],
-  },
   'Tokyo Night': {
     name: 'vs-dark',
     customColors: {
