@@ -124,7 +124,7 @@ export const presetThemes: Record<string, ThemeSettings> = {
     editorColors:{'editor.background':'#282a36','editor.foreground':'#f8f8f2','editorLineNumber.foreground':'#6272a4','editorLineNumber.activeForeground':'#f8f8f2','editorCursor.foreground':'#f8f8f2','editor.selectionBackground':'#44475a','editor.lineHighlightBackground':'#44475a50'},
     tokenColors:[{token:'keyword',foreground:'#ff79c6',fontStyle:'bold'},{token:'comment',foreground:'#6272a4',fontStyle:'italic'},{token:'string',foreground:'#f1fa8c'},{token:'number',foreground:'#bd93f9'},{token:'operator',foreground:'#ff79c6'},{token:'type',foreground:'#8be9fd'},{token:'function',foreground:'#50fa7b'},{token:'variable',foreground:'#f8f8f2'}],
   },
-  'Synthwave ''84': {
+  "Synthwave '84": {
     name: 'vs-dark',
     customColors: {
       bgPrimary:'#241b2f',bgSecondary:'#1a1226',bgTertiary:'#34294f',bgSelected:'#453976',bgHover:'#4c3f78',
