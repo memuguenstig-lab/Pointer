@@ -1631,7 +1631,7 @@ const App: React.FC = () => {
             sidebar={
               <Resizable
                 defaultWidth={300}
-                minWidth={80}
+                minWidth={180}
                 maxWidth={850}
                 isCollapsed={isSidebarCollapsed}
                 onCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
