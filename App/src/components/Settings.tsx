@@ -134,322 +134,121 @@ const settingsCategories = [
 
 // Path configuration moved to PathConfig.getActiveSettingsPath()
 
-// Theme preview component for the theme library
+// ── Animation keyframes injected once ────────────────────────────────────
+if (typeof document !== 'undefined' && !document.getElementById('theme-preview-anim')) {
+  const s = document.createElement('style');
+  s.id = 'theme-preview-anim';
+  s.textContent = `
+    @keyframes prev-neon{0%,100%{box-shadow:0 0 4px var(--pn,#f0f),0 0 8px var(--pn,#f0f)}50%{box-shadow:0 0 14px var(--pn,#f0f),0 0 28px var(--pn,#f0f)}}
+    @keyframes prev-aurora{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+    @keyframes prev-scan{0%{background-position:0 0}100%{background-position:0 4px}}
+    @keyframes prev-star{from{background-position:0 0,0 0,0 0,0 0,0 0}to{background-position:0 200px,0 150px,0 100px,0 80px,0 60px}}
+    @keyframes prev-badge{0%,100%{opacity:1}50%{opacity:.65}}
+  `;
+  document.head.appendChild(s);
+}
+
 const ThemePreview: React.FC<{ theme: ThemeSettings; name: string; onSelect: () => void }> = ({ theme, name, onSelect }) => {
+  const c = theme.customColors;
+  const preset = c.animationPreset;
+  const isAnimated = !!preset && preset !== 'none';
+  const neon = c.neonPulseColor || c.accentColor || '#ff00ff';
+  const acc  = c.accentColor || '#0078d4';
+  const kw   = theme.tokenColors?.find(t => t.token === 'keyword')?.foreground  || '#569cd6';
+  const fn   = theme.tokenColors?.find(t => t.token === 'function')?.foreground || '#dcdcaa';
+  const str  = theme.tokenColors?.find(t => t.token === 'string')?.foreground   || '#ce9178';
+  const vr   = theme.tokenColors?.find(t => t.token === 'variable')?.foreground || '#9cdcfe';
+  const num  = theme.tokenColors?.find(t => t.token === 'number')?.foreground   || '#b5cea8';
+  const ln   = theme.editorColors['editorLineNumber.foreground'] || '#858585';
+  const bg   = theme.editorColors['editor.background'] || c.bgSecondary || '#1e1e1e';
+  const fg   = c.textPrimary || '#ccc';
+
+  let overlayStyle: React.CSSProperties = {};
+  if (preset === 'aurora') {
+    overlayStyle = { background: `linear-gradient(135deg,${acc}18,${c.accentHover||acc}12,${c.terminalCyan||acc}10,${acc}18)`, backgroundSize: '400% 400%', animation: 'prev-aurora 4s ease infinite' };
+  } else if (preset === 'matrix-rain') {
+    overlayStyle = { background: `repeating-linear-gradient(0deg,transparent 0px,transparent 3px,${acc}20 3px,${acc}20 4px)`, animation: 'prev-scan .1s linear infinite' };
+  } else if (preset === 'starfield') {
+    overlayStyle = { backgroundImage: 'radial-gradient(1px 1px at 15% 20%,rgba(255,255,255,.7) 0%,transparent 100%),radial-gradient(1px 1px at 40% 60%,rgba(255,255,255,.5) 0%,transparent 100%),radial-gradient(1px 1px at 70% 30%,rgba(255,255,255,.6) 0%,transparent 100%),radial-gradient(1px 1px at 85% 75%,rgba(255,255,255,.4) 0%,transparent 100%),radial-gradient(2px 2px at 55% 45%,rgba(255,255,255,.3) 0%,transparent 100%)', animation: 'prev-star 8s linear infinite' };
+  } else if (preset === 'scanlines') {
+    overlayStyle = { background: 'repeating-linear-gradient(0deg,transparent 0px,transparent 2px,rgba(0,0,0,.06) 2px,rgba(0,0,0,.06) 4px)', animation: 'prev-scan .12s linear infinite' };
+  }
+
   return (
-    <div 
-      onClick={onSelect}
-      style={{
-        width: '200px',
-        height: '150px',
-        border: '1px solid var(--border-primary)',
-        borderRadius: '8px',
-        overflow: 'hidden',
-        cursor: 'pointer',
-        transition: 'transform 0.2s, box-shadow 0.2s',
-        position: 'relative',
-        boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.transform = 'translateY(-4px)';
-        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.transform = 'translateY(0)';
-        e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.1)';
-      }}
+    <div onClick={onSelect} style={{
+      width: '100%', height: '160px', borderRadius: '8px', overflow: 'hidden',
+      cursor: 'pointer', position: 'relative',
+      border: `1px solid ${isAnimated ? neon+'55' : (c.borderPrimary||'#333')}`,
+      boxShadow: isAnimated ? `0 2px 12px ${neon}30` : '0 2px 8px rgba(0,0,0,.2)',
+      transition: 'transform .18s ease, box-shadow .18s ease',
+      animation: preset === 'neon-pulse' ? 'prev-neon 2.5s ease-in-out infinite' : 'none',
+      ['--pn' as any]: neon,
+    }}
+      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px) scale(1.01)'; e.currentTarget.style.boxShadow = isAnimated ? `0 8px 24px ${neon}50` : '0 8px 20px rgba(0,0,0,.35)'; }}
+      onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0) scale(1)'; e.currentTarget.style.boxShadow = isAnimated ? `0 2px 12px ${neon}30` : '0 2px 8px rgba(0,0,0,.2)'; }}
     >
-      {/* Theme preview - titlebar */}
-      <div style={{
-        height: '24px',
-        backgroundColor: theme.customColors.titlebarBg || theme.customColors.bgPrimary || '#1e1e1e',
-        borderBottom: `1px solid ${theme.customColors.borderPrimary || '#333'}`,
-        display: 'flex',
-        alignItems: 'center',
-        padding: '0 8px',
-      }}>
-        <div style={{ 
-          width: '10px', 
-          height: '10px', 
-          borderRadius: '50%', 
-          backgroundColor: '#ff5f57', 
-          marginRight: '6px' 
-        }} />
-        <div style={{ 
-          width: '10px', 
-          height: '10px', 
-          borderRadius: '50%', 
-          backgroundColor: '#febc2e', 
-          marginRight: '6px' 
-        }} />
-        <div style={{ 
-          width: '10px', 
-          height: '10px', 
-          borderRadius: '50%', 
-          backgroundColor: '#28c840' 
-        }} />
+      {isAnimated && preset !== 'neon-pulse' && <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 2, ...overlayStyle }} />}
+      {/* Titlebar */}
+      <div style={{ height: 22, background: c.titlebarGradient && c.titlebarGradient !== 'none' ? c.titlebarGradient : (c.titlebarBg||c.bgPrimary||'#1e1e1e'), borderBottom: `1px solid ${preset==='neon-pulse'?neon:(c.borderPrimary||'#333')}`, display: 'flex', alignItems: 'center', padding: '0 8px', gap: 5, boxShadow: preset==='neon-pulse'?`0 1px 10px ${neon}70`:'none', position: 'relative', zIndex: 3 }}>
+        <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ff5f57' }} />
+        <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#febc2e' }} />
+        <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#28c840' }} />
       </div>
-      
-      {/* Theme preview - content */}
-      <div style={{
-        display: 'flex',
-        height: 'calc(100% - 24px)',
-      }}>
-        {/* Sidebar */}
-        <div style={{
-          width: '30px',
-          backgroundColor: theme.customColors.activityBarBg || theme.customColors.bgPrimary || '#1e1e1e',
-          height: '100%',
-          borderRight: `1px solid ${theme.customColors.borderPrimary || '#333'}`,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          padding: '8px 0',
-          gap: '8px',
-        }}>
-          <div style={{ 
-            width: '16px', 
-            height: '16px', 
-            backgroundColor: theme.customColors.activityBarFg || theme.customColors.textSecondary || '#8a8a8a',
-            opacity: 0.6,
-            borderRadius: '2px'
-          }} />
-          <div style={{ 
-            width: '16px', 
-            height: '16px', 
-            backgroundColor: theme.customColors.accentColor || '#0078d4',
-            borderRadius: '2px'
-          }} />
-          <div style={{ 
-            width: '16px', 
-            height: '16px', 
-            backgroundColor: theme.customColors.activityBarFg || theme.customColors.textSecondary || '#8a8a8a',
-            opacity: 0.6,
-            borderRadius: '2px'
-          }} />
+      {/* Body */}
+      <div style={{ display: 'flex', height: 'calc(100% - 22px)', position: 'relative', zIndex: 1 }}>
+        <div style={{ width: 24, flexShrink: 0, background: c.activityBarBg||c.bgPrimary||'#1e1e1e', borderRight: `1px solid ${c.borderPrimary||'#333'}`, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '6px 0', gap: 6 }}>
+          {[.5,1,.5].map((op,i) => <div key={i} style={{ width: 12, height: 12, borderRadius: 2, background: i===1?acc:(c.activityBarFg||'#888'), opacity: op }} />)}
         </div>
-        
-        {/* Main content */}
-        <div style={{
-          flex: 1,
-          backgroundColor: theme.editorColors['editor.background'] || theme.customColors.bgSecondary || '#1e1e1e',
-          padding: '2px 0 0 4px',
-          display: 'flex',
-          flexDirection: 'column',
-        }}>
-          {/* Code lines */}
-          <div style={{ 
-            fontSize: '9px', 
-            display: 'flex', 
-            lineHeight: '1.3',
-            color: theme.editorColors['editor.foreground'] || theme.customColors.textPrimary || '#d4d4d4',
-            fontFamily: 'monospace'
-          }}>
-            <div style={{ 
-              color: theme.editorColors['editorLineNumber.foreground'] || '#858585',
-              width: '14px',
-              textAlign: 'right',
-              marginRight: '6px',
-            }}>1</div>
-            <span style={{ color: theme.tokenColors?.find(t => t.token === 'keyword')?.foreground || '#569cd6' }}>
-              function
-            </span>
-            <span style={{ color: theme.tokenColors?.find(t => t.token === 'function')?.foreground || '#dcdcaa' }}>
-              &nbsp;example
-            </span>
-            () {'{'}
-          </div>
-          <div style={{ 
-            fontSize: '9px', 
-            display: 'flex', 
-            lineHeight: '1.3',
-            color: theme.editorColors['editor.foreground'] || theme.customColors.textPrimary || '#d4d4d4',
-            fontFamily: 'monospace'
-          }}>
-            <div style={{ 
-              color: theme.editorColors['editorLineNumber.foreground'] || '#858585',
-              width: '14px',
-              textAlign: 'right',
-              marginRight: '6px',
-            }}>2</div>
-            &nbsp;&nbsp;<span style={{ color: theme.tokenColors?.find(t => t.token === 'keyword')?.foreground || '#569cd6' }}>
-              const
-            </span>
-            <span style={{ color: theme.tokenColors?.find(t => t.token === 'variable')?.foreground || '#9cdcfe' }}>
-              &nbsp;str
-            </span>
-            &nbsp;=&nbsp;
-            <span style={{ color: theme.tokenColors?.find(t => t.token === 'string')?.foreground || '#ce9178' }}>
-              "hello"
-            </span>;
-          </div>
-          <div style={{ 
-            fontSize: '9px', 
-            display: 'flex', 
-            lineHeight: '1.3',
-            color: theme.editorColors['editor.foreground'] || theme.customColors.textPrimary || '#d4d4d4',
-            fontFamily: 'monospace'
-          }}>
-            <div style={{ 
-              color: theme.editorColors['editorLineNumber.foreground'] || '#858585',
-              width: '14px',
-              textAlign: 'right',
-              marginRight: '6px',
-            }}>3</div>
-            &nbsp;&nbsp;<span style={{ color: theme.tokenColors?.find(t => t.token === 'keyword')?.foreground || '#569cd6' }}>
-              return
-            </span>
-            <span style={{ color: theme.tokenColors?.find(t => t.token === 'variable')?.foreground || '#9cdcfe' }}>
-              &nbsp;str
-            </span>;
-          </div>
-          <div style={{ 
-            fontSize: '9px', 
-            display: 'flex', 
-            lineHeight: '1.3',
-            color: theme.editorColors['editor.foreground'] || theme.customColors.textPrimary || '#d4d4d4',
-            fontFamily: 'monospace'
-          }}>
-            <div style={{ 
-              color: theme.editorColors['editorLineNumber.foreground'] || '#858585',
-              width: '14px',
-              textAlign: 'right',
-              marginRight: '6px',
-            }}>4</div>
-            {'}'}
-          </div>
+        <div style={{ flex: 1, background: bg, padding: '4px 0 0 4px', overflow: 'hidden', fontFamily: 'Consolas,monospace', fontSize: 8, lineHeight: 1.5 }}>
+          <div style={{ display: 'flex' }}><span style={{ color: ln, width: 12, textAlign: 'right', marginRight: 5, opacity: .6 }}>1</span><span style={{ color: kw }}>function </span><span style={{ color: fn }}>hello</span><span style={{ color: fg }}>() {'{'}</span></div>
+          <div style={{ display: 'flex' }}><span style={{ color: ln, width: 12, textAlign: 'right', marginRight: 5, opacity: .6 }}>2</span><span style={{ color: fg }}>  </span><span style={{ color: kw }}>const </span><span style={{ color: vr }}>x</span><span style={{ color: fg }}> = </span><span style={{ color: str }}>"world"</span><span style={{ color: fg }}>;</span></div>
+          <div style={{ display: 'flex' }}><span style={{ color: ln, width: 12, textAlign: 'right', marginRight: 5, opacity: .6 }}>3</span><span style={{ color: fg }}>  </span><span style={{ color: kw }}>return </span><span style={{ color: num }}>42</span><span style={{ color: fg }}>;</span></div>
+          <div style={{ display: 'flex' }}><span style={{ color: ln, width: 12, textAlign: 'right', marginRight: 5, opacity: .6 }}>4</span><span style={{ color: fg }}>{'}'}</span></div>
         </div>
       </div>
-      
-      {/* Theme name overlay */}
-      <div style={{
-        position: 'absolute',
-        bottom: '0',
-        left: '0',
-        right: '0',
-        padding: '6px',
-        backgroundColor: 'rgba(0,0,0,0.6)',
-        color: '#fff',
-        fontSize: '12px',
-        fontWeight: 'bold',
-        backdropFilter: 'blur(2px)',
-      }}>
-        {name}
+      {/* Name + badge */}
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '5px 8px', background: 'linear-gradient(transparent,rgba(0,0,0,.78))', display: 'flex', alignItems: 'center', justifyContent: 'space-between', zIndex: 10 }}>
+        <span style={{ color: '#fff', fontSize: 11, fontWeight: 600, textShadow: '0 1px 3px rgba(0,0,0,.9)' }}>{name}</span>
+        {isAnimated && <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '.05em', padding: '2px 6px', borderRadius: 4, background: neon, color: '#000', textTransform: 'uppercase', animation: 'prev-badge 2s ease-in-out infinite', boxShadow: `0 0 6px ${neon}`, flexShrink: 0 }}>✦ animated</span>}
       </div>
     </div>
   );
 };
 
-// Theme library modal component
-const ThemeLibraryModal: React.FC<{ 
-  isVisible: boolean; 
-  onClose: () => void; 
-  onSelectTheme: (theme: ThemeSettings) => void 
-}> = ({ isVisible, onClose, onSelectTheme }) => {
+const ThemeLibraryModal: React.FC<{ isVisible: boolean; onClose: () => void; onSelectTheme: (theme: ThemeSettings) => void }> = ({ isVisible, onClose, onSelectTheme }) => {
+  const [filter, setFilter] = React.useState<'all'|'dark'|'light'|'animated'>('all');
   if (!isVisible) return null;
-  
+  const filtered = Object.entries(presetThemes).filter(([,t]) => {
+    if (filter === 'dark')     return t.name === 'vs-dark';
+    if (filter === 'light')    return t.name === 'vs';
+    if (filter === 'animated') return !!t.customColors.animationPreset && t.customColors.animationPreset !== 'none';
+    return true;
+  });
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0,0,0,0.7)',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      zIndex: 1000,
-      backdropFilter: 'blur(3px)',
-    }}>
-      <div style={{
-        width: '80%',
-        maxWidth: '900px',
-        maxHeight: '80vh',
-        backgroundColor: 'var(--bg-primary)',
-        borderRadius: '8px',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-      }}>
-        {/* Header */}
-        <div style={{
-          padding: '16px 20px',
-          borderBottom: '1px solid var(--border-primary)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}>
-          <h3 style={{ margin: 0, fontSize: '16px' }}>Theme Library</h3>
-          <button
-            onClick={onClose}
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              color: 'var(--text-secondary)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '24px',
-              height: '24px',
-              borderRadius: '4px',
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
-          </button>
-        </div>
-        
-        {/* Theme grid */}
-        <div style={{
-          padding: '20px',
-          overflowY: 'auto',
-          flex: 1,
-        }}>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-            gap: '20px',
-          }}>
-            {Object.entries(presetThemes).map(([name, theme]) => (
-              <ThemePreview 
-                key={name} 
-                name={name} 
-                theme={theme} 
-                onSelect={() => {
-                  onSelectTheme(theme);
-                  onClose();
-                }} 
-              />
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.75)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 2000, backdropFilter: 'blur(4px)' }}>
+      <div style={{ width: '88%', maxWidth: 1100, maxHeight: '85vh', background: 'var(--bg-primary)', borderRadius: 12, border: '1px solid var(--border-primary)', boxShadow: '0 24px 64px rgba(0,0,0,.5)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-primary)', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ flex: 1 }}>
+            <h3 style={{ margin: 0, fontSize: 15, fontWeight: 600 }}>Theme Library</h3>
+            <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--text-secondary)' }}>{filtered.length} theme{filtered.length !== 1 ? 's' : ''} — click to apply</p>
+          </div>
+          <div style={{ display: 'flex', gap: 6 }}>
+            {(['all','dark','light','animated'] as const).map(f => (
+              <button key={f} onClick={() => setFilter(f)} style={{ padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600, border: '1px solid var(--border-primary)', cursor: 'pointer', background: filter===f?'var(--accent-color)':'var(--bg-secondary)', color: filter===f?'#fff':'var(--text-secondary)', textTransform: 'capitalize' }}>{f}</button>
             ))}
           </div>
-        </div>
-        
-        {/* Footer */}
-        <div style={{
-          padding: '16px 20px',
-          borderTop: '1px solid var(--border-primary)',
-          display: 'flex',
-          justifyContent: 'flex-end',
-        }}>
-          <button
-            onClick={onClose}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '4px',
-              border: '1px solid var(--border-primary)',
-              background: 'var(--bg-secondary)',
-              color: 'var(--text-secondary)',
-              fontSize: '13px',
-              cursor: 'pointer',
-            }}
-          >
-            Close
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: 4, borderRadius: 4, display: 'flex', alignItems: 'center' }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
+        </div>
+        <div style={{ padding: 20, overflowY: 'auto', flex: 1 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(200px,1fr))', gap: 16 }}>
+            {filtered.map(([n,t]) => <ThemePreview key={n} name={n} theme={t} onSelect={() => { onSelectTheme(t); onClose(); }} />)}
+          </div>
+        </div>
+        <div style={{ padding: '12px 20px', borderTop: '1px solid var(--border-primary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>✦ animated = has live animation effects</span>
+          <button onClick={onClose} style={{ padding: '6px 16px', borderRadius: 6, border: '1px solid var(--border-primary)', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer' }}>Close</button>
         </div>
       </div>
     </div>
@@ -2738,493 +2537,84 @@ export function Settings({ isVisible, onClose, initialSettings }: SettingsProps)
 
                 {/* Theme Settings */}
                 {activeCategory === 'theme' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <div style={{ 
-                      display: 'flex', 
-                      justifyContent: 'space-between', 
-                      alignItems: 'center'
-                    }}>
-                      <h3 style={{ margin: '0 0 0 0', fontSize: '16px' }}>Theme & Editor Settings</h3>
-                      <button
-                        onClick={() => setIsThemeLibraryVisible(true)}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          cursor: 'pointer',
-                          color: 'var(--text-secondary)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          width: '28px',
-                          height: '28px',
-                          borderRadius: '4px',
-                        }}
-                        title="Browse Theme Library"
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <rect x="2" y="2" width="7" height="7" rx="1" />
-                          <rect x="15" y="2" width="7" height="7" rx="1" />
-                          <rect x="2" y="15" width="7" height="7" rx="1" />
-                          <rect x="15" y="15" width="7" height="7" rx="1" />
-                        </svg>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+
+                    {/* Header */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 600 }}>Theme & Editor</h3>
+                        <p style={{ margin: '2px 0 0', fontSize: '12px', color: 'var(--text-secondary)' }}>Colors, animations, fonts and editor behavior</p>
+                      </div>
+                      <button onClick={() => setIsThemeLibraryVisible(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: '6px', border: '1px solid var(--accent-color)', background: 'transparent', color: 'var(--accent-color)', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="7" height="7" rx="1"/><rect x="15" y="2" width="7" height="7" rx="1"/><rect x="2" y="15" width="7" height="7" rx="1"/><rect x="15" y="15" width="7" height="7" rx="1"/></svg>
+                        Browse Themes
                       </button>
                     </div>
-                    
-                    {/* Theme Library Modal */}
-                    <ThemeLibraryModal 
-                      isVisible={isThemeLibraryVisible} 
-                      onClose={() => setIsThemeLibraryVisible(false)} 
-                      onSelectTheme={(theme) => {
-                        setThemeSettings(theme);
-                        setHasUnsavedChanges(true);
-                      }}
-                    />
-                    
-                    {/* Theme Preset Selector */}
-                    <div style={{ 
-                      display: 'flex', 
-                      gap: '12px',
-                      marginTop: '8px',
-                      marginBottom: '8px'
-                    }}>
-                      <select
-                        onChange={(e) => {
-                          const selectedTheme = presetThemes[e.target.value];
-                          if (selectedTheme) {
-                            setThemeSettings(selectedTheme);
-                            setHasUnsavedChanges(true);
-                          }
-                        }}
-                        style={{
-                          padding: '6px 12px',
-                          background: 'var(--bg-secondary)',
-                          border: '1px solid var(--border-primary)',
-                          borderRadius: '4px',
-                          color: 'var(--text-primary)',
-                          fontSize: '13px',
-                          cursor: 'pointer',
-                          flex: 1,
-                        }}
-                      >
-                        <option value="">Select a preset theme...</option>
-                        {Object.keys(presetThemes).map((themeName) => (
-                          <option key={themeName} value={themeName}>
-                            {themeName}
-                          </option>
-                        ))}
+
+                    <ThemeLibraryModal isVisible={isThemeLibraryVisible} onClose={() => setIsThemeLibraryVisible(false)} onSelectTheme={(theme) => { setThemeSettings(theme); setHasUnsavedChanges(true); }} />
+
+                    {/* Quick preset + export/import */}
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <select onChange={(e) => { const t = presetThemes[e.target.value]; if (t) { setThemeSettings(t); setHasUnsavedChanges(true); } }} style={{ flex: 1, padding: '7px 10px', background: 'var(--bg-secondary)', border: '1px solid var(--border-primary)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '13px', cursor: 'pointer' }}>
+                        <option value="">Quick-select preset…</option>
+                        {Object.keys(presetThemes).map(n => <option key={n} value={n}>{n}</option>)}
                       </select>
-                    </div>
-
-                    {/* Theme Export/Import Section */}
-                    <div style={{ 
-                      display: 'flex', 
-                      gap: '12px',
-                      marginTop: '8px',
-                      marginBottom: '8px'
-                    }}>
-                      <button
-                        onClick={() => {
-                          const themeData = {
-                            theme: themeSettings,
-                            editor: editorSettings
-                          };
-                          
-                          const themeJson = JSON.stringify(themeData, null, 2);
-                          
-                          const blob = new Blob([themeJson], { type: 'application/json' });
-                          const url = URL.createObjectURL(blob);
-                          
-                          const a = document.createElement('a');
-                          a.href = url;
-                          a.download = `pointer-theme-${themeSettings.name.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.json`;
-                          document.body.appendChild(a);
-                          a.click();
-                          
-                          document.body.removeChild(a);
-                          URL.revokeObjectURL(url);
-                        }}
-                          style={{
-                          padding: '6px 12px',
-                            background: 'var(--bg-secondary)',
-                            border: '1px solid var(--border-primary)',
-                            borderRadius: '4px',
-                            color: 'var(--text-primary)',
-                          cursor: 'pointer',
-                          fontSize: '13px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                        }}
-                      >
-                        <span>Export Theme</span>
-                      </button>
-                      
-                      <label
-                          style={{
-                          padding: '6px 12px',
-                            background: 'var(--bg-secondary)',
-                            border: '1px solid var(--border-primary)',
-                            borderRadius: '4px',
-                            color: 'var(--text-primary)',
-                          cursor: 'pointer',
-                          fontSize: '13px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                        }}
-                      >
-                        <span>Import Theme</span>
-                        <input
-                          type="file"
-                          accept=".json"
-                          style={{ display: 'none' }}
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (!file) return;
-                            
-                            const reader = new FileReader();
-                            reader.onload = (event) => {
-                              try {
-                                const content = event.target?.result as string;
-                                const imported = JSON.parse(content);
-                                
-                                if (!imported.theme) {
-                                  throw new Error('Invalid theme file: Missing theme settings');
-                                }
-
-                                setThemeSettings(imported.theme);
-                                
-                                if (imported.editor) {
-                                  setEditorSettings(prev => ({
-                                    ...prev,
-                                    ...imported.editor
-                                  }));
-                                }
-                                
-                                setHasUnsavedChanges(true);
-                                alert('Theme imported successfully!');
-                              } catch (error) {
-                                console.error('Error importing theme:', error);
-                                alert('Failed to import theme: Invalid JSON format');
-                              }
-
-                              e.target.value = '';
-                            };
-                            
-                            reader.readAsText(file);
-                          }}
-                        />
+                      <button onClick={() => { const blob = new Blob([JSON.stringify({ theme: themeSettings, editor: editorSettings }, null, 2)], { type: 'application/json' }); const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: 'pointer-theme.json' }); document.body.appendChild(a); a.click(); document.body.removeChild(a); }} style={{ padding: '7px 12px', borderRadius: '6px', border: '1px solid var(--border-primary)', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>Export</button>
+                      <label style={{ padding: '7px 12px', borderRadius: '6px', border: '1px solid var(--border-primary)', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                        Import
+                        <input type="file" accept=".json" style={{ display: 'none' }} onChange={(e) => { const file = e.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = (ev) => { try { const imp = JSON.parse(ev.target?.result as string); if (!imp.theme) throw new Error(); setThemeSettings(imp.theme); if (imp.editor) setEditorSettings((p: any) => ({ ...p, ...imp.editor })); setHasUnsavedChanges(true); } catch { alert('Invalid theme file'); } e.target.value = ''; }; reader.readAsText(file); }} />
                       </label>
                     </div>
 
-                    {/* UI Colors Section */}
-                    <div>
-                      <h4 style={{ margin: '0 0 8px 0', fontSize: '14px' }}>UI Colors</h4>
+                    {/* ── UI Colors ── */}
+                    <CollapsibleSection title="UI Colors" defaultOpen={true}>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                        {/* Background Colors */}
                         <div>
-                          <h5 style={{ margin: '8px 0', fontSize: '13px' }}>Background Colors</h5>
-                          <ColorInput
-                            label="Primary Background"
-                            value={themeSettings.customColors.bgPrimary || ''}
-                            onChange={(value) => handleCustomColorChange('bgPrimary', value)}
-                            variable="--bg-primary"
-                          />
-                          <ColorInput
-                            label="Secondary Background"
-                            value={themeSettings.customColors.bgSecondary || ''}
-                            onChange={(value) => handleCustomColorChange('bgSecondary', value)}
-                            variable="--bg-secondary"
-                          />
-                          <ColorInput
-                            label="Tertiary Background"
-                            value={themeSettings.customColors.bgTertiary || ''}
-                            onChange={(value) => handleCustomColorChange('bgTertiary', value)}
-                            variable="--bg-tertiary"
-                          />
-                          <ColorInput
-                            label="Selected Background"
-                            value={themeSettings.customColors.bgSelected || ''}
-                            onChange={(value) => handleCustomColorChange('bgSelected', value)}
-                            variable="--bg-selected"
-                          />
-                          <ColorInput
-                            label="Hover Background"
-                            value={themeSettings.customColors.bgHover || ''}
-                            onChange={(value) => handleCustomColorChange('bgHover', value)}
-                            variable="--bg-hover"
-                          />
-                          <ColorInput
-                            label="Accent Background"
-                            value={themeSettings.customColors.bgAccent || ''}
-                            onChange={(value) => handleCustomColorChange('bgAccent', value)}
-                            variable="--bg-accent"
-                          />
-                        </div>
-
-                        {/* Text Colors */}
-                        <div>
-                          <h5 style={{ margin: '8px 0', fontSize: '13px' }}>Text Colors</h5>
-                          <ColorInput
-                            label="Primary Text"
-                            value={themeSettings.customColors.textPrimary || ''}
-                            onChange={(value) => handleCustomColorChange('textPrimary', value)}
-                            variable="--text-primary"
-                          />
-                          <ColorInput
-                            label="Secondary Text"
-                            value={themeSettings.customColors.textSecondary || ''}
-                            onChange={(value) => handleCustomColorChange('textSecondary', value)}
-                            variable="--text-secondary"
-                          />
-                          <ColorInput
-                            label="Inline Code"
-                            value={themeSettings.customColors.inlineCodeColor || ''}
-                            onChange={(value) => handleCustomColorChange('inlineCodeColor', value)}
-                            variable="--inline-code-color"
-                          />
-                        </div>
-
-                        {/* Border Colors */}
-                        <div>
-                          <h5 style={{ margin: '8px 0', fontSize: '13px' }}>Border Colors</h5>
-                          <ColorInput
-                            label="Border Color"
-                            value={themeSettings.customColors.borderColor || ''}
-                            onChange={(value) => handleCustomColorChange('borderColor', value)}
-                            variable="--border-color"
-                          />
-                          <ColorInput
-                            label="Primary Border"
-                            value={themeSettings.customColors.borderPrimary || ''}
-                            onChange={(value) => handleCustomColorChange('borderPrimary', value)}
-                            variable="--border-primary"
-                          />
-                        </div>
-
-                        {/* Explorer Colors */}
-                        <div>
-                          <h5 style={{ margin: '8px 0', fontSize: '13px' }}>Explorer Colors</h5>
-                          <ColorInput
-                            label="Folder Name"
-                            value={themeSettings.customColors.explorerFolderFg || ''}
-                            onChange={(value) => handleCustomColorChange('explorerFolderFg', value)}
-                            variable="--explorer-folder-fg"
-                          />
-                          <ColorInput
-                            label="Expanded Folder"
-                            value={themeSettings.customColors.explorerFolderExpandedFg || ''}
-                            onChange={(value) => handleCustomColorChange('explorerFolderExpandedFg', value)}
-                            variable="--explorer-folder-expanded-fg"
-                          />
-                          <ColorInput
-                            label="File Name"
-                            value={themeSettings.customColors.explorerFileFg || ''}
-                            onChange={(value) => handleCustomColorChange('explorerFileFg', value)}
-                            variable="--explorer-file-fg"
-                          />
-                        </div>
-
-                        {/* Custom File Extensions */}
-                        <div>
-                          <h5 style={{ margin: '8px 0', fontSize: '13px' }}>Custom File Extensions</h5>
-                          <p style={{ fontSize: '12px', opacity: 0.7, marginBottom: '8px' }}>
-                            Set custom colors for specific file extensions
-                          </p>
-                          
-                          {/* Display existing custom extensions */}
-                          {Object.entries(themeSettings.customColors.customFileExtensions || {}).map(([ext, color], index) => (
-                            <div key={index} style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-                              <input
-                                type="text"
-                                placeholder="Extension"
-                                value={ext}
-                                onChange={(e) => {
-                                  const newExt = e.target.value.toLowerCase().trim();
-                                  const newCustomExtensions = {...(themeSettings.customColors.customFileExtensions || {})};
-                                  
-                                  if (newExt && newExt !== ext) {
-                                    const colorValue = newCustomExtensions[ext];
-                                    delete newCustomExtensions[ext];
-                                    newCustomExtensions[newExt] = colorValue;
-                                    
-                                    const newCustomColors = {
-                                      ...themeSettings.customColors,
-                                      customFileExtensions: newCustomExtensions
-                                    };
-                                    
-                                    handleThemeSettingChange('customColors', newCustomColors);
-                                  }
-                                }}
-                                style={{
-                                  width: '80px',
-                                  padding: '4px 8px',
-                                  marginRight: '8px',
-                                  border: '1px solid var(--border-color)',
-                                  background: 'var(--bg-secondary)',
-                                  color: 'var(--text-primary)',
-                                }}
-                              />
-                              <input
-                                type="color"
-                                value={color}
-                                onChange={(e) => {
-                                  const newCustomExtensions = {...(themeSettings.customColors.customFileExtensions || {})};
-                                  newCustomExtensions[ext] = e.target.value;
-                                  
-                                  const newCustomColors = {
-                                    ...themeSettings.customColors,
-                                    customFileExtensions: newCustomExtensions
-                                  };
-                                  
-                                  handleThemeSettingChange('customColors', newCustomColors);
-                                }}
-                                style={{
-                                  width: '30px',
-                                  height: '30px',
-                                  padding: '0',
-                                  marginRight: '8px',
-                                  border: 'none',
-                                  background: 'transparent',
-                                }}
-                              />
-                              <button
-                                onClick={() => {
-                                  const newCustomExtensions = {...(themeSettings.customColors.customFileExtensions || {})};
-                                  delete newCustomExtensions[ext];
-                                  
-                                  const newCustomColors = {
-                                    ...themeSettings.customColors,
-                                    customFileExtensions: newCustomExtensions
-                                  };
-                                  
-                                  handleThemeSettingChange('customColors', newCustomColors);
-                                }}
-                                style={{
-                                  background: 'transparent',
-                                  border: 'none',
-                                  color: 'var(--error-color)',
-                                  cursor: 'pointer',
-                                  fontSize: '16px',
-                                }}
-                              >
-                                ×
-                              </button>
-                            </div>
+                          <h5 style={{ margin: '0 0 8px', fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Backgrounds</h5>
+                          {([['bgPrimary','Primary','--bg-primary'],['bgSecondary','Secondary','--bg-secondary'],['bgTertiary','Tertiary','--bg-tertiary'],['bgSelected','Selected','--bg-selected'],['bgHover','Hover','--bg-hover']] as const).map(([k,l,v]) => (
+                            <ColorInput key={k} label={l} value={themeSettings.customColors[k] || ''} onChange={val => handleCustomColorChange(k, val)} variable={v} />
                           ))}
-                          
-                          {/* Add new extension button */}
-                          <button
-                            onClick={() => {
-                              const existingExtensions = themeSettings.customColors.customFileExtensions || {};
-                              
-                              const newExtensions = {
-                                ...existingExtensions,
-                                'ext': '#ffffff'
-                              };
-                              
-                              const newCustomColors = {
-                                ...themeSettings.customColors,
-                                customFileExtensions: newExtensions
-                              };
-                              
-                              handleThemeSettingChange('customColors', newCustomColors);
-                            }}
-                            style={{
-                              padding: '4px 8px',
-                              background: 'var(--bg-accent)',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '4px',
-                              cursor: 'pointer',
-                              fontSize: '12px',
-                              marginBottom: '8px',
-                            }}
-                          >
-                            Add Custom Extension
-                          </button>
                         </div>
-
-                        {/* Accent Colors */}
                         <div>
-                          <h5 style={{ margin: '8px 0', fontSize: '13px' }}>Accent Colors</h5>
-                          <ColorInput
-                            label="Accent Color"
-                            value={themeSettings.customColors.accentColor || ''}
-                            onChange={(value) => handleCustomColorChange('accentColor', value)}
-                            variable="--accent-color"
-                          />
-                          <ColorInput
-                            label="Accent Hover"
-                            value={themeSettings.customColors.accentHover || ''}
-                            onChange={(value) => handleCustomColorChange('accentHover', value)}
-                            variable="--accent-hover"
-                          />
-                          <ColorInput
-                            label="Error Color"
-                            value={themeSettings.customColors.errorColor || ''}
-                            onChange={(value) => handleCustomColorChange('errorColor', value)}
-                            variable="--error-color"
-                          />
+                          <h5 style={{ margin: '0 0 8px', fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Text & Accent</h5>
+                          {([['textPrimary','Primary Text','--text-primary'],['textSecondary','Secondary Text','--text-secondary'],['accentColor','Accent','--accent-color'],['accentHover','Accent Hover','--accent-hover'],['errorColor','Error','--error-color'],['inlineCodeColor','Inline Code','--inline-code-color']] as const).map(([k,l,v]) => (
+                            <ColorInput key={k} label={l} value={themeSettings.customColors[k] || ''} onChange={val => handleCustomColorChange(k, val)} variable={v} />
+                          ))}
                         </div>
-
-                        {/* UI Element Colors */}
                         <div>
-                          <h5 style={{ margin: '8px 0', fontSize: '13px' }}>UI Elements</h5>
-                          <ColorInput
-                            label="Titlebar Background"
-                            value={themeSettings.customColors.titlebarBg || ''}
-                            onChange={(value) => handleCustomColorChange('titlebarBg', value)}
-                            variable="--titlebar-bg"
-                          />
-                          <ColorInput
-                            label="Statusbar Background"
-                            value={themeSettings.customColors.statusbarBg || ''}
-                            onChange={(value) => handleCustomColorChange('statusbarBg', value)}
-                            variable="--statusbar-bg"
-                          />
-                          <ColorInput
-                            label="Statusbar Text"
-                            value={themeSettings.customColors.statusbarFg || ''}
-                            onChange={(value) => handleCustomColorChange('statusbarFg', value)}
-                            variable="--statusbar-fg"
-                          />
-                          <ColorInput
-                            label="Activity Bar Background"
-                            value={themeSettings.customColors.activityBarBg || ''}
-                            onChange={(value) => handleCustomColorChange('activityBarBg', value)}
-                            variable="--activity-bar-bg"
-                          />
-                          <ColorInput
-                            label="Activity Bar Text"
-                            value={themeSettings.customColors.activityBarFg || ''}
-                            onChange={(value) => handleCustomColorChange('activityBarFg', value)}
-                            variable="--activity-bar-fg"
-                          />
+                          <h5 style={{ margin: '0 0 8px', fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Bars & Borders</h5>
+                          {([['titlebarBg','Titlebar','--titlebar-bg'],['statusbarBg','Statusbar BG','--statusbar-bg'],['statusbarFg','Statusbar Text','--statusbar-fg'],['activityBarBg','Activity Bar BG','--activity-bar-bg'],['activityBarFg','Activity Bar Icons','--activity-bar-fg'],['borderColor','Border','--border-color']] as const).map(([k,l,v]) => (
+                            <ColorInput key={k} label={l} value={themeSettings.customColors[k] || ''} onChange={val => handleCustomColorChange(k, val)} variable={v} />
+                          ))}
+                        </div>
+                        <div>
+                          <h5 style={{ margin: '0 0 8px', fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Explorer</h5>
+                          {([['explorerFolderFg','Folder','--explorer-folder-fg'],['explorerFolderExpandedFg','Folder (open)','--explorer-folder-expanded-fg'],['explorerFileFg','File','--explorer-file-fg']] as const).map(([k,l,v]) => (
+                            <ColorInput key={k} label={l} value={themeSettings.customColors[k] || ''} onChange={val => handleCustomColorChange(k, val)} variable={v} />
+                          ))}
+                          <div style={{ marginTop: 10, padding: '8px 10px', borderRadius: 6, border: '1px dashed var(--border-primary)', background: 'var(--bg-secondary)' }}>
+                            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '0 0 6px' }}>Generate palette from accent color</p>
+                            <button onClick={applyAutoPaletteFromAccent} style={{ padding: '4px 10px', borderRadius: 4, border: 'none', background: 'var(--accent-color)', color: '#fff', fontSize: '11px', cursor: 'pointer' }}>Auto-generate</button>
+                          </div>
                         </div>
                       </div>
+                    </CollapsibleSection>
 
-                      <div style={{ marginTop: '12px', border: '1px dashed var(--border-primary)', padding: '12px', borderRadius: '8px' }}>
-                        <h5 style={{ fontSize: '13px', margin: '0 0 8px 0' }}>Smart Palette</h5>
-                        <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '0 0 8px 0' }}>
-                          Easily generate accessible text + border colors from your accent color.
-                        </p>
-                        <button
-                          onClick={applyAutoPaletteFromAccent}
-                          style={{
-                            padding: '8px 12px',
-                            borderRadius: '6px',
-                            border: '1px solid var(--border-primary)',
-                            background: 'var(--bg-accent)',
-                            color: 'white',
-                            cursor: 'pointer',
-                            fontSize: '12px',
-                          }}
-                        >
-                          Generate from Accent
-                        </button>
+                    {/* ── File Extension Colors ── */}
+                    <CollapsibleSection title="File Extension Colors" defaultOpen={false}>
+                      <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '0 0 10px' }}>Override colors for specific file extensions in the explorer.</p>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: 8 }}>
+                        {Object.entries(themeSettings.customColors.customFileExtensions || {}).map(([ext, color], i) => (
+                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--bg-secondary)', padding: '4px 8px', borderRadius: 4 }}>
+                            <input type="text" value={ext} onChange={e => { const ne = e.target.value.toLowerCase().trim(); if (!ne || ne === ext) return; const exts = { ...(themeSettings.customColors.customFileExtensions || {}) }; const col = exts[ext]; delete exts[ext]; exts[ne] = col; handleThemeSettingChange('customColors', { ...themeSettings.customColors, customFileExtensions: exts }); }} style={{ width: 60, padding: '2px 6px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: 3, color: 'var(--text-primary)', fontSize: 11 }} />
+                            <input type="color" value={color} onChange={e => { const exts = { ...(themeSettings.customColors.customFileExtensions || {}), [ext]: e.target.value }; handleThemeSettingChange('customColors', { ...themeSettings.customColors, customFileExtensions: exts }); }} style={{ width: 24, height: 24, padding: 0, border: 'none', background: 'transparent', cursor: 'pointer' }} />
+                            <span style={{ flex: 1, fontSize: 11, color, fontFamily: 'monospace' }}>.{ext}</span>
+                            <button onClick={() => { const exts = { ...(themeSettings.customColors.customFileExtensions || {}) }; delete exts[ext]; handleThemeSettingChange('customColors', { ...themeSettings.customColors, customFileExtensions: exts }); }} style={{ background: 'none', border: 'none', color: 'var(--error-color)', cursor: 'pointer', fontSize: 14, padding: '0 2px' }}>×</button>
+                          </div>
+                        ))}
                       </div>
-                        </div>
+                      <button onClick={() => { const exts = { ...(themeSettings.customColors.customFileExtensions || {}), 'ext': '#ffffff' }; handleThemeSettingChange('customColors', { ...themeSettings.customColors, customFileExtensions: exts }); }} style={{ padding: '5px 10px', borderRadius: 4, border: '1px solid var(--border-primary)', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer' }}>+ Add Extension</button>
+                    </CollapsibleSection>
 
                     {/* ── Terminal Colors ── */}
                     <CollapsibleSection title="Terminal Colors" defaultOpen={false}>
@@ -3370,12 +2760,8 @@ export function Settings({ isVisible, onClose, initialSettings }: SettingsProps)
                       </div>
                     </CollapsibleSection>
 
-                    {/* Editor Behavior Settings Section */}
-                        <div>
-                      <h4 style={{ margin: '16px 0 8px 0', fontSize: '14px' }}>Editor Behavior</h4>
-                      <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
-                        Customize how the editor behaves
-                      </p>
+                    {/* ── Editor Behavior ── */}
+                    <CollapsibleSection title="Editor Behavior" defaultOpen={false}>
                       
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                         <div>
@@ -3521,14 +2907,10 @@ export function Settings({ isVisible, onClose, initialSettings }: SettingsProps)
                           </label>
                         </div>
                       </div>
-                    </div>
-                    
-                    {/* Editor Colors Section */}
-                    <div>
-                      <h4 style={{ margin: '16px 0 8px 0', fontSize: '14px' }}>Monaco Editor Colors</h4>
-                      <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
-                        Customize the appearance of the code editor
-                      </p>
+                    </CollapsibleSection>
+
+                    {/* ── Monaco Editor Colors ── */}
+                    <CollapsibleSection title="Monaco Editor Colors" defaultOpen={false}>
                       
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                         {/* Basic Editor Colors */}
@@ -3623,14 +3005,10 @@ export function Settings({ isVisible, onClose, initialSettings }: SettingsProps)
                           />
                         </div>
                       </div>
-                    </div>
+                    </CollapsibleSection>
 
-                    {/* Token Syntax Colors Section */}
-                    <div>
-                      <h4 style={{ margin: '16px 0 8px 0', fontSize: '14px' }}>Syntax Highlighting</h4>
-                      <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '12px' }}>
-                        Customize syntax highlighting for different code elements
-                      </p>
+                    {/* ── Syntax Highlighting ── */}
+                    <CollapsibleSection title="Syntax Highlighting" defaultOpen={false}>
                       
                       <div>
                         {(themeSettings.tokenColors || []).map((tokenColor, index) => (
@@ -3760,16 +3138,10 @@ export function Settings({ isVisible, onClose, initialSettings }: SettingsProps)
                           Add Token Rule
                         </button>
                       </div>
-                      </div>
+                    </CollapsibleSection>
 
-                    {/* Reset Theme & Editor Settings button */}
-                    <div style={{ 
-                      marginTop: '24px', 
-                      borderTop: '1px solid var(--border-primary)', 
-                      paddingTop: '16px',
-                      display: 'flex',
-                      gap: '12px'
-                    }}>
+                    {/* Reset button */}
+                    <div style={{ borderTop: '1px solid var(--border-primary)', paddingTop: '16px', display: 'flex', gap: '12px' }}>
                         <button
                           onClick={() => {
                           if (confirm('Are you sure you want to reset all theme and editor settings to defaults?')) {
