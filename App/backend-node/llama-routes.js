@@ -396,33 +396,45 @@ router.post('/chat', async (req, res) => {
 
   try {
     const { LlamaChatSession } = await import('node-llama-cpp');
-    const context = await loadedModel.createContext({
-      contextSize: Math.min(4096, loadedModel.trainContextSize ?? 4096),
-    });
-    const session = new LlamaChatSession({ contextSequence: context.getSequence() });
 
-    // Extract last user message
+    const systemMsg = messages.find(m => m.role === 'system');
     const lastUser = [...messages].reverse().find(m => m.role === 'user');
-    if (!lastUser) { await context.dispose(); return res.status(400).json({ error: 'No user message' }); }
+    if (!lastUser) return res.status(400).json({ error: 'No user message' });
+
+    const context = await loadedModel.createContext({
+      contextSize: Math.min(2048, loadedModel.trainContextSize ?? 2048),
+    });
+
+    const session = new LlamaChatSession({
+      contextSequence: context.getSequence(),
+      ...(systemMsg ? { systemPrompt: systemMsg.content } : {}),
+    });
+
+    const maxTok = max_tokens || 512;
 
     if (stream) {
       res.setHeader('Content-Type', 'text/event-stream');
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('Connection', 'keep-alive');
+      res.flushHeaders();
 
-      await session.prompt(lastUser.content, {
-        maxTokens: max_tokens || 2048,
-        temperature,
-        onTextChunk: (chunk) => {
-          res.write(`data: ${JSON.stringify({ choices: [{ delta: { content: chunk }, index: 0, finish_reason: null }] })}\n\n`);
-        },
-      });
+      try {
+        await session.prompt(lastUser.content, {
+          maxTokens: maxTok,
+          temperature,
+          onTextChunk: (chunk) => {
+            res.write(`data: ${JSON.stringify({ choices: [{ delta: { content: chunk }, index: 0, finish_reason: null }] })}\n\n`);
+          },
+        });
+      } catch (e) {
+        console.error('[llama] prompt error:', e.message);
+      }
 
       res.write(`data: ${JSON.stringify({ choices: [{ delta: {}, index: 0, finish_reason: 'stop' }] })}\n\n`);
       res.write('data: [DONE]\n\n');
       res.end();
     } else {
-      const response = await session.prompt(lastUser.content, { maxTokens: max_tokens || 2048, temperature });
+      const response = await session.prompt(lastUser.content, { maxTokens: maxTok, temperature });
       res.json({ choices: [{ message: { role: 'assistant', content: response }, finish_reason: 'stop', index: 0 }] });
     }
 
@@ -430,7 +442,7 @@ router.post('/chat', async (req, res) => {
   } catch (err) {
     console.error('[llama] Chat error:', err.message);
     if (!res.headersSent) res.status(500).json({ error: err.message });
-    else { res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`); res.end(); }
+    else { try { res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`); res.end(); } catch (_) {} }
   }
 });
 

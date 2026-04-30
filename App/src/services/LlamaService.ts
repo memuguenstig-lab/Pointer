@@ -111,43 +111,52 @@ class LlamaService {
     messages: { role: string; content: string }[],
     options: { temperature?: number; max_tokens?: number; onChunk?: (token: string) => void; signal?: AbortSignal } = {}
   ): Promise<string> {
-    const { temperature = 0.7, max_tokens, onChunk, signal } = options;
+    const { temperature = 0.7, max_tokens = 512, onChunk, signal } = options;
 
-    const res = await fetch(`${BACKEND}/api/llama/chat`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages, temperature, max_tokens, stream: true }),
-      signal,
-    });
+    // Use a longer timeout for embedded inference (model needs time to generate)
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 min timeout
+    const combinedSignal = signal ?? controller.signal;
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: res.statusText }));
-      throw new Error(err.error || `HTTP ${res.status}`);
-    }
+    try {
+      const res = await fetch(`${BACKEND}/api/llama/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages, temperature, max_tokens, stream: true }),
+        signal: combinedSignal,
+      });
 
-    const reader = res.body!.getReader();
-    const decoder = new TextDecoder();
-    let full = '';
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      const chunk = decoder.decode(value);
-      for (const line of chunk.split('\n')) {
-        if (!line.startsWith('data: ') || line === 'data: [DONE]') continue;
-        try {
-          const data = JSON.parse(line.slice(6));
-          const token = data.choices?.[0]?.delta?.content || '';
-          if (token) {
-            full += token;
-            onChunk?.(token);
-          }
-        } catch (_) {}
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: res.statusText }));
+        throw new Error(err.error || `HTTP ${res.status}`);
       }
-    }
 
-    return full;
+      const reader = res.body!.getReader();
+      const decoder = new TextDecoder();
+      let full = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value);
+        for (const line of chunk.split('\n')) {
+          if (!line.startsWith('data: ') || line === 'data: [DONE]') continue;
+          try {
+            const data = JSON.parse(line.slice(6));
+            const token = data.choices?.[0]?.delta?.content || '';
+            if (token) {
+              full += token;
+              onChunk?.(token);
+            }
+          } catch (_) {}
+        }
+      }
+
+      return full;
+    } finally {
+      clearTimeout(timeoutId);
+    }
   }
 
   /** Check if a model is currently loaded */
