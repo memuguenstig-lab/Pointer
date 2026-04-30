@@ -21,6 +21,9 @@ app.commandLine.appendSwitch('ignore-gpu-blocklist');
 app.commandLine.appendSwitch('disable-http-cache', 'false');
 // Reduce IPC overhead
 app.commandLine.appendSwitch('js-flags', '--max-old-space-size=512');
+// Disable GPU disk cache to avoid "Unable to move cache" errors on Windows
+app.commandLine.appendSwitch('disable-gpu-shader-disk-cache');
+app.commandLine.appendSwitch('disk-cache-size', '0');
 
 // Get dev server port from environment variable or default to 3000
 const DEV_SERVER_PORT = process.env.VITE_DEV_SERVER_PORT || '3000';
