@@ -96,16 +96,25 @@ class LMStudioService {
 
       // ── Embedded LLM (node-llama-cpp) ──────────────────────────────────
       if (modelConfig.modelProvider === 'ollama-embedded') {
-        let full = '';
-        await llamaService.chat(options.messages as any, {
-          temperature: options.temperature ?? 0.7,
-          max_tokens: options.max_tokens ?? undefined,
-          onChunk: (token) => {
-            full += token;
-            onStream?.(full);
-          },
-        });
-        return { choices: [{ message: { content: cleanAIResponse(full) } }] };
+        try {
+          let full = '';
+          await llamaService.chat(options.messages as any, {
+            temperature: options.temperature ?? 0.7,
+            max_tokens: options.max_tokens ?? undefined,
+            onChunk: (token) => {
+              full += token;
+              onStream?.(full);
+            },
+          });
+          return { choices: [{ message: { content: cleanAIResponse(full) } }] };
+        } catch (err: any) {
+          // Embedded inference not available — fallback to Ollama/LM Studio
+          console.warn('[Embedded] Not available, falling back to local server:', err.message);
+          // Change provider to 'local' and use Ollama default endpoint
+          modelConfig.modelProvider = 'local';
+          modelConfig.apiEndpoint = 'http://localhost:11434/v1';
+          // Continue to normal flow below
+        }
       }
       // ───────────────────────────────────────────────────────────────────
       console.log(`Attempting to connect to API at: ${modelConfig.apiEndpoint}`);
@@ -281,17 +290,25 @@ class LMStudioService {
 
       // ── Embedded LLM (node-llama-cpp) ──────────────────────────────────
       if (modelConfig.modelProvider === 'ollama-embedded') {
-        let accumulated = '';
-        await llamaService.chat(messages as any, {
-          temperature,
-          max_tokens: max_tokens ?? undefined,
-          signal,
-          onChunk: (token) => {
-            accumulated += token;
-            onUpdateWithFunctionCallDetection(accumulated);
-          },
-        });
-        return;
+        try {
+          let accumulated = '';
+          await llamaService.chat(messages as any, {
+            temperature,
+            max_tokens: max_tokens ?? undefined,
+            signal,
+            onChunk: (token) => {
+              accumulated += token;
+              onUpdateWithFunctionCallDetection(accumulated);
+            },
+          });
+          return;
+        } catch (err: any) {
+          // Embedded inference not available — fallback to Ollama
+          console.warn('[Embedded] Not available, falling back to Ollama:', err.message);
+          modelConfig.modelProvider = 'local';
+          modelConfig.apiEndpoint = 'http://localhost:11434/v1';
+          // Continue to normal flow below
+        }
       }
       // ───────────────────────────────────────────────────────────────────
 

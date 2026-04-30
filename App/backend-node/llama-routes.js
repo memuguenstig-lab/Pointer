@@ -75,8 +75,37 @@ function modelStatus() {
   return MODELS.map(m => ({
     ...m,
     downloaded: fs.existsSync(path.join(dir, m.file)),
-    loaded: false,
+    loaded: loadedModelPath === path.join(dir, m.file),
   }));
+}
+
+// ── Inference state ────────────────────────────────────────────────────────
+let llamaInstance = null;
+let loadedModel = null;
+let loadedModelPath = null;
+
+async function getLlamaInstance() {
+  if (llamaInstance) return llamaInstance;
+  const { getLlama } = await import('node-llama-cpp');
+  llamaInstance = await getLlama({ gpu: 'auto' }).catch(() => getLlama({ gpu: false }));
+  console.log('[llama] Initialized, GPU:', llamaInstance.gpu ?? 'cpu');
+  return llamaInstance;
+}
+
+async function ensureModelLoaded(modelPath) {
+  if (loadedModelPath === modelPath && loadedModel) return loadedModel;
+  // Unload previous
+  if (loadedModel) {
+    try { await loadedModel.dispose(); } catch (_) {}
+    loadedModel = null;
+    loadedModelPath = null;
+  }
+  const llama = await getLlamaInstance();
+  console.log('[llama] Loading model:', modelPath);
+  loadedModel = await llama.loadModel({ modelPath });
+  loadedModelPath = modelPath;
+  console.log('[llama] Model loaded');
+  return loadedModel;
 }
 
 // ── Parallel chunk downloader ──────────────────────────────────────────────
@@ -254,9 +283,9 @@ async function downloadChunked(url, dest, partFile, totalSize, resumeFrom) {
 
 router.get('/status', (req, res) => {
   res.json({
-    available: false,
-    modelLoaded: false,
-    loadedModelPath: null,
+    available: true,
+    modelLoaded: !!loadedModel,
+    loadedModelPath,
     modelsDir: getModelsDir(),
     localModels: modelStatus(),
     downloadState,
@@ -328,16 +357,81 @@ router.delete('/models/:modelId', (req, res) => {
   }
 });
 
-router.post('/load', (req, res) => {
-  res.status(503).json({ error: 'Embedded inference not available in this build. Use the downloaded model with Ollama or LM Studio.' });
+router.post('/load', async (req, res) => {
+  const { modelId, modelPath } = req.body || {};
+  let filePath = modelPath;
+  if (!filePath && modelId) {
+    const model = MODELS.find(m => m.id === modelId);
+    if (!model) return res.status(404).json({ error: 'Unknown model' });
+    filePath = path.join(getModelsDir(), model.file);
+  }
+  if (!filePath) return res.status(400).json({ error: 'modelId or modelPath required' });
+  if (!fs.existsSync(filePath)) return res.status(404).json({ error: `Model file not found: ${filePath}` });
+
+  try {
+    await ensureModelLoaded(filePath);
+    res.json({ success: true, modelPath: filePath });
+  } catch (err) {
+    console.error('[llama] Load failed:', err.message);
+    res.status(500).json({ error: err.message });
+  }
 });
 
-router.post('/unload', (req, res) => {
+router.post('/unload', async (req, res) => {
+  if (loadedModel) {
+    try { await loadedModel.dispose(); } catch (_) {}
+    loadedModel = null;
+    loadedModelPath = null;
+  }
   res.json({ success: true });
 });
 
-router.post('/chat', (req, res) => {
-  res.status(503).json({ error: 'Embedded inference not available in this build.' });
+router.post('/chat', async (req, res) => {
+  if (!loadedModel) {
+    return res.status(503).json({ error: 'No model loaded. Call /api/llama/load first.' });
+  }
+
+  const { messages = [], temperature = 0.7, max_tokens, stream = true } = req.body;
+  if (!messages.length) return res.status(400).json({ error: 'messages required' });
+
+  try {
+    const { LlamaChatSession } = await import('node-llama-cpp');
+    const context = await loadedModel.createContext({
+      contextSize: Math.min(4096, loadedModel.trainContextSize ?? 4096),
+    });
+    const session = new LlamaChatSession({ contextSequence: context.getSequence() });
+
+    // Extract last user message
+    const lastUser = [...messages].reverse().find(m => m.role === 'user');
+    if (!lastUser) { await context.dispose(); return res.status(400).json({ error: 'No user message' }); }
+
+    if (stream) {
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+
+      await session.prompt(lastUser.content, {
+        maxTokens: max_tokens || 2048,
+        temperature,
+        onTextChunk: (chunk) => {
+          res.write(`data: ${JSON.stringify({ choices: [{ delta: { content: chunk }, index: 0, finish_reason: null }] })}\n\n`);
+        },
+      });
+
+      res.write(`data: ${JSON.stringify({ choices: [{ delta: {}, index: 0, finish_reason: 'stop' }] })}\n\n`);
+      res.write('data: [DONE]\n\n');
+      res.end();
+    } else {
+      const response = await session.prompt(lastUser.content, { maxTokens: max_tokens || 2048, temperature });
+      res.json({ choices: [{ message: { role: 'assistant', content: response }, finish_reason: 'stop', index: 0 }] });
+    }
+
+    await context.dispose();
+  } catch (err) {
+    console.error('[llama] Chat error:', err.message);
+    if (!res.headersSent) res.status(500).json({ error: err.message });
+    else { res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`); res.end(); }
+  }
 });
 
 module.exports = router;
