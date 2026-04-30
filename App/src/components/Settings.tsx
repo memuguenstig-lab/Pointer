@@ -598,6 +598,7 @@ export function Settings({ isVisible, onClose, initialSettings }: SettingsProps)
         console.log('IPC Renderer not available, skipping Discord RPC settings save');
       }
       setHasUnsavedChanges(false);
+      window.dispatchEvent(new Event('settings-saved'));
       onClose();
     } catch (error) {
       console.error('Error saving settings:', error);

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FileSystemItem } from '../types';
 import { ActivityView } from './ActivityBar';
+import { AIFileService } from '../services/AIFileService';
 
 interface StatusBarProps {
   currentFileId: string | null;
@@ -9,6 +10,7 @@ interface StatusBarProps {
   saveStatus: 'saved' | 'saving' | 'error' | null;
   activeView: ActivityView;
   onToggleGitView: () => void;
+  onOpenSettings?: () => void;
   workspaceName?: string;
   errorCount?: number;
   warningCount?: number;
@@ -39,12 +41,14 @@ const StatusBar: React.FC<StatusBarProps> = ({
   saveStatus,
   activeView,
   onToggleGitView,
+  onOpenSettings,
   workspaceName,
   errorCount = 0,
   warningCount = 0,
 }) => {
   const [gitBranch, setGitBranch] = useState<string | null>(null);
   const [time, setTime] = useState(() => new Date());
+  const [activeModel, setActiveModel] = useState<{ chat: string; agent: string } | null>(null);
 
   // Fetch git branch + status
   useEffect(() => {
@@ -68,6 +72,29 @@ const StatusBar: React.FC<StatusBarProps> = ({
   useEffect(() => {
     const id = setInterval(() => setTime(new Date()), 1000);
     return () => clearInterval(id);
+  }, []);
+
+  // Load active model names
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [chatCfg, agentCfg] = await Promise.all([
+          AIFileService.getModelConfigForPurpose('chat'),
+          AIFileService.getModelConfigForPurpose('agent'),
+        ]);
+        const shorten = (id: string) => id.length > 24 ? id.slice(0, 22) + '…' : id;
+        setActiveModel({
+          chat: shorten(chatCfg.modelId || 'none'),
+          agent: shorten(agentCfg.modelId || 'none'),
+        });
+      } catch {
+        setActiveModel(null);
+      }
+    };
+    load();
+    // Refresh when settings change
+    window.addEventListener('settings-saved', load);
+    return () => window.removeEventListener('settings-saved', load);
   }, []);
 
   const currentFile = currentFileId ? items[currentFileId] : null;
@@ -179,6 +206,23 @@ const StatusBar: React.FC<StatusBarProps> = ({
             <span className="status-bar__item" title="Encoding">
               UTF-8
             </span>
+            <span className="status-bar__divider" />
+          </>
+        )}
+        {/* Active model indicator */}
+        {activeModel && (
+          <>
+            <button
+              className="status-bar__item status-bar__item--btn"
+              onClick={onOpenSettings}
+              title={`Chat: ${activeModel.chat}\nAgent: ${activeModel.agent}\nClick to change models`}
+              style={{ gap: 4, opacity: 0.8 }}
+            >
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor" style={{ flexShrink: 0 }}>
+                <path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13zM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75zM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/>
+              </svg>
+              <span style={{ fontSize: 11 }}>{activeModel.chat}</span>
+            </button>
             <span className="status-bar__divider" />
           </>
         )}

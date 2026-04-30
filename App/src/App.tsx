@@ -1707,6 +1707,7 @@ const App: React.FC = () => {
           saveStatus={saveStatus}
           activeView={activeView}
           onToggleGitView={() => handleActivityViewChange('git')}
+          onOpenSettings={() => setIsSettingsModalOpen(true)}
           errorCount={diagnostics.errors}
           warningCount={diagnostics.warnings}
         />
