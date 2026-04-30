@@ -1,5 +1,9 @@
 # Pointer - Modern Development Suite
 
+<p align="center">
+  <img src="Assets/banner.png" alt="Pointer Banner" width="100%" />
+</p>
+
 A comprehensive development suite consisting of a modern code editor, community Discord bots, and a web presence - all built with React, TypeScript, Python, and Next.js.
 
 - **Website**: [pointr.sh](https://pointr.sh)

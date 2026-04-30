@@ -1,6 +1,10 @@
 # Pointer Code Editor
 
-A modern, AI-powered code editor built with Electron, React, TypeScript, and Python. Features VS Code-like interface, integrated terminal, AI assistance, and professional development tools.
+<p align="center">
+  <img src="../Assets/banner.png" alt="Pointer Banner" width="100%" />
+</p>
+
+A modern, AI-powered code editor built with Electron, React, TypeScript, and Node.js. Features VS Code-like interface, integrated terminal, AI assistance, and professional development tools.
 
 ## 🚀 Quick Start
 

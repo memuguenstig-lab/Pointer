@@ -79,6 +79,15 @@
       "target": "nsis",
       "icon": "electron/logo3.png"
     },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerSidebar": "installer/banner.png",
+      "uninstallerSidebar": "installer/banner.png",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Pointer"
+    },
     "linux": {
       "target": "AppImage",
       "icon": "electron/logo3.png"

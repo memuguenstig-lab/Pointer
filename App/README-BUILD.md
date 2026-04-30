@@ -1,5 +1,9 @@
 # Pointer — Building the Installer
 
+<p align="center">
+  <img src="../Assets/banner.png" alt="Pointer Banner" width="100%" />
+</p>
+
 ## Prerequisites (build machine only — NOT required for end users)
 - Node.js 18+ and yarn
 - Windows: build the Windows installer on a Windows machine
