@@ -1320,17 +1320,8 @@ export function Settings({ isVisible, onClose, initialSettings }: SettingsProps)
     }
   }, [modelAssignments.autocompletion, modelConfigs, testAutocompletionConnection]);
 
-  // Test autocompletion connection when the assigned model's configuration changes
-  useEffect(() => {
-    const autocompletionModelId = modelAssignments.autocompletion;
-    if (autocompletionModelId && modelConfigs[autocompletionModelId]) {
-      const config = modelConfigs[autocompletionModelId];
-      // Only test if we have the necessary configuration
-      if (config.apiEndpoint) {
-        testAutocompletionConnection();
-      }
-    }
-  }, [modelConfigs, modelAssignments.autocompletion, testAutocompletionConnection]);
+  // Test autocompletion connection only when settings are opened (not on every config change)
+  // Removed aggressive re-test on every modelConfigs change to reduce noise
 
   // Add function to handle password visibility toggle
   const handleTogglePasswordVisibility = async () => {

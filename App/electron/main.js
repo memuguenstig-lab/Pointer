@@ -826,9 +826,9 @@ ipcMain.on('discord-settings-update', (event, settings) => {
       if (!rpc) initDiscordRPC();
     } else {
       if (rpc) {
-        // Safe destroy — ignore errors if socket already closed
-        try { rpc.destroy(); } catch (_) {}
+        const _rpc = rpc;
         rpc = null;
+        try { _rpc.destroy().catch(() => {}); } catch (_) {}
       }
     }
   } else {
@@ -863,7 +863,7 @@ ipcMain.handle('update-discord-rpc-settings', async (event, newSettings) => {
       updateRichPresence();
     } else if (!discordRpcSettings.enabled && rpc) {
       // Clear presence if disabled — safe call
-      try { rpc.clearActivity(); } catch (_) {}
+      try { rpc.clearActivity().catch(() => {}); } catch (_) {}
     } else if (discordRpcSettings.enabled && !rpc) {
       initDiscordRPC();
     }
