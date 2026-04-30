@@ -106,14 +106,6 @@ const App: React.FC = () => {
           parentId: null,
           path: '',
         },
-        'welcome': {
-          id: 'welcome',
-          name: 'notes.js',
-          type: 'file',
-          content: "// Welcome to your new code editor!\n// Start typing here...\n\n// By the way you can't delete or save this file. (future updates (maybe (if i have motivation)))",
-          parentId: rootId,
-          path: 'notes.js',
-        },
       },
       currentFileId: null,
       rootId,
@@ -692,49 +684,9 @@ const App: React.FC = () => {
     // Apply custom theme at the beginning of tab select to ensure it's set
     applyCustomTheme();
     
-    // Special handling for welcome tab
-    if (tabId === 'welcome') {
-      // Make sure welcome file exists in the state
-      if (!fileSystem.items['welcome']) {
-        // If welcome file doesn't exist, recreate it
-        setFileSystem(prev => ({
-          ...prev,
-          currentFileId: 'welcome',
-          items: {
-            ...prev.items,
-            'welcome': {
-              id: 'welcome',
-              name: 'notes.js',
-              type: 'file',
-              content: "// Welcome to your new code editor!\n// Start typing here...\n\n// By the way you can't delete or save this file. (future updates (maybe (if i have motivation)))",
-              parentId: prev.rootId,
-              path: 'notes.js',
-            }
-          }
-        }));
-        
-        if (editor.current) {
-          editor.current.setValue((fileSystem.items['welcome'] as FileSystemItem)?.content || '');
-          // Reapply the custom theme after setting editor content
-          applyCustomTheme();
-        }
-        return;
-      }
-      
-      setFileSystem(prev => ({ ...prev, currentFileId: 'welcome' }));
-      if (editor.current) {
-        editor.current.setValue((fileSystem.items['welcome'] as FileSystemItem)?.content || '');
-        // Reapply the custom theme after setting editor content
-        applyCustomTheme();
-      }
-      return;
-    }
-
-    // Check if regular file exists
+    // Check if file exists
     if (!fileSystem.items[tabId]) {
       console.error(`Attempted to select non-existent tab with id: ${tabId}`);
-      // Fall back to welcome file
-      handleTabSelect('welcome');
       return;
     }
 
@@ -1371,15 +1323,22 @@ const App: React.FC = () => {
         const lastDir = localStorage.getItem('lastDirectory');
         if (lastDir) {
           setConnectionMessage('');
-          const result = await FileSystemService.openSpecificDirectory(lastDir);
-          if (result) {
-            setFileSystem(prevState => ({
-              ...prevState,
-              items: result.items,
-              rootId: result.rootId,
-              currentFileId: null, // Don't open the welcome tab
-              terminalOpen: false,
-            }));
+          try {
+            const result = await FileSystemService.openSpecificDirectory(lastDir);
+            if (result && result.items && Object.keys(result.items).length > 1) {
+              setFileSystem(prevState => ({
+                ...prevState,
+                items: result.items,
+                rootId: result.rootId,
+                currentFileId: null,
+                terminalOpen: false,
+              }));
+            } else {
+              // Directory empty or not found — clear saved path
+              localStorage.removeItem('lastDirectory');
+            }
+          } catch {
+            localStorage.removeItem('lastDirectory');
           }
         }
         
@@ -1650,6 +1609,31 @@ const App: React.FC = () => {
                 ) : isGitViewActive ? (
                   <GitView onBack={handleToggleExplorerView} />
                 ) : isExplorerViewActive ? (
+                  // Check if a real project is loaded (more than just the root node)
+                  Object.keys(fileSystem.items).length <= 1 ? (
+                    <div style={{
+                      display: 'flex', flexDirection: 'column', alignItems: 'center',
+                      justifyContent: 'center', height: '100%', gap: '12px',
+                      padding: '24px', textAlign: 'center',
+                    }}>
+                      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" strokeWidth="1.2">
+                        <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/>
+                      </svg>
+                      <div style={{ color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.5 }}>
+                        No project open
+                      </div>
+                      <button
+                        onClick={handleOpenFolder}
+                        style={{
+                          padding: '6px 14px', fontSize: '12px',
+                          background: 'var(--accent-color)', color: '#fff',
+                          border: 'none', borderRadius: '4px', cursor: 'pointer',
+                        }}
+                      >
+                        Open Folder
+                      </button>
+                    </div>
+                  ) : (
                   <FileExplorer
                     items={fileSystem.items}
                     rootId={fileSystem.rootId}
@@ -1661,6 +1645,7 @@ const App: React.FC = () => {
                     onDeleteItem={handleDeleteItem}
                     onRenameItem={handleRenameItem}
                   />
+                  )
                 ) : (
                   <div style={{ padding: '16px', color: 'var(--text-secondary)', fontSize: 13 }}>
                     No view selected
