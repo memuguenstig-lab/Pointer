@@ -1133,42 +1133,46 @@ const App: React.FC = () => {
   const handleDeleteItem = async (item: FileSystemItem) => {
     const success = await FileSystemService.deleteItem(item.path);
     if (success) {
-      // If the deleted item was a file and it was open, close its tab
+      // Close any open tabs for this item or its children
       if (item.type === 'file' && openFiles.includes(item.id)) {
         handleTabClose(item.id);
-      }
-
-      // Remove the item and its children from the file system
-      const newItems = { ...fileSystem.items };
-      const itemsToDelete = new Set<string>();
-
-      // Helper function to collect all child items
-      const collectChildren = (parentId: string) => {
-        Object.entries(newItems).forEach(([id, item]) => {
-          if (item.parentId === parentId) {
-            itemsToDelete.add(id);
-            if (item.type === 'directory') {
-              collectChildren(id);
-            }
-          }
+      } else if (item.type === 'directory') {
+        // Close all open files that are children of this directory
+        const toClose = openFiles.filter(fileId => {
+          const f = fileSystem.items[fileId];
+          return f && f.path && f.path.startsWith(item.path);
         });
-      };
-
-      // Add the item itself and collect all its children if it's a directory
-      itemsToDelete.add(item.id);
-      if (item.type === 'directory') {
-        collectChildren(item.id);
+        for (const id of toClose) handleTabClose(id);
       }
 
-      // Remove all collected items
-      itemsToDelete.forEach(id => {
-        delete newItems[id];
-      });
-
-      setFileSystem(prev => ({
-        ...prev,
-        items: newItems,
-      }));
+      // Reload the workspace to get accurate state from disk
+      const currentDir = FileSystemService.getCurrentDirectory();
+      if (currentDir) {
+        const result = await FileSystemService.openSpecificDirectory(currentDir);
+        if (result) {
+          setFileSystem(prev => ({
+            ...prev,
+            items: result.items,
+            rootId: result.rootId,
+          }));
+        }
+      } else {
+        // Fallback: remove from state manually
+        const newItems = { ...fileSystem.items };
+        const itemsToDelete = new Set<string>();
+        const collectChildren = (parentId: string) => {
+          Object.entries(newItems).forEach(([id, i]) => {
+            if (i.parentId === parentId) {
+              itemsToDelete.add(id);
+              if (i.type === 'directory') collectChildren(id);
+            }
+          });
+        };
+        itemsToDelete.add(item.id);
+        if (item.type === 'directory') collectChildren(item.id);
+        itemsToDelete.forEach(id => delete newItems[id]);
+        setFileSystem(prev => ({ ...prev, items: newItems }));
+      }
     }
   };
 

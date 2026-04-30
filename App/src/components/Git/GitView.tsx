@@ -28,14 +28,14 @@ const styles = {
     padding: '8px 12px',
     borderBottom: '1px solid var(--border-color)',
     justifyContent: 'space-between',
-    backgroundColor: 'var(--bg-secondary, #1e1e2e)',
+    backgroundColor: 'var(--bg-secondary)',
   },
   title: {
     fontSize: '11px',
     textTransform: 'uppercase' as const,
     fontWeight: 600,
     letterSpacing: '1px',
-    color: '#bbbbbb',
+    color: 'var(--text-secondary)',
     margin: 0,
   },
   headerActions: {
@@ -101,7 +101,7 @@ const styles = {
     flex: 1,
     overflow: 'auto',
     padding: '8px',
-    backgroundColor: 'var(--bg-primary, #282838)',
+    backgroundColor: 'var(--bg-primary)',
   },
   notGitRepo: {
     display: 'flex',
