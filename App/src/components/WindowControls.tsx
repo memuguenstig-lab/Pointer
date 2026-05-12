@@ -4,7 +4,7 @@ import '../styles/WindowControls.css';
 interface WindowControlsProps {
   onMinimize?: () => void;
   onMaximize?: () => void;
-  onClose?: () => void;
+  onClose?: (forceQuit?: boolean) => void;
   isMaximized?: boolean;
   position?: 'left' | 'right';
   theme?: 'dark' | 'light';
@@ -60,8 +60,8 @@ const WindowControls: React.FC<WindowControlsProps> = ({
 
       <button
         className="window-control-btn close-btn"
-        onClick={onClose}
-        title="Close (Alt+F4)"
+        onClick={(e) => onClose?.(e.shiftKey)}
+        title="Close (Alt+F4) · Shift+Click to quit"
         aria-label="Close window"
         type="button"
       >

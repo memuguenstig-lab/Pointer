@@ -123,12 +123,16 @@ const Titlebar: React.FC<TitlebarProps> = ({
     window.electron?.window?.maximize();
   };
 
-  const handleClose = () => {
-    window.electron?.window?.close();
+  const handleClose = (forceQuit?: boolean) => {
+    if (forceQuit) {
+      window.electron?.window?.forceClose?.();
+    } else {
+      window.electron?.window?.close();
+    }
   };
 
   const handleTitleClick = () => {
-    window.open('https://pointr.sh', '_blank');
+    window.open('https://pointer.f1shy312.com', '_blank');
   };
 
   const handleCloneRepository = () => {
@@ -294,7 +298,7 @@ const Titlebar: React.FC<TitlebarProps> = ({
               </svg>
             )}
           </button>
-          <button className="titlebar-button close" onClick={handleClose} title="Close">
+          <button className="titlebar-button close" onClick={(e) => handleClose(e.shiftKey)} title="Close (Shift+Click to quit)">
             <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M1 1L9 9M9 1L1 9" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
             </svg>

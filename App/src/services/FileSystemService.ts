@@ -190,8 +190,8 @@ export class FileSystemService {
   static async readFile(fileId: string): Promise<string | null> {
     try {
       await this.refreshStructure();
-      // Clear the cache for this specific file
-      this.fileCache.delete(fileId);
+      // Only clear cache if file was recently modified (tracked by saveFile)
+      // Don't unconditionally clear — it defeats the purpose of caching
       
       let filePath = this.filePaths.get(fileId);
       
@@ -299,6 +299,9 @@ export class FileSystemService {
       }
 
       // Return both success status and the saved content
+      // Invalidate cache for this file so next read gets fresh content
+      this.fileCache.delete(path);
+      this.fileCache.delete(pathToUse);
       return { success: true, content };
     } catch (error) {
       console.error(`Error saving file ${path}:`, error);
@@ -392,7 +395,7 @@ export class FileSystemService {
       }
 
       // Read the file content via backend
-      const fs = await import('fs').catch(() => null);
+      const fs = await import('fs').catch((): null => null);
       let content: string;
       try {
         // Try reading via backend read-text endpoint
@@ -554,11 +557,36 @@ export class FileSystemService {
     }
   }
 
+  // ── Debounced refresh ─────────────────────────────────────────────────────
+  // refreshStructure is called on every file operation. We debounce it so
+  // rapid successive calls (e.g. save + read) only trigger one network request.
+  private static _refreshPromise: Promise<any> | null = null;
+  private static _refreshTimer: ReturnType<typeof setTimeout> | null = null;
+  private static _lastRefreshAt = 0;
+  private static readonly REFRESH_COOLDOWN_MS = 300;
+
   static async refreshStructure() {
     if (!this.getCurrentDirectory()) {
       return null;
     }
 
+    // If a refresh happened very recently, skip it — caches are still warm
+    const now = Date.now();
+    if (now - this._lastRefreshAt < this.REFRESH_COOLDOWN_MS) {
+      return null;
+    }
+
+    // Deduplicate concurrent calls — return the in-flight promise
+    if (this._refreshPromise) return this._refreshPromise;
+
+    this._refreshPromise = this._doRefresh().finally(() => {
+      this._refreshPromise = null;
+      this._lastRefreshAt = Date.now();
+    });
+    return this._refreshPromise;
+  }
+
+  private static async _doRefresh() {
     try {
       // Store the old file paths before clearing
       const oldFilePaths = new Map(this.filePaths);
@@ -611,6 +639,14 @@ export class FileSystemService {
       console.error('Error refreshing directory:', error);
       throw error;
     }
+  }
+
+  // Also add a cache-aware readFile that skips refreshStructure for cached files
+  static async readFileCached(fileId: string): Promise<string | null> {
+    if (this.fileCache.has(fileId)) {
+      return this.fileCache.get(fileId)!;
+    }
+    return this.readFile(fileId);
   }
 
   static async listDirectory(path: string): Promise<string[]> {

@@ -45,7 +45,7 @@ let discordRpcSettings = {
   smallImageKey: "code",
   smallImageText: "{languageId} | Line {line}:{column}",
   button1Label: "Website",
-  button1Url: "https://pointr.sh",
+  button1Url: "https://pointer.f1shy312.com",
   button2Label: "Join the Discord 🚀",
   button2Url: "https://discord.gg/vhgc8THmNk"
 };
@@ -459,7 +459,7 @@ function createTray() {
 
   tray.setContextMenu(Menu.buildFromTemplate([
     {
-      label: 'Show Pointer',
+      label: 'Show All Windows',
       click: () => {
         const wins = BrowserWindow.getAllWindows();
         if (wins.length === 0) {
@@ -468,6 +468,10 @@ function createTray() {
           wins.forEach(w => { w.show(); w.focus(); });
         }
       },
+    },
+    {
+      label: 'New Window',
+      click: () => { createWindow(); },
     },
     { type: 'separator' },
     {
@@ -800,6 +804,11 @@ ipcMain.on('window-close', (event) => {
   if (win) win.hide(); // Hide to tray instead of closing
 });
 
+ipcMain.on('window-force-close', (event) => {
+  forceQuit = true;
+  app.quit();
+});
+
 ipcMain.handle('window-is-maximized', (event) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   return win ? win.isMaximized() : false;
@@ -876,6 +885,24 @@ ipcMain.handle('update-discord-rpc-settings', async (event, newSettings) => {
 ipcMain.handle('get-discord-rpc-settings', async () => {
   await loadSettings();
   return discordRpcSettings;
+});
+
+// New window from renderer (Ctrl+Shift+N or menu)
+ipcMain.on('window-new', () => { createWindow(); });
+
+// AI work complete — flash tray icon if window is hidden
+ipcMain.on('ai-work-complete', () => {
+  const wins = BrowserWindow.getAllWindows();
+  const allHidden = wins.length === 0 || wins.every(w => !w.isVisible());
+  if (allHidden && tray) {
+    tray.setToolTip('Pointer — AI finished working');
+    // Flash taskbar on Windows
+    if (wins[0]) wins[0].flashFrame(true);
+    // Reset tooltip after 10s
+    setTimeout(() => {
+      if (tray) tray.setToolTip('Pointer — running in background');
+    }, 10000);
+  }
 });
 
 // Open file/folder in system explorer

@@ -7,6 +7,9 @@ import GitLogView from './GitLogView';
 import GitBranchView from './GitBranchView';
 import GitStashView from './GitStashView';
 import GitPullRequestView from './GitPullRequestView';
+import GitGraphView from './GitGraphView';
+import GitConflictResolver from './GitConflictResolver';
+import GitRebaseView from './GitRebaseView';
 
 // CSS styles for the GitView
 const styles = {
@@ -101,7 +104,7 @@ const styles = {
     flex: 1,
     overflow: 'auto',
     padding: '8px',
-    backgroundColor: 'var(--bg-primary, #282838)',
+    backgroundColor: 'var(--bg-secondary)',
   },
   notGitRepo: {
     display: 'flex',
@@ -213,7 +216,7 @@ const styles = {
 };
 
 // Types of views in the Git panel
-type GitViewType = 'status' | 'log' | 'branches' | 'stash' | 'pr';
+type GitViewType = 'status' | 'log' | 'graph' | 'branches' | 'stash' | 'conflicts' | 'rebase' | 'pr';
 
 interface GitViewProps {
   onBack?: () => void;
@@ -469,10 +472,16 @@ const GitView: React.FC<GitViewProps> = ({ onBack }) => {
         return <GitStatusView gitStatus={gitStatus} refreshStatus={refreshStatus} onPush={handlePush} />;
       case 'log':
         return <GitLogView />;
+      case 'graph':
+        return <GitGraphView />;
       case 'branches':
         return <GitBranchView refreshStatus={refreshStatus} />;
       case 'stash':
         return <GitStashView refreshStatus={refreshStatus} />;
+      case 'conflicts':
+        return <GitConflictResolver onAllResolved={() => { refreshStatus(); setActiveView('status' as any); }} />;
+      case 'rebase':
+        return <GitRebaseView />;
       case 'pr':
         return <GitPullRequestView />;
       default:
@@ -510,9 +519,10 @@ const GitView: React.FC<GitViewProps> = ({ onBack }) => {
       
       {isGitRepo && !isLoading && (
         <div style={styles.navBar}>
-          {(['status','log','branches','stash','pr'] as GitViewType[]).map((view) => {
-            const labels: Record<GitViewType, string> = { status: 'Status', log: 'Log', branches: 'Branches', stash: 'Stash', pr: 'Pull Requests' };
+          {(['status','log','graph','branches','stash','conflicts','rebase','pr'] as GitViewType[]).map((view) => {
+            const labels: Record<GitViewType, string> = { status: 'Status', log: 'Log', graph: 'Graph', branches: 'Branches', stash: 'Stash', conflicts: 'Conflicts', rebase: 'Rebase', pr: 'Pull Requests' };
             const isActive = activeView === view;
+            const hasConflicts = view === 'conflicts' && gitStatus && (gitStatus as any).conflicts?.length > 0;
             return (
               <button
                 key={view}
@@ -524,6 +534,11 @@ const GitView: React.FC<GitViewProps> = ({ onBack }) => {
                 title={labels[view]}
               >
                 {labels[view]}
+                {hasConflicts && (
+                  <span style={{ marginLeft: 4, background: '#f0883e', color: '#fff', borderRadius: 8, fontSize: 9, padding: '0 4px', lineHeight: '14px' }}>
+                    !
+                  </span>
+                )}
               </button>
             );
           })}

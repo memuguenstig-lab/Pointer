@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { FitAddon } from '@xterm/addon-fit';
 import { TerminalProps, TerminalInstance, PanelTab, TAB_DEFS, actionBtn } from './types';
 import { createInstance } from './utils';
+import { TerminalBus, TerminalErrorEvent } from './TerminalBus';
 
 /** Safe fit — guards against the FitAddon 'dimensions' crash when container is hidden/zero-size */
 function safeFit(fitAddon: FitAddon | null, containerRef: React.RefObject<HTMLDivElement>) {
@@ -22,9 +23,45 @@ const Terminal: React.FC<TerminalProps> = ({ isVisible, errorCount = 0, warningC
   const [activeId, setActiveId] = useState<string>(() => instances[0].id);
   const [activeTab, setActiveTab] = useState<PanelTab>('terminal');
   const [height, setHeight] = useState(260);
+  const [splitMode, setSplitMode] = useState(false); // horizontal split
   const resizingRef = useRef(false);
   const startYRef = useRef(0);
   const startHeightRef = useRef(0);
+  const [terminalError, setTerminalError] = useState<TerminalErrorEvent | null>(null);
+  const [errorExplanation, setErrorExplanation] = useState('');
+  const [isExplainingError, setIsExplainingError] = useState(false);
+
+  // Subscribe to terminal errors
+  useEffect(() => {
+    const unsub = TerminalBus.subscribeErrors(event => {
+      setTerminalError(event);
+      setErrorExplanation('');
+    });
+    return unsub;
+  }, []);
+
+  const handleExplainError = async () => {
+    if (!terminalError) return;
+    setIsExplainingError(true);
+    setErrorExplanation('');
+    try {
+      const lmStudio = (await import('../../services/LMStudioService')).default;
+      let result = '';
+      await lmStudio.createStreamingChatCompletion({
+        model: '', purpose: 'chat',
+        messages: [
+          { role: 'system', content: 'You are a terminal error explainer. Explain what went wrong, why it happened, and how to fix it. Be concise and practical.' },
+          { role: 'user', content: `Command: ${terminalError.command}\nExit code: ${terminalError.exitCode}\nOutput:\n${terminalError.output}` },
+        ],
+        temperature: 0.3,
+        onUpdate: (c) => { result = c; setErrorExplanation(c); },
+      });
+    } catch (e: any) {
+      setErrorExplanation('Failed to explain error: ' + e.message);
+    } finally {
+      setIsExplainingError(false);
+    }
+  };
 
   const addTerminal = useCallback(() => {
     const inst = createInstance();
@@ -171,6 +208,24 @@ const Terminal: React.FC<TerminalProps> = ({ isVisible, errorCount = 0, warningC
               </svg>
             </button>
             <button
+              onClick={() => {
+                if (!splitMode) {
+                  // Add a second terminal if only one exists
+                  if (instances.length < 2) addTerminal();
+                }
+                setSplitMode(v => !v);
+              }}
+              title={splitMode ? 'Unsplit Terminal' : 'Split Terminal'}
+              style={{ ...actionBtn, color: splitMode ? 'var(--accent-color)' : 'var(--text-secondary)' }}
+              onMouseEnter={e => { e.currentTarget.style.color = splitMode ? 'var(--accent-color)' : 'var(--text-primary)'; }}
+              onMouseLeave={e => { e.currentTarget.style.color = splitMode ? 'var(--accent-color)' : 'var(--text-secondary)'; }}
+            >
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <rect x="1" y="1" width="14" height="14" rx="2"/>
+                <line x1="8" y1="1" x2="8" y2="15"/>
+              </svg>
+            </button>
+            <button
               onClick={() => activeInstance?.xterm?.clear()}
               title="Clear Terminal"
               style={actionBtn}
@@ -189,18 +244,88 @@ const Terminal: React.FC<TerminalProps> = ({ isVisible, errorCount = 0, warningC
       <div style={{ display: 'flex', height, overflow: 'hidden' }}>
         <div style={{ flex: 1, overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column' }}>
           {activeTab === 'terminal' && (
-            <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
-              {instances.map(inst => (
-                <TerminalPane
-                  key={inst.id}
-                  instance={inst}
-                  isActive={inst.id === activeId}
-                  onReady={(id, xterm, fitAddon) =>
-                    setInstances(prev => prev.map(i => i.id === id ? { ...i, xterm, fitAddon } : i))
-                  }
-                  onCwdChange={handleCwdChange}
-                />
-              ))}
+            <div style={{ flex: 1, overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'column' }}>
+              {/* Split or single pane */}
+              <div style={{ flex: 1, overflow: 'hidden', position: 'relative', display: 'flex', flexDirection: 'row' }}>
+                {splitMode ? (
+                  // Split mode: show first two instances side by side
+                  <>
+                    {instances.slice(0, 2).map((inst, idx) => (
+                      <React.Fragment key={inst.id}>
+                        {idx === 1 && (
+                          <div style={{ width: 1, background: 'var(--border-color)', flexShrink: 0 }} />
+                        )}
+                        <div
+                          style={{ flex: 1, overflow: 'hidden', position: 'relative', cursor: 'pointer' }}
+                          onClick={() => setActiveId(inst.id)}
+                        >
+                          {inst.id === activeId && (
+                            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'var(--accent-color)', zIndex: 1 }} />
+                          )}
+                          <TerminalPane
+                            instance={inst}
+                            isActive={true}
+                            onReady={(id, xterm, fitAddon) =>
+                              setInstances(prev => prev.map(i => i.id === id ? { ...i, xterm, fitAddon } : i))
+                            }
+                            onCwdChange={handleCwdChange}
+                          />
+                        </div>
+                      </React.Fragment>
+                    ))}
+                  </>
+                ) : (
+                  // Normal mode: stack all instances, show only active
+                  instances.map(inst => (
+                    <TerminalPane
+                      key={inst.id}
+                      instance={inst}
+                      isActive={inst.id === activeId}
+                      onReady={(id, xterm, fitAddon) =>
+                        setInstances(prev => prev.map(i => i.id === id ? { ...i, xterm, fitAddon } : i))
+                      }
+                      onCwdChange={handleCwdChange}
+                    />
+                  ))
+                )}
+              </div>
+
+              {/* Error explanation banner */}
+              {terminalError && (
+                <div style={{
+                  flexShrink: 0, borderTop: '1px solid rgba(248,81,73,0.4)',
+                  background: 'rgba(248,81,73,0.06)', padding: '8px 12px',
+                  display: 'flex', flexDirection: 'column', gap: '6px',
+                  maxHeight: errorExplanation ? '200px' : '52px',
+                  overflow: 'hidden', transition: 'max-height 0.2s',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '11px', color: '#f85149', fontWeight: 600 }}>
+                      ✕ Command failed (exit {terminalError.exitCode})
+                    </span>
+                    <code style={{ fontSize: '11px', color: 'var(--text-secondary)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {terminalError.command}
+                    </code>
+                    <button
+                      onClick={handleExplainError}
+                      disabled={isExplainingError}
+                      style={{ padding: '2px 8px', fontSize: '11px', borderRadius: '3px', border: '1px solid rgba(248,81,73,0.4)', background: 'rgba(248,81,73,0.1)', color: '#f85149', cursor: 'pointer', flexShrink: 0 }}
+                    >
+                      {isExplainingError ? '…' : '✨ Explain'}
+                    </button>
+                    <button
+                      onClick={() => { setTerminalError(null); setErrorExplanation(''); }}
+                      style={{ padding: '2px 6px', fontSize: '11px', borderRadius: '3px', border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', flexShrink: 0 }}
+                    >✕</button>
+                  </div>
+                  {errorExplanation && (
+                    <div style={{ fontSize: '12px', color: 'var(--text-primary)', lineHeight: 1.5, overflow: 'auto', whiteSpace: 'pre-wrap' }}>
+                      {errorExplanation}
+                      {isExplainingError && <span style={{ opacity: 0.5 }}>▋</span>}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
           {activeTab === 'output'   && <OutputPanel />}

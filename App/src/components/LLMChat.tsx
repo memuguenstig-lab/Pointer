@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
+﻿import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import lmStudio from '../services/LMStudioService';
@@ -2527,6 +2527,15 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
   const [chats, setChats] = useState<ChatSession[]>([]);
   const [isChatListVisible, setIsChatListVisible] = useState(false);
   const [chatTitle, setChatTitle] = useState<string>('');
+  const [sessionTokens, setSessionTokens] = useState({ promptTokens: 0, completionTokens: 0, totalTokens: 0 });
+  const [lastMsgTokens, setLastMsgTokens] = useState<{ promptTokens: number; completionTokens: number } | null>(null);
+  const [isOpenAIProvider, setIsOpenAIProvider] = useState(false);
+  const [sessionCost, setSessionCost] = useState(0);
+  const [contextLimit, setContextLimit] = useState(128000);
+  const [embeddedModels, setEmbeddedModels] = useState<{ id: string; name: string; loaded: boolean }[]>([]);
+  const [showEmbeddedSwitcher, setShowEmbeddedSwitcher] = useState(false);
+  const [switchingModel, setSwitchingModel] = useState(false); // default 128K
+  const [resumeTask, setResumeTask] = useState<{ chatId: string; lastUserMessage: string; startedAt: number } | null>(null);
   const [editingMessageIndex, setEditingMessageIndex] = useState<number | null>(null);
   // Add state for tracking pending code inserts
   const [pendingInserts, setPendingInserts] = useState<{
@@ -2934,6 +2943,79 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  // Subscribe to token usage events
+  useEffect(() => {
+    import('../services/TokenUsageService').then(({ TokenUsageService }) => {
+      const unsub = TokenUsageService.subscribe((usage) => {
+        setLastMsgTokens({ promptTokens: usage.promptTokens, completionTokens: usage.completionTokens });
+        setSessionTokens(prev => ({
+          promptTokens: prev.promptTokens + usage.promptTokens,
+          completionTokens: prev.completionTokens + usage.completionTokens,
+          totalTokens: prev.totalTokens + usage.totalTokens,
+        }));
+        setSessionCost(TokenUsageService.getSessionCost());
+      });
+      return unsub;
+    });
+    // Detect if OpenAI/Grok/Anthropic provider is selected (shows token counter)
+    try {
+      const cfg = localStorage.getItem('modelConfig');
+      if (cfg) {
+        const parsed = JSON.parse(cfg);
+        setIsOpenAIProvider(['openai', 'grok', 'anthropic'].includes(parsed.modelProvider));
+        // Load embedded models if embedded provider
+        if (parsed.modelProvider === 'ollama-embedded') {
+          fetchEmbeddedModels();
+        }
+        // Set context limit based on model
+        const modelId: string = parsed.id ?? '';
+        const limit =
+          modelId.includes('gpt-4o') ? 128000 :
+          modelId.includes('gpt-4-turbo') ? 128000 :
+          modelId.includes('gpt-4') ? 8192 :
+          modelId.includes('gpt-3.5') ? 16385 :
+          modelId.includes('o1') ? 200000 :
+          modelId.includes('o3') ? 200000 :
+          modelId.includes('claude-3-7') ? 200000 :
+          modelId.includes('claude-3-5') ? 200000 :
+          modelId.includes('claude-3') ? 200000 :
+          modelId.includes('claude') ? 200000 :
+          modelId.includes('grok-3') ? 131072 :
+          modelId.includes('grok-2') ? 131072 :
+          parsed.contextLength ?? 128000;
+        setContextLimit(limit);
+      }
+    } catch (_) {}
+
+    // ── Resume detection: check if AI was working when app was closed ──────
+    import('../services/PendingTaskService').then(({ PendingTaskService }) => {
+      PendingTaskService.load().then(task => {
+        if (!task) return;
+        // Only offer resume if task is less than 2 hours old
+        const age = Date.now() - task.startedAt;
+        if (age < 2 * 60 * 60 * 1000) {
+          setResumeTask(task);
+        } else {
+          // Stale task — clear it
+          PendingTaskService.clear();
+        }
+      });
+    });
+  }, []);
+
+  // Fetch downloaded embedded models for the quick switcher
+  const fetchEmbeddedModels = async () => {
+    try {
+      const res = await fetch('http://127.0.0.1:23816/api/llama/models');
+      if (!res.ok) return;
+      const data = await res.json();
+      const downloaded = (data.models ?? []).filter((m: any) => m.downloaded);
+      if (downloaded.length > 1) {
+        setEmbeddedModels(downloaded.map((m: any) => ({ id: m.id, name: m.name ?? m.id, loaded: m.loaded })));
+      }
+    } catch (_) {}
   };
 
   // Load all chats
@@ -3437,21 +3519,21 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
         currentDir ? FileSystemService.fetchFolderContents(currentDir).then(result => {
           if (!result?.items) return [];
           return Object.values(result.items)
-            .filter(item => item.type === 'file')
-            .filter(item => term === '' || item.name.toLowerCase().includes(term.toLowerCase()))
+            .filter((item: any) => item.type === 'file')
+            .filter((item: any) => term === '' || item.name.toLowerCase().includes(term.toLowerCase()))
             .slice(0, 8)
-            .map(item => ({ name: item.name, path: item.path, type: 'file' as const }));
-        }).catch(() => []) : Promise.resolve([]),
+            .map((item: any) => ({ name: item.name, path: item.path, type: 'file' as const }));
+        }).catch(() => [] as any[]) : Promise.resolve([] as any[]),
         // Symbols from codebase index
         term.length >= 2 ? fetch(`http://localhost:23816/api/codebase/search?query=${encodeURIComponent(term)}&limit=8`)
-          .then(r => r.ok ? r.json() : { elements: [] })
-          .then(data => (data.elements || data.results || []).map((el: any) => ({
+          .then(r => r.ok ? r.json() : { elements: [] as any[] })
+          .then((data: any) => (data.elements || data.results || []).map((el: any) => ({
             name: el.name,
             path: el.file || '',
             type: 'symbol' as const,
             symbolType: el.type,
           })))
-          .catch(() => []) : Promise.resolve([]),
+          .catch(() => [] as any[]) : Promise.resolve([] as any[]),
       ]);
 
       const combined = [...fileResults, ...symbolResults].slice(0, 12);
@@ -3548,6 +3630,17 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
     try {
       setIsProcessing(true);
       setIsStreamingComplete(false); // Reset streaming complete state
+
+      // ── Persist pending task so we can resume after a crash ──────────────
+      if (currentChatId && content.trim()) {
+        import('../services/PendingTaskService').then(({ PendingTaskService }) => {
+          PendingTaskService.save({
+            chatId: currentChatId,
+            lastUserMessage: content.slice(0, 500),
+            startedAt: Date.now(),
+          });
+        });
+      }
       
       // Clear any pending inserts from previous streaming sessions
       // This ensures we don't process old code blocks when new streaming starts
@@ -4068,6 +4161,17 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
       // Clear streaming timeout in case of error or completion
       clearTimeout(streamingTimeoutId);
       setIsProcessing(false);
+      // Clear pending task — work is done
+      import('../services/PendingTaskService').then(({ PendingTaskService }) => {
+        PendingTaskService.clear();
+      });
+      // Notify via tray if window is hidden
+      try {
+        const electron = (window as any).require?.('electron');
+        if (electron?.ipcRenderer) {
+          electron.ipcRenderer.send('ai-work-complete');
+        }
+      } catch (_) {}
     }
   };
 
@@ -4217,6 +4321,12 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
         const target = e.target as HTMLElement;
         if (!target.closest('.chat-switcher')) {
           setIsChatListVisible(false);
+        }
+      }
+      if (showEmbeddedSwitcher) {
+        const target = e.target as HTMLElement;
+        if (!target.closest('.embedded-model-switcher')) {
+          setShowEmbeddedSwitcher(false);
         }
       }
     };
@@ -6589,6 +6699,36 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
             </span>
           </button>
 
+                              {/* Token context bar */}
+          {isOpenAIProvider && sessionTokens.totalTokens > 0 && (() => {
+            const pct = Math.min(100, (sessionTokens.totalTokens / contextLimit) * 100);
+            const barColor = pct > 85 ? '#f85149' : pct > 65 ? '#f0883e' : 'var(--accent-color)';
+            const costStr = sessionCost < 0.01 ? sessionCost.toFixed(4) : sessionCost.toFixed(3);
+            return (
+              <div
+                title={'Context: ' + sessionTokens.totalTokens.toLocaleString() + ' / ' + contextLimit.toLocaleString() + ' tokens (' + pct.toFixed(1) + '%)' + (sessionCost > 0 ? ' | cost: ' + costStr : '')}
+                style={{
+                  position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)',
+                  display: 'flex', alignItems: 'center', gap: '5px', cursor: 'default',
+                  padding: '2px 6px', borderRadius: '4px', background: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-primary)',
+                }}
+              >
+                <div style={{ width: 60, height: 4, borderRadius: 2, background: 'var(--bg-accent)', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', borderRadius: 2, width: pct + '%', background: barColor, transition: 'width 0.4s ease, background 0.3s' }} />
+                </div>
+                <span style={{ fontSize: 10, color: barColor, fontWeight: 600, whiteSpace: 'nowrap' }}>
+                  {pct < 1 ? '<1' : pct.toFixed(0)}%
+                </span>
+                {sessionCost > 0 && (
+                  <span style={{ fontSize: 10, color: 'var(--text-secondary)', opacity: 0.7 }}>
+                    {costStr}
+                  </span>
+                )}
+              </div>
+            );
+          })()}
+
           {isChatListVisible && (
             <div
               className="chat-switcher-dropdown"
@@ -6601,14 +6741,34 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
                 borderRadius: '6px',
                 boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
                 zIndex: 1000,
-                minWidth: '220px',
-                maxHeight: '360px',
-                overflowY: 'auto',
+                minWidth: '260px',
+                maxHeight: '400px',
+                display: 'flex',
+                flexDirection: 'column',
               }}
             >
-              <div style={{ padding: '6px 8px', borderBottom: '1px solid var(--border-primary)' }}>
-                <span style={{ fontSize: 11, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Recent Chats</span>
+              <div style={{ padding: '6px 8px', borderBottom: '1px solid var(--border-primary)', flexShrink: 0 }}>
+                <input
+                  type="text"
+                  placeholder="Search chats…"
+                  autoFocus
+                  onChange={(e) => {
+                    const q = e.target.value.toLowerCase();
+                    const el = e.target.closest('.chat-switcher-dropdown')?.querySelector('.chat-list') as HTMLElement | null;
+                    if (!el) return;
+                    el.querySelectorAll<HTMLElement>('[data-chat-search]').forEach(btn => {
+                      const text = btn.getAttribute('data-chat-search') ?? '';
+                      btn.style.display = text.includes(q) ? '' : 'none';
+                    });
+                  }}
+                  style={{
+                    width: '100%', padding: '5px 8px', fontSize: 12, boxSizing: 'border-box',
+                    background: 'var(--bg-primary)', border: '1px solid var(--border-primary)',
+                    borderRadius: '4px', color: 'var(--text-primary)', outline: 'none',
+                  }}
+                />
               </div>
+              <div className="chat-list" style={{ overflowY: 'auto', flex: 1 }}>
               {chats.length === 0 ? (
                 <div style={{ padding: '10px 12px', color: 'var(--text-secondary)', fontSize: 12 }}>
                   No saved chats
@@ -6618,6 +6778,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
                   <button
                     key={chat.id}
                     className="chat-button"
+                    data-chat-search={`${chat.name} ${chat.messages?.map((m: any) => m.content ?? '').join(' ')}`.toLowerCase()}
                     onClick={(e) => {
                       if (e.ctrlKey || e.metaKey) {
                         e.preventDefault();
@@ -6650,9 +6811,86 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
                   </button>
                 ))
               )}
+              </div>
             </div>
           )}
         </div>
+
+        {/* Embedded model quick-switcher — shown when multiple downloaded models exist */}
+        {embeddedModels.length > 1 && (
+          <div style={{ position: 'relative', flexShrink: 0 }}>
+            <button
+              onClick={() => { setShowEmbeddedSwitcher(v => !v); fetchEmbeddedModels(); }}
+              className="settings-button"
+              title="Switch embedded model"
+              style={{
+                display: 'flex', alignItems: 'center', gap: 4, padding: '3px 7px',
+                border: `1px solid ${showEmbeddedSwitcher ? 'var(--accent-color)' : 'var(--border-primary)'}`,
+                borderRadius: 4, background: showEmbeddedSwitcher ? 'rgba(14,99,156,0.15)' : 'transparent',
+                color: showEmbeddedSwitcher ? 'var(--accent-color)' : 'var(--text-secondary)',
+              }}
+            >
+              <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M4 0h1v1h6V0h1v1h1a1 1 0 0 1 1 1v1h1v1h-1v2h1v1h-1v2h1v1h-1v1a1 1 0 0 1-1 1h-1v1h-1v-1H5v1H4v-1H3a1 1 0 0 1-1-1v-1H1v-1h1V8H1V7h1V5H1V4h1V3a1 1 0 0 1 1-1h1V0zm8 3H4a.5.5 0 0 0-.5.5v9a.5.5 0 0 0 .5.5h8a.5.5 0 0 0 .5-.5v-9A.5.5 0 0 0 12 3zM6 5h4a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/>
+              </svg>
+              <span style={{ fontSize: 10 }}>
+                {embeddedModels.find(m => m.loaded)?.name?.replace(/\s*\d+B.*$/i, '') ?? 'Model'}
+              </span>
+              <svg width="8" height="8" viewBox="0 0 16 16" fill="currentColor" style={{ opacity: 0.6 }}>
+                <path d="M7.247 11.14L2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z"/>
+              </svg>
+            </button>
+
+            {showEmbeddedSwitcher && (
+              <div style={{
+                position: 'absolute', top: '100%', right: 0, marginTop: 4,
+                background: 'var(--bg-primary)', border: '1px solid var(--border-primary)',
+                borderRadius: 6, boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+                zIndex: 1000, minWidth: 200, overflow: 'hidden',
+              }}>
+                <div style={{ padding: '6px 10px', fontSize: 10, color: 'var(--text-secondary)', opacity: 0.6, textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid var(--border-primary)' }}>
+                  Embedded Models
+                </div>
+                {embeddedModels.map(m => (
+                  <button
+                    key={m.id}
+                    disabled={switchingModel || m.loaded}
+                    onClick={async () => {
+                      if (m.loaded) { setShowEmbeddedSwitcher(false); return; }
+                      setSwitchingModel(true);
+                      try {
+                        await fetch('http://127.0.0.1:23816/api/llama/load', {
+                          method: 'POST', headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ modelId: m.id }),
+                        });
+                        await fetchEmbeddedModels();
+                        setShowEmbeddedSwitcher(false);
+                      } catch (_) {}
+                      setSwitchingModel(false);
+                    }}
+                    style={{
+                      width: '100%', padding: '8px 12px', textAlign: 'left',
+                      background: m.loaded ? 'rgba(63,185,80,0.08)' : 'transparent',
+                      border: 'none', borderBottom: '1px solid var(--border-primary)',
+                      color: m.loaded ? '#3fb950' : 'var(--text-primary)',
+                      cursor: m.loaded ? 'default' : 'pointer', fontSize: 12,
+                      display: 'flex', alignItems: 'center', gap: 8,
+                      opacity: switchingModel && !m.loaded ? 0.5 : 1,
+                    }}
+                    onMouseEnter={e => { if (!m.loaded) e.currentTarget.style.background = 'var(--bg-hover)'; }}
+                    onMouseLeave={e => { if (!m.loaded) e.currentTarget.style.background = 'transparent'; }}
+                  >
+                    <span style={{ fontSize: 10, width: 14, textAlign: 'center', flexShrink: 0 }}>
+                      {m.loaded ? '●' : switchingModel ? '…' : '○'}
+                    </span>
+                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.name}</span>
+                    {m.loaded && <span style={{ fontSize: 10, color: '#3fb950', flexShrink: 0 }}>active</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Close button */}
         <button
@@ -6719,6 +6957,64 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
         )}
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Resume banner — shown when app was closed while AI was working */}
+      {resumeTask && (
+        <div style={{
+          margin: '8px 12px 0',
+          padding: '10px 14px',
+          borderRadius: '6px',
+          background: 'rgba(14,99,156,0.12)',
+          border: '1px solid rgba(14,99,156,0.35)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          fontSize: '12px',
+        }}>
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="var(--accent-color)" style={{ flexShrink: 0 }}>
+            <path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z"/>
+            <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z"/>
+          </svg>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <span style={{ color: 'var(--accent-color)', fontWeight: 600 }}>Unfinished task detected</span>
+            <span style={{ color: 'var(--text-secondary)', marginLeft: 6 }}>
+              "{resumeTask.lastUserMessage.slice(0, 80)}{resumeTask.lastUserMessage.length > 80 ? '…' : ''}"
+            </span>
+          </div>
+          <button
+            onClick={async () => {
+              const task = resumeTask;
+              setResumeTask(null);
+              // Switch to the chat and re-send the message
+              onSelectChat(task.chatId);
+              // Small delay to let the chat load
+              setTimeout(() => {
+                processUserMessage(task.lastUserMessage, []);
+              }, 800);
+            }}
+            style={{
+              padding: '4px 12px', fontSize: '11px', borderRadius: '4px',
+              background: 'var(--accent-color)', color: '#fff',
+              border: 'none', cursor: 'pointer', flexShrink: 0, fontWeight: 500,
+            }}
+          >
+            Resume
+          </button>
+          <button
+            onClick={() => {
+              setResumeTask(null);
+              import('../services/PendingTaskService').then(({ PendingTaskService }) => PendingTaskService.clear());
+            }}
+            style={{
+              padding: '4px 8px', fontSize: '11px', borderRadius: '4px',
+              background: 'transparent', color: 'var(--text-secondary)',
+              border: '1px solid var(--border-primary)', cursor: 'pointer', flexShrink: 0,
+            }}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* Attached Files Section */}
       {attachedFiles.length > 0 && (

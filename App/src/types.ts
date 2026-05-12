@@ -52,13 +52,15 @@ export interface ElectronAPI {
     minimize: () => void;
     maximize: () => void;
     close: () => void;
+    forceClose: () => void;
+    newWindow: () => void;
     isMaximized: () => Promise<boolean>;
   };
   send: (channel: string, data: ElectronMessage['data']) => void;
   receive: (channel: string, func: (data: ElectronMessage['data']) => void) => void;
   discord: {
     updateEditorInfo: (info: EditorInfo) => void;
-    updateSettings: (settings: DiscordSettings) => void;
+    updateSettings: (settings: DiscordRpcSettings) => void;
   };
   openInExplorer: (filePath: string) => Promise<{ success: boolean; error?: string }>;
   openExternal: (url: string) => Promise<{ success: boolean; error?: string }>;

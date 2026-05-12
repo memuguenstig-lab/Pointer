@@ -9,6 +9,8 @@ contextBridge.exposeInMainWorld(
       minimize: () => ipcRenderer.send('window-minimize'),
       maximize: () => ipcRenderer.send('window-maximize'),
       close: () => ipcRenderer.send('window-close'),
+      forceClose: () => ipcRenderer.send('window-force-close'),
+      newWindow: () => ipcRenderer.send('window-new'),
       isMaximized: () => ipcRenderer.invoke('window-is-maximized'),
     },
     send: (channel, data) => {

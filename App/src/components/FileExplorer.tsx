@@ -174,6 +174,24 @@ const FileExplorerItem: React.FC<{
         onMouseEnter={handleFolderHover}
         onMouseLeave={() => setIsHovered(false)}
         onContextMenu={handleContextMenu}
+        role={item.type === 'directory' ? 'treeitem' : 'treeitem'}
+        aria-selected={item.id === currentFileId}
+        aria-expanded={item.type === 'directory' ? isExpanded : undefined}
+        aria-label={item.name}
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            if (item.type === 'file') { onFileSelect(item.id); }
+            else { handleFolderClick(); }
+          } else if (e.key === 'ArrowRight' && item.type === 'directory' && !isExpanded) {
+            e.preventDefault(); handleFolderClick();
+          } else if (e.key === 'ArrowLeft' && item.type === 'directory' && isExpanded) {
+            e.preventDefault(); handleFolderClick();
+          } else if (e.key === 'Delete') {
+            e.preventDefault(); onDeleteItem(item);
+          }
+        }}
       >
         <div style={{ 
           width: '16px', 
@@ -1022,7 +1040,11 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
       }}>
         <span style={{ marginBottom: '4px' }}>{items[rootId]?.name || 'Explorer'}</span>
       </div>
-      <div style={{ padding: '4px 0 0 12px' }}>
+      <div
+        role="tree"
+        aria-label="File Explorer"
+        style={{ padding: '4px 0 0 12px' }}
+      >
         {renderItem(rootId)}
       </div>
     </div>

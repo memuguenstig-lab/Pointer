@@ -8,6 +8,7 @@ import { FileSystemService } from './services/FileSystemService';
 import EditorGrid from './components/EditorGrid';
 import { initializeLanguageSupport, getLanguageFromFileName } from './utils/languageUtils';
 import { LLMChat, MemoizedLLMChat } from './components/LLMChat';
+import { OnboardingFlow, shouldShowOnboarding } from './components/OnboardingFlow';
 import './styles/App.css';
 import { ChatService, ChatSession } from './services/ChatService';
 import { v4 as uuidv4 } from 'uuid';
@@ -204,6 +205,9 @@ const App: React.FC = () => {
   // Command palette
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
 
+  // Onboarding
+  const [showOnboarding, setShowOnboarding] = useState(() => shouldShowOnboarding());
+
   // Split editor groups
   const [editorGroups, setEditorGroups] = useState<EditorGroup[]>([{ id: 'group-1', openFiles: [], currentFileId: null }]);
   const [activeGroupId, setActiveGroupId] = useState('group-1');
@@ -270,7 +274,7 @@ const App: React.FC = () => {
     smallImageKey: "code",
     smallImageText: "{languageId} | Line {line}:{column}",
     button1Label: "Website",
-    button1Url: "https://pointr.sh",
+    button1Url: "https://pointer.f1shy312.com",
     button2Label: "Join the Discord 🚀",
     button2Url: "https://discord.gg/vhgc8THmNk"
   });
@@ -971,23 +975,23 @@ const App: React.FC = () => {
     setModalState({ isOpen: false, type: null, parentId: null, name: '' });
   };
 
-  const createFile = async (parentId: string) => {
+  const createFile = useCallback(async (parentId: string) => {
     setModalState({
       isOpen: true,
       type: 'file',
       parentId,
       name: '',
     });
-  };
+  }, []);
 
-  const createFolder = async (parentId: string) => {
+  const createFolder = useCallback(async (parentId: string) => {
     setModalState({
       isOpen: true,
       type: 'folder',
       parentId,
       name: '',
     });
-  };
+  }, []);
 
   const getCurrentFileName = () => {
     if (!fileSystem.currentFileId) return 'No file open';
@@ -1068,6 +1072,9 @@ const App: React.FC = () => {
       } else if ((e.ctrlKey || e.metaKey) && e.key === ',') {
         e.preventDefault();
         setIsSettingsModalOpen(true);
+      } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'n') {
+        e.preventDefault();
+        window.electron?.window?.newWindow?.();
       }
     };
 
@@ -1178,7 +1185,7 @@ const App: React.FC = () => {
     });
   };
 
-  const handleDeleteItem = async (item: FileSystemItem) => {
+  const handleDeleteItem = useCallback(async (item: FileSystemItem) => {
     const success = await FileSystemService.deleteItem(item.path);
     if (success) {
       // If the deleted item was a file and it was open, close its tab
@@ -1218,7 +1225,7 @@ const App: React.FC = () => {
         items: newItems,
       }));
     }
-  };
+  }, [openFiles, fileSystem.items, handleTabClose]);
 
   const handleRenameItem = async (item: FileSystemItem, newName: string) => {
     try {
@@ -1343,6 +1350,27 @@ const App: React.FC = () => {
   // Add to the App component state declarations
   const [currentChatId, setCurrentChatId] = useState<string>(uuidv4());
 
+  // Parallel chat slots — each slot is an independent chat session
+  const [chatSlots, setChatSlots] = useState<{ id: string; chatId: string }[]>(() => [{ id: 'slot-1', chatId: uuidv4() }]);
+  const [activeChatSlot, setActiveChatSlot] = useState('slot-1');
+  const maxParallelChats = 4; // configurable via settings later
+
+  const addChatSlot = useCallback(() => {
+    if (chatSlots.length >= maxParallelChats) return;
+    const newSlot = { id: `slot-${Date.now()}`, chatId: uuidv4() };
+    setChatSlots(prev => [...prev, newSlot]);
+    setActiveChatSlot(newSlot.id);
+  }, [chatSlots.length, maxParallelChats]);
+
+  const removeChatSlot = useCallback((slotId: string) => {
+    setChatSlots(prev => {
+      if (prev.length <= 1) return prev;
+      const next = prev.filter(s => s.id !== slotId);
+      if (activeChatSlot === slotId) setActiveChatSlot(next[next.length - 1].id);
+      return next;
+    });
+  }, [activeChatSlot]);
+
   // Add this state for Explorer and Git view toggle (derived from activeView)
   const isGitViewActive = activeView === 'git';
   const isExplorerViewActive = activeView === 'explorer';
@@ -1408,12 +1436,12 @@ const App: React.FC = () => {
   }, []); // Empty dependency array
 
   // Add a function to handle terminal toggle
-  const toggleTerminal = () => {
+  const toggleTerminal = useCallback(() => {
     setFileSystem(prev => ({
       ...prev,
       terminalOpen: !prev.terminalOpen
     }));
-  };
+  }, []);
 
   // Update Discord RPC when editor state changes
   useEffect(() => {
@@ -1475,7 +1503,7 @@ const App: React.FC = () => {
   }, [fileSystem.currentFileId]);
 
   // Activity bar view handler
-  const handleActivityViewChange = (view: ActivityView) => {
+  const handleActivityViewChange = useCallback((view: ActivityView) => {
     if (activeView === view) {
       setActiveView(null);
       setIsSidebarCollapsed(true);
@@ -1483,11 +1511,11 @@ const App: React.FC = () => {
       setActiveView(view);
       setIsSidebarCollapsed(view === null);
     }
-  };
+  }, [activeView]);
 
   // Keep legacy handlers for any remaining references
-  const handleToggleGitView = () => handleActivityViewChange('git');
-  const handleToggleExplorerView = () => handleActivityViewChange('explorer');
+  const handleToggleGitView = useCallback(() => handleActivityViewChange('git'), [handleActivityViewChange]);
+  const handleToggleExplorerView = useCallback(() => handleActivityViewChange('explorer'), [handleActivityViewChange]);
 
   // Stable callbacks for MemoizedLLMChat
   const handleLLMClose = useCallback(() => setIsLLMChatVisible(false), []);
@@ -1500,6 +1528,11 @@ const App: React.FC = () => {
       }), 0);
     }
   }, []);
+
+  // Memoize file system items to prevent FileExplorer/SplitEditor re-renders
+  // when unrelated state (chat visibility, modal state, etc.) changes
+  const memoizedItems = useMemo(() => fileSystem.items, [fileSystem.items]);
+  const memoizedCurrentFileId = useMemo(() => fileSystem.currentFileId, [fileSystem.currentFileId]);
 
   // Corrected useEffect for loadAllSettings
   useEffect(() => {
@@ -1651,9 +1684,9 @@ const App: React.FC = () => {
                   <GitView onBack={handleToggleExplorerView} />
                 ) : isExplorerViewActive ? (
                   <FileExplorer
-                    items={fileSystem.items}
+                    items={memoizedItems}
                     rootId={fileSystem.rootId}
-                    currentFileId={fileSystem.currentFileId}
+                    currentFileId={memoizedCurrentFileId}
                     onFileSelect={handleFileSelect}
                     onCreateFile={createFile}
                     onCreateFolder={createFolder}
@@ -1671,7 +1704,7 @@ const App: React.FC = () => {
             editor={
               <div className="editor-area" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
                 <SplitEditor
-                  items={fileSystem.items}
+                  items={memoizedItems}
                   groups={editorGroups}
                   activeGroupId={activeGroupId}
                   onGroupsChange={setEditorGroups}
@@ -1699,13 +1732,76 @@ const App: React.FC = () => {
               </div>
             }
             chat={
-              <MemoizedLLMChat
-                isVisible={isLLMChatVisible}
-                onClose={handleLLMClose}
-                onResize={handleLLMResize}
-                currentChatId={currentChatId}
-                onSelectChat={setCurrentChatId}
-              />
+              <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                {/* Chat slot tabs — shown when more than 1 slot */}
+                {chatSlots.length > 1 && (
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: 0,
+                    background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-primary)',
+                    flexShrink: 0, height: 28, paddingLeft: 4,
+                  }}>
+                    {chatSlots.map((slot, idx) => (
+                      <div
+                        key={slot.id}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 4,
+                          padding: '0 8px', height: '100%', cursor: 'pointer',
+                          borderBottom: activeChatSlot === slot.id ? '2px solid var(--accent-color)' : '2px solid transparent',
+                          color: activeChatSlot === slot.id ? 'var(--text-primary)' : 'var(--text-secondary)',
+                          fontSize: 11, userSelect: 'none',
+                        }}
+                        onClick={() => setActiveChatSlot(slot.id)}
+                      >
+                        <span>Chat {idx + 1}</span>
+                        <button
+                          onClick={e => { e.stopPropagation(); removeChatSlot(slot.id); }}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 12, padding: '0 2px', lineHeight: 1, opacity: 0.6 }}
+                        >✕</button>
+                      </div>
+                    ))}
+                    {chatSlots.length < maxParallelChats && (
+                      <button
+                        onClick={addChatSlot}
+                        title="New parallel chat"
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 14, padding: '0 6px', lineHeight: 1 }}
+                      >+</button>
+                    )}
+                  </div>
+                )}
+                {/* Render all slots, show only active */}
+                {chatSlots.map(slot => (
+                  <div key={slot.id} style={{ flex: 1, display: activeChatSlot === slot.id ? 'flex' : 'none', flexDirection: 'column', overflow: 'hidden' }}>
+                    <MemoizedLLMChat
+                      isVisible={isLLMChatVisible}
+                      onClose={handleLLMClose}
+                      onResize={handleLLMResize}
+                      currentChatId={slot.chatId}
+                      onSelectChat={(id) => {
+                        setChatSlots(prev => prev.map(s => s.id === slot.id ? { ...s, chatId: id } : s));
+                      }}
+                    />
+                  </div>
+                ))}
+                {/* Add chat button when only 1 slot */}
+                {chatSlots.length === 1 && isLLMChatVisible && (
+                  <button
+                    onClick={addChatSlot}
+                    title="Open parallel chat (run multiple AI requests simultaneously)"
+                    style={{
+                      position: 'absolute', bottom: 48, right: 8,
+                      background: 'var(--bg-secondary)', border: '1px solid var(--border-primary)',
+                      borderRadius: 6, padding: '4px 8px', fontSize: 11,
+                      color: 'var(--text-secondary)', cursor: 'pointer', zIndex: 10,
+                      display: 'flex', alignItems: 'center', gap: 4,
+                    }}
+                  >
+                    <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                      <path d="M8 3v10M3 8h10"/>
+                    </svg>
+                    Parallel chat
+                  </button>
+                )}
+              </div>
             }
           />
         </div>{/* end ActivityBar + PanelLayout row */}
@@ -1864,6 +1960,11 @@ const App: React.FC = () => {
             }
           }}
         />
+
+        {/* Onboarding Flow */}
+        {showOnboarding && (
+          <OnboardingFlow onDone={() => setShowOnboarding(false)} />
+        )}
       </div>
     </div>
   );

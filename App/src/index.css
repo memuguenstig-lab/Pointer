@@ -568,3 +568,14 @@ code[class*="language-"] {
 .diff-changes::-webkit-scrollbar-thumb:hover {
   background: var(--text-secondary);
 } 
+
+/* ── Git Blame decorations ─────────────────────────────────────────────── */
+.blame-glyph {
+  width: 6px !important;
+  background: rgba(88, 166, 255, 0.35);
+  border-radius: 2px;
+  margin-left: 2px;
+}
+.blame-gutter {
+  border-left: 2px solid rgba(88, 166, 255, 0.5);
+}

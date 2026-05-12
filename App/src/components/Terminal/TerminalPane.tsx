@@ -5,6 +5,7 @@ import React, { useEffect, useRef, useCallback } from 'react';
 import '@xterm/xterm/css/xterm.css';
 import { TerminalInstance } from './types';
 import { parseCwd } from './utils';
+import { TerminalBus } from './TerminalBus';
 
 const WS_URL = 'ws://localhost:23816/ws/terminal';
 const RECONNECT_DELAYS = [1000, 2000, 4000, 8000];
@@ -48,6 +49,10 @@ interface Props {
 const TerminalPane: React.FC<Props> = ({ instance, isActive, onReady, onCwdChange }) => {
   const initialized = useRef(false);
   const retryCount = useRef(0);
+  // Error detection state — refs so they're accessible in both connect and useEffect
+  const lastCommandRef = useRef('');
+  const outputSinceCommandRef = useRef('');
+  const waitingForExitCodeRef = useRef(false);
 
   const connect = useCallback((xterm: XTerm, fitAddon: FitAddon) => {
     const socket = new WebSocket(WS_URL);
@@ -66,6 +71,26 @@ const TerminalPane: React.FC<Props> = ({ instance, isActive, onReady, onCwdChang
 
     socket.onmessage = (e) => {
       const text = typeof e.data === 'string' ? e.data : new TextDecoder().decode(e.data as ArrayBuffer);
+
+      // ── Exit code sentinel detection ──────────────────────────────────
+      const clean = text.replace(/\x1b\[[0-9;]*[mGKHFJK]/g, '');
+      const sentinelMatch = clean.match(/__POINTER_EXIT__:(\d+)/);
+      if (sentinelMatch && waitingForExitCodeRef.current) {
+        waitingForExitCodeRef.current = false;
+        const exitCode = parseInt(sentinelMatch[1]);
+        if (exitCode !== 0 && outputSinceCommandRef.current.trim()) {
+          TerminalBus.emitError({
+            command: lastCommandRef.current || '(unknown)',
+            output: outputSinceCommandRef.current.slice(-2000),
+            exitCode,
+          });
+        }
+        const filtered = text.replace(/.*__POINTER_EXIT__:\d+.*\r?\n?/g, '');
+        if (filtered) requestAnimationFrame(() => xterm.write(filtered));
+        return;
+      }
+
+      outputSinceCommandRef.current += clean;
       requestAnimationFrame(() => xterm.write(text));
       const cwd = parseCwd(text);
       if (cwd) onCwdChange(instance.id, cwd);
@@ -82,10 +107,6 @@ const TerminalPane: React.FC<Props> = ({ instance, isActive, onReady, onCwdChang
       xterm.write(`\r\n\x1b[33m[Reconnecting in ${delay / 1000}s…]\x1b[0m\r\n`);
       instance.reconnectTimer = setTimeout(() => connect(xterm, fitAddon), delay);
     };
-
-    xterm.onData(data => {
-      if (socket.readyState === WebSocket.OPEN) socket.send(data);
-    });
 
     xterm.onResize(({ cols, rows }) => {
       if (socket.readyState === WebSocket.OPEN)
@@ -120,6 +141,90 @@ const TerminalPane: React.FC<Props> = ({ instance, isActive, onReady, onCwdChang
     instance.xterm = xterm;
     instance.fitAddon = fitAddon;
 
+    // ── Error detection: watch for failed commands ─────────────────────────
+    const EXIT_SENTINEL = '__POINTER_EXIT__';
+
+    xterm.onData(data => {
+      if (instance.socket?.readyState === WebSocket.OPEN) {
+        instance.socket.send(data);
+        if (data === '\r' || data === '\n') {
+          const cmd = lastCommandRef.current.trim();
+          lastCommandRef.current = '';
+          outputSinceCommandRef.current = '';
+          if (cmd && !waitingForExitCodeRef.current) {
+            waitingForExitCodeRef.current = true;
+            setTimeout(() => {
+              if (instance.socket?.readyState === WebSocket.OPEN) {
+                instance.socket.send(`echo "${EXIT_SENTINEL}:$?"\n`);
+              }
+            }, 300);
+          }
+        } else if (data === '\x7f') {
+          lastCommandRef.current = lastCommandRef.current.slice(0, -1);
+        } else if (!data.startsWith('\x1b')) {
+          lastCommandRef.current += data;
+        }
+      }
+    });
+
+    // ── TerminalBus subscription ───────────────────────────────────────────
+    // When the AI agent calls run_terminal_cmd, it emits a 'run-command' event.
+    // We intercept it here, write the command to the terminal, collect the
+    // output until the next prompt appears, then resolve the promise so the
+    // agent gets the real output back.
+    const busUnsub = TerminalBus.subscribe(async (event) => {
+      if (event.type !== 'run-command') return;
+      const { command, resolve } = event;
+
+      // Write the command as if the user typed it
+      const socket = instance.socket;
+      if (!socket || socket.readyState !== WebSocket.OPEN) {
+        resolve(`[Terminal not connected — command not executed: ${command}]`);
+        return;
+      }
+
+      // Collect output until we see a new prompt (heuristic: line ending with $ or > or %)
+      let outputBuffer = '';
+      const PROMPT_RE = /[\$#>%]\s*$/m;
+      const TIMEOUT_MS = 30_000;
+
+      const outputListener = (e: MessageEvent) => {
+        const text = typeof e.data === 'string' ? e.data : new TextDecoder().decode(e.data as ArrayBuffer);
+        // Strip ANSI escape codes for clean output
+        outputBuffer += text.replace(/\x1b\[[0-9;]*[mGKHF]/g, '');
+      };
+
+      socket.addEventListener('message', outputListener);
+
+      // Send the command followed by a newline
+      socket.send(command + '\n');
+
+      // Wait for prompt to reappear (output settled) or timeout
+      await new Promise<void>(res => {
+        const start = Date.now();
+        const check = setInterval(() => {
+          const elapsed = Date.now() - start;
+          // Consider done when we see a prompt line after some output, or timeout
+          if ((outputBuffer.length > 0 && PROMPT_RE.test(outputBuffer)) || elapsed > TIMEOUT_MS) {
+            clearInterval(check);
+            res();
+          }
+        }, 150);
+      });
+
+      socket.removeEventListener('message', outputListener);
+
+      // Clean up the output: remove the echoed command line and trailing prompt
+      const lines = outputBuffer.split('\n');
+      const cleaned = lines
+        .filter(l => !l.trim().endsWith(command.trim())) // remove echoed command
+        .filter((l, i) => !(i === lines.length - 1 && PROMPT_RE.test(l))) // remove trailing prompt
+        .join('\n')
+        .trim();
+
+      resolve(cleaned || '(no output)');
+    });
+
     // Use ResizeObserver to fit as soon as the container gets real dimensions.
     // This is the only reliable way to avoid the FitAddon 'dimensions' crash
     // which happens when fit() is called while the element is hidden or zero-size.
@@ -146,6 +251,7 @@ const TerminalPane: React.FC<Props> = ({ instance, isActive, onReady, onCwdChang
 
     return () => {
       ro.disconnect();
+      busUnsub();
       window.removeEventListener('theme-changed', onThemeChange);
       if (instance.reconnectTimer) clearTimeout(instance.reconnectTimer);
       try { instance.socket?.close(); } catch (_) {}

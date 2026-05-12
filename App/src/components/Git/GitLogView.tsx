@@ -104,6 +104,9 @@ const GitLogView: React.FC<GitLogViewProps> = () => {
   const [error, setError] = useState<string | null>(null);
   const [expandedCommit, setExpandedCommit] = useState<string | null>(null);
   const [limitCount, setLimitCount] = useState(50);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<{ hash: string; author: string; date: string; message: string }[] | null>(null);
+  const [isSearching, setIsSearching] = useState(false);
 
   const currentDirectory = FileSystemService.getCurrentDirectory();
 
@@ -221,8 +224,49 @@ const GitLogView: React.FC<GitLogViewProps> = () => {
     }
   };
 
+  const handleSearch = async () => {
+    if (!currentDirectory || !searchQuery.trim()) {
+      setSearchResults(null);
+      return;
+    }
+    setIsSearching(true);
+    try {
+      const results = await GitService.searchLog(currentDirectory, searchQuery.trim());
+      setSearchResults(results);
+    } catch (err) {
+      setError(`Search failed: ${err}`);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const displayedLogs = searchResults !== null
+    ? searchResults.map(r => ({ hash: r.hash, author: r.author, date: r.date, message: r.message } as GitLogEntry))
+    : logs;
+
   return (
     <div style={styles.container}>
+      {/* Search bar */}
+      <div style={{ display: 'flex', gap: '6px', marginBottom: '10px' }}>
+        <input
+          type="text"
+          placeholder="Search commits…"
+          value={searchQuery}
+          onChange={e => { setSearchQuery(e.target.value); if (!e.target.value) setSearchResults(null); }}
+          onKeyDown={e => e.key === 'Enter' && handleSearch()}
+          style={{ flex: 1, padding: '6px 10px', fontSize: '12px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'var(--text-primary)', outline: 'none' }}
+        />
+        <button style={styles.button} onClick={handleSearch} disabled={isSearching || !searchQuery.trim()}>
+          {isSearching ? '…' : 'Search'}
+        </button>
+        {searchResults !== null && (
+          <button style={{ ...styles.button, background: 'transparent', border: '1px solid var(--border-color)' }}
+            onClick={() => { setSearchResults(null); setSearchQuery(''); }}>
+            ✕
+          </button>
+        )}
+      </div>
+
       <div style={styles.controls}>
         <button 
           style={styles.button}
@@ -259,11 +303,11 @@ const GitLogView: React.FC<GitLogViewProps> = () => {
       
       {isLoading ? (
         <div style={styles.loading}>Loading commit history...</div>
-      ) : logs.length === 0 ? (
-        <div style={styles.emptyState}>No commit history found</div>
+      ) : displayedLogs.length === 0 ? (
+        <div style={styles.emptyState}>{searchResults !== null ? 'No commits match your search' : 'No commit history found'}</div>
       ) : (
         <div style={styles.commitList}>
-          {logs.map((commit) => {
+          {displayedLogs.map((commit) => {
             const isExpanded = expandedCommit === commit.hash;
             
             return (

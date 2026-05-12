@@ -368,25 +368,16 @@ async function main() {
     // Start server with custom port
     const serverProcess = startProcess('npm', ['run', 'dev:server'], 'Server', 'blue', { VITE_PORT: serverPort.toString() });
     
-    // Wait for server to start if not skipping checks
-    if (!skipChecks) {
-      console.log(chalk.blue(`⏳ Waiting for dev server to initialize on port ${serverPort}...`));
-      try {
-        const isHealthy = await testServerHealth(serverPort);
-        if (isHealthy) {
-          console.log(chalk.green('✅ Dev server started successfully!'));
-        } else {
-          throw new Error('Server health check failed');
-        }
-      } catch (error) {
-        console.error(chalk.red('❌ Dev server failed to start within timeout period.'));
-        console.log(chalk.red('   Try: yarn dev:server'));
-        if (backendProcess) backendProcess.kill();
-        serverProcess.kill();
-        process.exit(1);
-      }
-    } else {
-      console.log(chalk.yellow('⏭️  Skipping server startup verification'));
+    // Always wait for Vite to be ready before starting Electron
+    console.log(chalk.blue(`⏳ Waiting for dev server to initialize on port ${serverPort}...`));
+    try {
+      await tcpPortUsed.waitUntilUsed(serverPort, 500, 60000);
+      console.log(chalk.green('✅ Dev server started successfully!'));
+    } catch (error) {
+      console.error(chalk.red('❌ Dev server failed to start within timeout period.'));
+      if (backendProcess) backendProcess.kill();
+      serverProcess.kill();
+      process.exit(1);
     }
     
     // Start electron with custom server port

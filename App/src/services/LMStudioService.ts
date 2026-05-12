@@ -167,6 +167,17 @@ class LMStudioService {
                     const newContent = data.choices[0]?.delta?.content || '';
                     fullContent += newContent;
                     onStream?.(fullContent);
+                    // Capture usage if present (some providers send it in the last chunk)
+                    if (data.usage) {
+                      const { TokenUsageService } = await import('./TokenUsageService');
+                      TokenUsageService.emit({
+                        promptTokens: data.usage.prompt_tokens ?? 0,
+                        completionTokens: data.usage.completion_tokens ?? 0,
+                        totalTokens: data.usage.total_tokens ?? 0,
+                        model: data.model,
+                        timestamp: Date.now(),
+                      });
+                    }
                   } catch (e) {
                     console.warn('Failed to parse streaming response:', e);
                   }
@@ -295,21 +306,121 @@ class LMStudioService {
       }
       // ───────────────────────────────────────────────────────────────────
 
-      // Use fallback endpoints if available
-      const endpointsToTry = modelConfig.fallbackEndpoints || [modelConfig.apiEndpoint];
+      // Build list of configs to try: primary first, then fallbackConfigs
+      const configsToTry: any[] = [modelConfig];
+      if (modelConfig.fallbackConfigs && modelConfig.fallbackConfigs.length > 0) {
+        configsToTry.push(...modelConfig.fallbackConfigs);
+      }
+
       let lastError: Error | null = null;
-      
-      for (const baseEndpoint of endpointsToTry) {
+
+      for (const tryConfig of configsToTry) {
+        const baseEndpoint = tryConfig.apiEndpoint || tryConfig.fallbackEndpoints?.[0] || 'http://localhost:1234/v1';
         try {
           // Format the endpoint URL correctly
           let baseUrl = baseEndpoint;
           if (!baseUrl.endsWith('/v1')) {
-            baseUrl = baseUrl.endsWith('/') 
-              ? `${baseUrl}v1` 
+            baseUrl = baseUrl.endsWith('/')
+              ? `${baseUrl}v1`
               : `${baseUrl}/v1`;
           }
 
+          if (tryConfig !== modelConfig) {
+            console.warn(`[Fallback] Primary model unreachable, trying: ${baseUrl} (${tryConfig.name ?? tryConfig.id ?? 'unknown'})`);
+            // Notify UI about fallback
+            import('./ToastService').then(({ showToast }) => {
+              showToast(`Primary model unavailable — using fallback: ${tryConfig.name ?? tryConfig.id ?? baseUrl}`, 'info');
+            }).catch(() => {});
+          }
+
           console.log(`Trying endpoint: ${baseUrl}`);
+
+          // ── Anthropic (Claude) — different API format ──────────────────
+          const isAnthropic = tryConfig.modelProvider === 'anthropic' ||
+            baseUrl.includes('api.anthropic.com');
+
+          if (isAnthropic) {
+            // Anthropic uses /messages endpoint, x-api-key header, and different body shape
+            let processedMessages = this.processMessages(messages);
+            let trimmedMessages = this.applyMessageLimits(processedMessages);
+
+            // Anthropic requires system message to be separate
+            const systemMsg = trimmedMessages.find((m: any) => m.role === 'system');
+            const nonSystemMsgs = trimmedMessages.filter((m: any) => m.role !== 'system');
+
+            const anthropicBody: any = {
+              model: tryConfig.id || model,
+              messages: nonSystemMsgs.map((m: any) => ({
+                role: m.role === 'assistant' ? 'assistant' : 'user',
+                content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
+              })),
+              max_tokens: (max_tokens && max_tokens > 0) ? max_tokens : 4096,
+              stream: true,
+              ...(systemMsg && { system: typeof systemMsg.content === 'string' ? systemMsg.content : JSON.stringify(systemMsg.content) }),
+              ...(temperature !== undefined && { temperature }),
+            };
+
+            const anthropicKey = tryConfig.apiKey || modelConfig.apiKey;
+            const anthropicResponse = await fetch(`${baseUrl}/messages`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'anthropic-version': '2023-06-01',
+                'anthropic-beta': 'messages-2023-12-15',
+                ...(anthropicKey && { 'x-api-key': anthropicKey }),
+              },
+              body: JSON.stringify(anthropicBody),
+              signal,
+            });
+
+            if (!anthropicResponse.ok) {
+              const errorText = await anthropicResponse.text();
+              throw new Error(`Anthropic API error (${anthropicResponse.status}): ${errorText}`);
+            }
+
+            // Parse Anthropic SSE format
+            const reader = anthropicResponse.body!.getReader();
+            const decoder = new TextDecoder();
+            let accumulated = '';
+
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              const chunk = decoder.decode(value);
+              for (const line of chunk.split('\n')) {
+                if (!line.startsWith('data: ')) continue;
+                const data = line.slice(6).trim();
+                if (data === '[DONE]' || data === 'event: message_stop') continue;
+                try {
+                  const parsed = JSON.parse(data);
+                  // Anthropic delta format
+                  const text = parsed.delta?.text || parsed.delta?.content?.[0]?.text || '';
+                  if (text) {
+                    accumulated += text;
+                    onUpdateWithFunctionCallDetection(accumulated);
+                  }
+                  // Usage info
+                  if (parsed.usage || parsed.message?.usage) {
+                    const u = parsed.usage || parsed.message?.usage;
+                    if (u) {
+                      import('./TokenUsageService').then(({ TokenUsageService }) => {
+                        TokenUsageService.emit({
+                          promptTokens: u.input_tokens ?? 0,
+                          completionTokens: u.output_tokens ?? 0,
+                          totalTokens: (u.input_tokens ?? 0) + (u.output_tokens ?? 0),
+                          model: anthropicBody.model,
+                          timestamp: Date.now(),
+                        });
+                      });
+                    }
+                  }
+                } catch (_) {}
+              }
+            }
+            reader.releaseLock();
+            return;
+          }
+          // ── End Anthropic ──────────────────────────────────────────────
 
           // Process messages to remove thinking tags and ensure consistent tool naming
           let processedMessages = this.processMessages(messages);
@@ -321,7 +432,7 @@ class LMStudioService {
           trimmedMessages = this.ensureAllToolCallsHaveResponses(trimmedMessages);
           
           const requestBody: any = {
-            model,
+            model: tryConfig.id || model,
             messages: trimmedMessages,
             temperature,
             ...(max_tokens !== null && max_tokens !== undefined && max_tokens > 0 ? { max_tokens } : {}),
@@ -347,7 +458,7 @@ class LMStudioService {
             headers: {
               'Content-Type': 'application/json',
               'Accept': 'text/event-stream',
-              ...(modelConfig.apiKey && { 'Authorization': `Bearer ${modelConfig.apiKey}` })
+              ...((tryConfig.apiKey || modelConfig.apiKey) && { 'Authorization': `Bearer ${tryConfig.apiKey || modelConfig.apiKey}` })
             },
             body: JSON.stringify(requestBody),
             signal: signal
@@ -366,11 +477,11 @@ class LMStudioService {
         } catch (error) {
           console.error(`Error with endpoint ${baseEndpoint}:`, error);
           lastError = error as Error;
-          // Continue to next endpoint
+          // Continue to next config
         }
       }
       
-      // If we've tried all endpoints and none worked, throw the last error
+      // If we've tried all configs and none worked, throw the last error
       if (lastError) {
         throw lastError;
       } else {
@@ -1512,6 +1623,18 @@ class LMStudioService {
             if (content) {
               accumulatedContent += content;
               onUpdate(accumulatedContent);
+            }
+            // Capture token usage if present
+            if (data.usage) {
+              import('./TokenUsageService').then(({ TokenUsageService }) => {
+                TokenUsageService.emit({
+                  promptTokens: data.usage.prompt_tokens ?? 0,
+                  completionTokens: data.usage.completion_tokens ?? 0,
+                  totalTokens: data.usage.total_tokens ?? 0,
+                  model: data.model,
+                  timestamp: Date.now(),
+                });
+              });
             }
             
             // Check for tool calls in delta

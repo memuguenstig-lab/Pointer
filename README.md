@@ -2,7 +2,7 @@
 
 A comprehensive development suite consisting of a modern code editor, community Discord bots, and a web presence - all built with React, TypeScript, Python, and Next.js.
 
-- **Website**: [pointr.sh](https://pointr.sh)
+- **Website**: [pointer.f1shy312.com](https://pointer.f1shy312.com)
 - **Discord**: [Join our Discord](https://discord.gg/vhgc8THmNk)
 - **GitHub**: [Source Code](https://github.com/PointerIDE/Pointer)
 

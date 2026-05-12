@@ -718,30 +718,40 @@ ${content.length > 32000 ? content.substring(0, 32000) + "\n[truncated]" : conte
   static async getModelConfigForPurpose(purpose: 'chat' | 'insert' | 'autocompletion' | 'summary' | 'agent'): Promise<any> {
     try {
       const defaultEndpoint = 'http://localhost:1234/v1';
-      let apiEndpoint = defaultEndpoint;
       let modelId = await this.getModelIdForPurpose(purpose);
-      
+
       const settingsPath = PathConfig.getActiveSettingsPath();
       const settingsResult = await FileService.readSettingsFiles(settingsPath);
-      if (settingsResult.settings && settingsResult.settings.models && 
+
+      if (settingsResult.settings && settingsResult.settings.models &&
           settingsResult.settings.modelAssignments && settingsResult.settings.modelAssignments[purpose]) {
         const assignedModelId = settingsResult.settings.modelAssignments[purpose];
-        if (settingsResult.settings.models[assignedModelId]) {
-          const modelConfig = settingsResult.settings.models[assignedModelId];
-          apiEndpoint = modelConfig.apiEndpoint || defaultEndpoint;
-          
+        const allModels: Record<string, any> = settingsResult.settings.models;
+
+        if (allModels[assignedModelId]) {
+          const primaryConfig = allModels[assignedModelId];
+          const primaryEndpoint = primaryConfig.apiEndpoint || defaultEndpoint;
+
+          // Build fallback chain: all other configured models that have an endpoint,
+          // ordered by: same provider first, then others.
+          const fallbackConfigs: any[] = Object.entries(allModels)
+            .filter(([id, cfg]: [string, any]) =>
+              id !== assignedModelId &&
+              cfg.apiEndpoint &&
+              cfg.modelProvider !== 'ollama-embedded'
+            )
+            .map(([, cfg]) => cfg);
+
           return {
             modelId,
-            apiEndpoint,
-            fallbackEndpoints: [
-              apiEndpoint,
-              // should be user configurable soon
-            ],
-            ...modelConfig
+            apiEndpoint: primaryEndpoint,
+            fallbackEndpoints: [primaryEndpoint],
+            fallbackConfigs,          // full configs for each fallback model
+            ...primaryConfig,
           };
         }
       }
-      
+
       // Fall back to localStorage
       const modelConfigStr = localStorage.getItem('modelConfig');
       if (modelConfigStr) {
@@ -749,30 +759,25 @@ ${content.length > 32000 ? content.substring(0, 32000) + "\n[truncated]" : conte
         return {
           modelId,
           apiEndpoint: parsed.apiEndpoint || defaultEndpoint,
-          fallbackEndpoints: [
-            parsed.apiEndpoint || defaultEndpoint,
-            // should be user configurable soon
-          ],
-          ...parsed
+          fallbackEndpoints: [parsed.apiEndpoint || defaultEndpoint],
+          fallbackConfigs: [],
+          ...parsed,
         };
       }
-      
+
       return {
         modelId,
-        apiEndpoint,
-        fallbackEndpoints: [
-          defaultEndpoint,
-          // should be user configurable soon
-        ]
+        apiEndpoint: defaultEndpoint,
+        fallbackEndpoints: [defaultEndpoint],
+        fallbackConfigs: [],
       };
     } catch (error) {
       console.error(`Error loading model configuration for ${purpose}:`, error);
       return {
         modelId: 'deepseek-coder-v2-lite-instruct',
         apiEndpoint: 'http://localhost:1234/v1',
-        fallbackEndpoints: [
-          // should be user configurable soon
-        ]
+        fallbackEndpoints: ['http://localhost:1234/v1'],
+        fallbackConfigs: [],
       };
     }
   }

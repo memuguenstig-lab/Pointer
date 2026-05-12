@@ -83,6 +83,11 @@ const EditorPane: React.FC<EditorPaneProps> = ({ fileId, file, onEditorReady, se
     isStreaming: false
   });
 
+  // Blame state
+  const [blameData, setBlameData] = useState<{ lineNum: number; hash: string; author: string; date: string; summary: string }[]>([]);
+  const [blameVisible, setBlameVisible] = useState(false);
+  const blameDecorationsRef = useRef<monaco.editor.IEditorDecorationsCollection | null>(null);
+
   // Add cleanup effect to reset streaming state on unmount
   useEffect(() => {
     return () => {
@@ -151,9 +156,7 @@ const EditorPane: React.FC<EditorPaneProps> = ({ fileId, file, onEditorReady, se
     const editorOptions: monaco.editor.IStandaloneEditorConstructionOptions = {
       model: model,
       automaticLayout: true,
-      minimap: {
-        enabled: false
-      },
+      minimap: { enabled: false },
       lineNumbers: 'on',
       wordWrap: 'off',
       renderWhitespace: 'selection',
@@ -162,7 +165,9 @@ const EditorPane: React.FC<EditorPaneProps> = ({ fileId, file, onEditorReady, se
       lineHeight: 19,
       renderFinalNewline: 'on',
       detectIndentation: true,
-      trimAutoWhitespace: true
+      trimAutoWhitespace: true,
+      codeLens: true,
+      codeLensFontSize: 11,
     };
 
     // Create editor with the model
@@ -214,6 +219,232 @@ const EditorPane: React.FC<EditorPaneProps> = ({ fileId, file, onEditorReady, se
     // Add keyboard event handler for Ctrl+I
     editor.current.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyI, () => {
       setShowPromptInput(true);
+    });
+
+    // ── Multi-cursor AI: Ctrl+Shift+I ─────────────────────────────────────
+    // Collects all cursor selections, sends them to AI with a prompt,
+    // then applies the result back to each selection position.
+    editor.current.addAction({
+      id: 'ai-multi-cursor-edit',
+      label: 'AI: Edit All Selections',
+      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyI],
+      contextMenuGroupId: 'ai',
+      contextMenuOrder: 1,
+      run: async (ed) => {
+        const selections = ed.getSelections();
+        if (!selections || selections.length === 0) return;
+
+        const model = ed.getModel();
+        if (!model) return;
+
+        // Collect selected text from all cursors
+        const selectedTexts = selections.map(sel => ({
+          selection: sel,
+          text: model.getValueInRange(sel),
+        })).filter(s => s.text.trim().length > 0);
+
+        if (selectedTexts.length === 0) {
+          showToast('Select some text first', 'info');
+          return;
+        }
+
+        const prompt = window.prompt(
+          `AI will edit ${selectedTexts.length} selection(s). Enter instruction:`,
+          'Refactor this code'
+        );
+        if (!prompt) return;
+
+        showToast(`Applying AI to ${selectedTexts.length} selection(s)…`, 'info');
+
+        try {
+          // Process all selections in parallel
+          const results = await Promise.all(selectedTexts.map(async ({ text }) => {
+            let result = '';
+            await lmStudio.createStreamingChatCompletion({
+              model: '',
+              purpose: 'chat',
+              messages: [
+                {
+                  role: 'system',
+                  content: 'You are a code editor. Apply the user instruction to the given code. Reply with ONLY the modified code, no explanation, no markdown fences.',
+                },
+                {
+                  role: 'user',
+                  content: `Instruction: ${prompt}\n\nCode:\n${text}`,
+                },
+              ],
+              temperature: 0.2,
+              onUpdate: (content) => { result = content; },
+            });
+            return result.trim();
+          }));
+
+          // Apply all edits in a single operation (reverse order to preserve positions)
+          const edits = selectedTexts.map(({ selection }, i) => ({
+            range: selection,
+            text: results[i] || selectedTexts[i].text,
+            forceMoveMarkers: true,
+          }));
+
+          model.pushEditOperations([], edits, () => null);
+          showToast(`Applied AI edits to ${edits.length} selection(s)`, 'success');
+        } catch (e: any) {
+          showToast('AI edit failed: ' + e.message, 'error');
+        }
+      },
+    });
+
+    // Also register as context menu item for single selection
+    editor.current.addAction({
+      id: 'ai-edit-selection',
+      label: 'AI: Edit Selection',
+      keybindings: [],
+      contextMenuGroupId: 'ai',
+      contextMenuOrder: 2,
+      run: async (ed) => {
+        const selection = ed.getSelection();
+        const model = ed.getModel();
+        if (!selection || !model) return;
+        const text = model.getValueInRange(selection);
+        if (!text.trim()) { setShowPromptInput(true); return; }
+
+        const prompt = window.prompt('AI instruction for selection:', 'Improve this code');
+        if (!prompt) return;
+
+        showToast('Applying AI to selection…', 'info');
+        try {
+          let result = '';
+          await lmStudio.createStreamingChatCompletion({
+            model: '',
+            purpose: 'chat',
+            messages: [
+              { role: 'system', content: 'Apply the instruction to the code. Reply with ONLY the modified code, no markdown.' },
+              { role: 'user', content: `Instruction: ${prompt}\n\nCode:\n${text}` },
+            ],
+            temperature: 0.2,
+            onUpdate: (c) => { result = c; },
+          });
+          if (result.trim()) {
+            model.pushEditOperations([], [{ range: selection, text: result.trim(), forceMoveMarkers: true }], () => null);
+            showToast('AI edit applied', 'success');
+          }
+        } catch (e: any) {
+          showToast('AI edit failed: ' + e.message, 'error');
+        }
+      },
+    });
+
+    // ── Explain Code ──────────────────────────────────────────────────────
+    editor.current.addAction({
+      id: 'ai-explain-selection',
+      label: 'Explain Code',
+      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyE],
+      contextMenuGroupId: 'ai',
+      contextMenuOrder: 0, // first in the AI group
+      run: async (ed) => {
+        const selection = ed.getSelection();
+        const model = ed.getModel();
+        if (!selection || !model) return;
+        const text = model.getValueInRange(selection);
+        if (!text.trim()) {
+          showToast('Select some code first', 'info');
+          return;
+        }
+
+        // Detect language for better context
+        const lang = model.getLanguageId?.() ?? 'code';
+        const label = text.length > 60 ? text.slice(0, 60).replace(/\n/g, ' ') + '…' : text.replace(/\n/g, ' ');
+
+        setFunctionExplanationDialog({
+          isOpen: true,
+          functionName: label,
+          explanation: '',
+          isLoading: true,
+          isStreaming: false,
+        });
+
+        try {
+          let streamed = '';
+          await lmStudio.createStreamingChatCompletion({
+            model: '',
+            purpose: 'chat',
+            messages: [
+              {
+                role: 'system',
+                content: 'You are a code explainer. Explain the given code clearly and concisely. Cover: what it does, how it works, and any important details. Use plain language. Format with short paragraphs or bullet points where helpful.',
+              },
+              {
+                role: 'user',
+                content: `Explain this ${lang} code:\n\n\`\`\`${lang}\n${text}\n\`\`\``,
+              },
+            ],
+            temperature: 0.3,
+            onUpdate: (content) => {
+              streamed = content;
+              setFunctionExplanationDialog(prev => ({
+                ...prev,
+                explanation: streamed,
+                isLoading: false,
+                isStreaming: true,
+              }));
+            },
+          });
+          setFunctionExplanationDialog(prev => ({ ...prev, isStreaming: false }));
+        } catch (e: any) {
+          setFunctionExplanationDialog(prev => ({
+            ...prev,
+            explanation: 'Failed to explain code: ' + e.message,
+            isLoading: false,
+            isStreaming: false,
+          }));
+        }
+      },
+    });
+
+    // ── Git Blame ──────────────────────────────────────────────────────────
+    editor.current.addAction({
+      id: 'git-blame-toggle',
+      label: 'Git: Toggle Blame',
+      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyB],
+      contextMenuGroupId: 'git',
+      contextMenuOrder: 1,
+      run: async (ed) => {
+        if (blameVisible) {
+          blameDecorationsRef.current?.clear();
+          setBlameData([]);
+          setBlameVisible(false);
+          return;
+        }
+        const dir = FileSystemService.getCurrentDirectory();
+        if (!dir || !file?.path) { showToast('No file open', 'info'); return; }
+        showToast('Loading blame…', 'info');
+        try {
+          const { GitService } = await import('../services/gitService');
+          const lines = await GitService.blame(dir, file.path);
+          setBlameData(lines);
+          setBlameVisible(true);
+
+          // Apply gutter decorations
+          const model = ed.getModel();
+          if (!model) return;
+          const decorations = lines.map(l => ({
+            range: new monaco.Range(l.lineNum, 1, l.lineNum, 1),
+            options: {
+              isWholeLine: false,
+              linesDecorationsClassName: 'blame-gutter',
+              glyphMarginHoverMessage: {
+                value: `**${l.hash.slice(0, 7)}** — ${l.author}\n\n${l.summary}\n\n_${l.date}_`,
+              },
+              glyphMarginClassName: 'blame-glyph',
+            },
+          }));
+          blameDecorationsRef.current?.clear();
+          blameDecorationsRef.current = ed.createDecorationsCollection(decorations);
+          showToast('Blame loaded — hover gutter for details', 'success');
+        } catch (e: any) {
+          showToast('Blame failed: ' + e.message, 'error');
+        }
+      },
     });
 
     // Add Ctrl+Space command for manual code completion
@@ -316,6 +547,65 @@ const EditorPane: React.FC<EditorPaneProps> = ({ fileId, file, onEditorReady, se
       editorInitializedRef.current = true;
       onEditorReady(editor.current);
     }
+
+    // ── Code Lens ──────────────────────────────────────────────────────────
+    // Shows function complexity, line count, and git blame info above functions.
+    const codeLensDisposable = monaco.languages.registerCodeLensProvider('*', {
+      provideCodeLenses(model) {
+        if (model.uri.toString() !== editor.current?.getModel()?.uri.toString()) {
+          return { lenses: [], dispose: () => {} };
+        }
+        const content = model.getValue();
+        const lines = content.split('\n');
+        const lenses: monaco.languages.CodeLens[] = [];
+
+        // Detect function/method declarations
+        const funcRe = /^\s*(?:export\s+)?(?:async\s+)?(?:function\s+(\w+)|(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s+)?\(|(?:public|private|protected|static|\s)*(?:async\s+)?(\w+)\s*\()/;
+
+        lines.forEach((line, i) => {
+          const m = funcRe.exec(line);
+          if (!m) return;
+          const name = m[1] || m[2] || m[3];
+          if (!name || name.length < 2 || ['if', 'for', 'while', 'switch', 'catch'].includes(name)) return;
+
+          // Count lines in this function (simple heuristic: count until matching brace depth)
+          let depth = 0, funcLines = 0, started = false;
+          for (let j = i; j < Math.min(i + 200, lines.length); j++) {
+            for (const ch of lines[j]) {
+              if (ch === '{') { depth++; started = true; }
+              else if (ch === '}') depth--;
+            }
+            funcLines++;
+            if (started && depth === 0) break;
+          }
+
+          // Cyclomatic complexity (count branches)
+          const funcBody = lines.slice(i, i + funcLines).join('\n');
+          const branches = (funcBody.match(/\b(if|else if|for|while|case|catch|\?\?|\?\s*:|\&\&|\|\|)\b/g) || []).length;
+          const complexity = 1 + branches;
+
+          const complexityLabel = complexity <= 5 ? '✓' : complexity <= 10 ? '⚠' : '✗';
+          const complexityColor = complexity <= 5 ? 'low' : complexity <= 10 ? 'medium' : 'high';
+
+          lenses.push({
+            range: { startLineNumber: i + 1, startColumn: 1, endLineNumber: i + 1, endColumn: 1 },
+            id: `lens-${i}`,
+            command: {
+              id: 'ai-explain-selection',
+              title: `${funcLines}L · complexity ${complexity} ${complexityLabel}`,
+              tooltip: `${funcLines} lines · cyclomatic complexity: ${complexity} (${complexityColor})\nClick to explain this function`,
+              arguments: [],
+            },
+          });
+        });
+
+        return { lenses, dispose: () => {} };
+      },
+      resolveCodeLens(model, codeLens) { return codeLens; },
+    });
+
+    // Store disposable for cleanup
+    (editor.current as any).__codeLensDisposable = codeLensDisposable;
 
     // Handle cursor position changes
     editor.current.onDidChangeCursorPosition((e) => {
@@ -1857,6 +2147,11 @@ DO NOT include the [CURSOR] marker in your response. Provide ONLY the completion
               0% { transform: rotate(0deg); }
               100% { transform: rotate(360deg); }
             }
+            @keyframes blink {
+              0%, 100% { opacity: 1; }
+              50% { opacity: 0; }
+            }
+            .blinking-cursor { animation: blink 1s step-end infinite; }
           `}
         </style>
 
@@ -1874,6 +2169,80 @@ DO NOT include the [CURSOR] marker in your response. Provide ONLY the completion
             title="AI Assistant"
             content={renderExplanationContent()}
           />
+        )}
+
+        {/* Explain Code panel — slides in from right */}
+        {functionExplanationDialog.isOpen && (
+          <div style={{
+            position: 'absolute', top: 0, right: 0, bottom: 0, width: '380px',
+            background: 'var(--bg-primary)', borderLeft: '1px solid var(--border-color)',
+            zIndex: 50, display: 'flex', flexDirection: 'column',
+            boxShadow: '-4px 0 20px rgba(0,0,0,0.35)',
+          }}>
+            {/* Header */}
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '10px 14px', borderBottom: '1px solid var(--border-color)',
+              background: 'var(--bg-secondary)', flexShrink: 0, gap: 8,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="var(--accent-color)">
+                  <path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 2a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm1 9H7V7h2v5z"/>
+                </svg>
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  Explain Code
+                </span>
+              </div>
+              <button
+                onClick={() => setFunctionExplanationDialog(prev => ({ ...prev, isOpen: false }))}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 16, flexShrink: 0, lineHeight: 1 }}
+              >✕</button>
+            </div>
+
+            {/* Selected code preview */}
+            {functionExplanationDialog.functionName && (
+              <div style={{
+                padding: '8px 14px', borderBottom: '1px solid var(--border-color)',
+                background: 'var(--bg-secondary)', flexShrink: 0,
+              }}>
+                <div style={{ fontSize: 10, color: 'var(--text-secondary)', opacity: 0.6, marginBottom: 3, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Selection</div>
+                <div style={{ fontSize: 11, fontFamily: 'monospace', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {functionExplanationDialog.functionName}
+                </div>
+              </div>
+            )}
+
+            {/* Explanation content */}
+            <div style={{ flex: 1, overflow: 'auto', padding: '14px' }}>
+              {functionExplanationDialog.isLoading ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--text-secondary)', fontSize: 12 }}>
+                  <div style={{ width: 14, height: 14, border: '2px solid var(--border-color)', borderTopColor: 'var(--accent-color)', borderRadius: '50%', animation: 'spin 0.8s linear infinite', flexShrink: 0 }} />
+                  Analyzing code…
+                </div>
+              ) : (
+                <div style={{ fontSize: 13, color: 'var(--text-primary)', lineHeight: 1.65, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                  {functionExplanationDialog.explanation}
+                  {functionExplanationDialog.isStreaming && <span className="blinking-cursor" style={{ color: 'var(--accent-color)' }}>▋</span>}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            {!functionExplanationDialog.isLoading && !functionExplanationDialog.isStreaming && functionExplanationDialog.explanation && (
+              <div style={{ padding: '8px 14px', borderTop: '1px solid var(--border-color)', flexShrink: 0, display: 'flex', gap: 6 }}>
+                <button
+                  onClick={() => navigator.clipboard.writeText(functionExplanationDialog.explanation)}
+                  style={{
+                    padding: '4px 10px', fontSize: 11, borderRadius: 4,
+                    border: '1px solid var(--border-color)', background: 'var(--bg-secondary)',
+                    color: 'var(--text-secondary)', cursor: 'pointer',
+                  }}
+                >
+                  Copy
+                </button>
+              </div>
+            )}
+          </div>
         )}
       </div>
     );

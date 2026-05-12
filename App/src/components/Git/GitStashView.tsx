@@ -11,6 +11,42 @@ interface GitStash {
   message: string;
 }
 
+// ── Stash diff preview popup ───────────────────────────────────────────────
+function StashDiffPopup({ directory, stashIndex, onClose }: { directory: string; stashIndex: number; onClose: () => void }) {
+  const [diff, setDiff] = React.useState<string | null>(null);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    GitService.getStashDiff(directory, stashIndex)
+      .then(d => { setDiff(d); setLoading(false); })
+      .catch(() => { setDiff('Could not load diff.'); setLoading(false); });
+  }, [directory, stashIndex]);
+
+  const renderDiff = (raw: string) => {
+    if (!raw.trim()) return <div style={{ color: 'var(--text-secondary)', padding: '12px', fontSize: '12px' }}>No changes in stash</div>;
+    return raw.split('\n').map((line, i) => {
+      let bg = 'transparent', color = 'var(--text-primary)';
+      if (line.startsWith('+') && !line.startsWith('+++')) { bg = 'rgba(63,185,80,0.12)'; color = '#3fb950'; }
+      else if (line.startsWith('-') && !line.startsWith('---')) { bg = 'rgba(248,81,73,0.12)'; color = '#f85149'; }
+      else if (line.startsWith('@@')) { bg = 'rgba(14,99,156,0.12)'; color = 'var(--accent-color)'; }
+      else if (line.startsWith('diff ') || line.startsWith('index ') || line.startsWith('---') || line.startsWith('+++')) { color = 'var(--text-secondary)'; }
+      return <div key={i} style={{ background: bg, color, fontFamily: 'monospace', fontSize: '12px', lineHeight: '1.5', padding: '0 8px', whiteSpace: 'pre' }}>{line || ' '}</div>;
+    });
+  };
+
+  return (
+    <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: '55vw', minWidth: '400px', background: 'var(--bg-primary)', borderLeft: '1px solid var(--border-color)', zIndex: 1000, display: 'flex', flexDirection: 'column', boxShadow: '-4px 0 24px rgba(0,0,0,0.35)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-secondary)', flexShrink: 0 }}>
+        <span style={{ fontSize: '13px', fontWeight: 600 }}>Stash Preview — stash@{`{${stashIndex}}`}</span>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '16px' }}>✕</button>
+      </div>
+      <div style={{ flex: 1, overflow: 'auto', padding: '8px 0' }}>
+        {loading ? <div style={{ padding: '20px', color: 'var(--text-secondary)', fontSize: '12px' }}>Loading diff…</div> : renderDiff(diff ?? '')}
+      </div>
+    </div>
+  );
+}
+
 const styles = {
   container: {
     padding: '0 8px',
@@ -96,6 +132,7 @@ const GitStashView: React.FC<GitStashViewProps> = ({ refreshStatus }) => {
   const [stashMessage, setStashMessage] = useState('');
   const [isStashing, setIsStashing] = useState(false);
   const [isPopping, setIsPopping] = useState(false);
+  const [previewStash, setPreviewStash] = useState<number | null>(null);
 
   const currentDirectory = FileSystemService.getCurrentDirectory();
 
@@ -115,7 +152,7 @@ const GitStashView: React.FC<GitStashViewProps> = ({ refreshStatus }) => {
 
     try {
       const stashList = await GitService.listStashes(currentDirectory);
-      setStashes(stashList.map((s: string, i: number) => ({ index: `stash_${i}`, message: s })));
+      setStashes(stashList.map((s, i) => ({ index: String(i), message: s.message || `Stash ${i}` })));
     } catch (err) {
       console.error('Error loading stashes:', err);
       setError(`Error loading stashes: ${err}`);
@@ -241,6 +278,12 @@ const GitStashView: React.FC<GitStashViewProps> = ({ refreshStatus }) => {
                     {stashMsg || `Stash ${stashIdx}`}
                   </span>
                   <div style={styles.stashActions}>
+                    <button
+                      style={{ ...styles.button, background: 'var(--bg-primary)', border: '1px solid var(--border-color)', fontSize: '12px', padding: '4px 8px' }}
+                      onClick={() => setPreviewStash(stashIdx)}
+                    >
+                      Preview
+                    </button>
                     <button 
                       style={styles.button}
                       onClick={() => handlePopStash(stashIdx)}
@@ -258,8 +301,17 @@ const GitStashView: React.FC<GitStashViewProps> = ({ refreshStatus }) => {
           })}
         </div>
       )}
+
+      {/* Stash diff preview popup */}
+      {previewStash !== null && currentDirectory && (
+        <StashDiffPopup
+          directory={currentDirectory}
+          stashIndex={previewStash}
+          onClose={() => setPreviewStash(null)}
+        />
+      )}
     </div>
   );
 };
 
-export default GitStashView; 
+export default GitStashView;

@@ -198,10 +198,21 @@ export class ToolService {
       
       // ── Mirror terminal commands into the visible terminal ──────────────
       if (backendToolName === 'run_terminal_cmd' && mappedParams.command) {
-        // Fire-and-forget: push the command into the active terminal so the
-        // user can watch it run live. We don't await here because the actual
-        // result still comes from the backend /api/tools/call endpoint.
-        TerminalBus.runCommand(mappedParams.command).catch(() => {});
+        // Run the command in the visible terminal AND capture its output.
+        // We await the promise so the AI gets the real terminal output back.
+        try {
+          const terminalOutput = await TerminalBus.runCommand(mappedParams.command);
+          ToolService.setToolExecutionState(false);
+          const title = `Ran command [${mappedParams.command}]: ${terminalOutput.startsWith('[Terminal not connected') ? 'Terminal unavailable' : 'Success'}`;
+          return {
+            role: 'tool',
+            content: `${title}\n${terminalOutput}`,
+            tool_call_id: this.generateToolCallId(),
+          };
+        } catch (termErr) {
+          // Fall through to backend execution if terminal bus fails
+          console.warn('[TerminalBus] Failed, falling back to backend:', termErr);
+        }
       }
 
       console.log(`Making API call to backend tool ${backendToolName} with params:`, mappedParams);

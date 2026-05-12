@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import tinycolor from 'tinycolor2';
 import { FileSystemService } from '../services/FileSystemService';
+import { GitService } from '../services/gitService';
 import { ModelConfig, EditorSettings, ThemeSettings, AppSettings, ModelAssignments, DiscordRpcSettings, PromptsSettings, CustomRule } from '../types';
 import * as monaco from 'monaco-editor';
 import ColorInput from './ColorInput';
@@ -104,7 +105,7 @@ const defaultDiscordRpcSettings: DiscordRpcSettings = {
   smallImageKey: 'code',
   smallImageText: '{languageId} | Line {line}:{column}',
   button1Label: 'Download Pointer',
-  button1Url: 'https://pointr.sh',
+  button1Url: 'https://pointer.f1shy312.com',
   button2Label: '',
   button2Url: '',
 };
@@ -122,15 +123,152 @@ const defaultPromptsSettings: PromptsSettings = {
   customRules: [],
 };
 
+// ── GPG Signing Settings ───────────────────────────────────────────────────
+const GPGSettings: React.FC = () => {
+  const [keys, setKeys] = useState<{ id: string; uid: string }[]>([]);
+  const [config, setConfig] = useState({ signingKey: '', gpgSign: false });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const dir = FileSystemService.getCurrentDirectory();
+
+  useEffect(() => {
+    if (!dir) { setLoading(false); return; }
+    Promise.all([
+      fetch('http://localhost:23816/git/gpg-list-keys', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ directory: dir }) }).then(r => r.json()).catch(() => ({ keys: [] as { id: string; uid: string }[] })),
+      fetch('http://localhost:23816/git/gpg-get-config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ directory: dir }) }).then(r => r.json()).catch(() => ({ signingKey: '', gpgSign: false })),
+    ]).then(([keysRes, cfgRes]) => {
+      setKeys(keysRes.keys ?? []);
+      setConfig({ signingKey: cfgRes.signingKey ?? '', gpgSign: cfgRes.gpgSign ?? false });
+    }).finally(() => setLoading(false));
+  }, [dir]);
+
+  const save = async () => {
+    if (!dir) return;
+    setSaving(true);
+    await fetch('http://localhost:23816/git/gpg-set-signing-key', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ directory: dir, keyId: config.signingKey, enable: config.gpgSign }) }).catch(() => {});
+    setSaving(false);
+  };
+
+  if (!dir) return <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Open a workspace to configure GPG signing.</div>;
+  if (loading) return <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Loading GPG keys…</div>;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer' }}>
+        <input type="checkbox" checked={config.gpgSign} onChange={e => setConfig(c => ({ ...c, gpgSign: e.target.checked }))} />
+        Sign commits with GPG
+      </label>
+      {config.gpgSign && (
+        <div>
+          <label style={{ display: 'block', marginBottom: 4, fontSize: 13 }}>Signing Key</label>
+          {keys.length > 0 ? (
+            <select value={config.signingKey} onChange={e => setConfig(c => ({ ...c, signingKey: e.target.value }))}
+              style={{ width: '100%', padding: '7px 8px', background: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 4, color: 'var(--text-primary)', fontSize: 13 }}>
+              <option value="">— select a key —</option>
+              {keys.map(k => <option key={k.id} value={k.id}>{k.id} — {k.uid}</option>)}
+            </select>
+          ) : (
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>No GPG keys found. Install GPG and create a key first.</div>
+          )}
+        </div>
+      )}
+      <button onClick={save} disabled={saving} style={{ alignSelf: 'flex-start', padding: '6px 14px', fontSize: 12, borderRadius: 4, border: 'none', background: 'var(--accent-color)', color: '#fff', cursor: 'pointer' }}>
+        {saving ? 'Saving…' : 'Save'}
+      </button>
+    </div>
+  );
+};
+
+// ── Submodule Manager ──────────────────────────────────────────────────────
+const SubmoduleManager: React.FC = () => {
+  const [submodules, setSubmodules] = useState<{ path: string; hash: string; status: string; branch: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [addUrl, setAddUrl] = useState('');
+  const [addPath, setAddPath] = useState('');
+  const [adding, setAdding] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const dir = FileSystemService.getCurrentDirectory();
+
+  const load = async () => {
+    if (!dir) { setLoading(false); return; }
+    setLoading(true);
+    const res = await fetch('http://localhost:23816/git/submodule-list', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ directory: dir }) }).then(r => r.json()).catch(() => ({ submodules: [] as { path: string; hash: string; status: string; branch: string }[] }));
+    setSubmodules(res.submodules ?? []);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, [dir]);
+
+  const handleAdd = async () => {
+    if (!dir || !addUrl.trim()) return;
+    setAdding(true); setError(null);
+    const res = await fetch('http://localhost:23816/git/submodule-add', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ directory: dir, url: addUrl, path: addPath || undefined }) }).then(r => r.json()).catch(e => ({ success: false, error: e.message }));
+    if (!res.success) setError(res.error ?? 'Failed to add submodule');
+    else { setAddUrl(''); setAddPath(''); await load(); }
+    setAdding(false);
+  };
+
+  const handleUpdate = async (path?: string) => {
+    if (!dir) return;
+    await fetch('http://localhost:23816/git/submodule-update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ directory: dir, path }) }).catch(() => {});
+    await load();
+  };
+
+  const handleRemove = async (path: string) => {
+    if (!dir || !confirm(`Remove submodule "${path}"?`)) return;
+    await fetch('http://localhost:23816/git/submodule-remove', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ directory: dir, path }) }).catch(() => {});
+    await load();
+  };
+
+  if (!dir) return <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Open a workspace to manage submodules.</div>;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {error && <div style={{ fontSize: 12, color: '#f85149', padding: '6px 10px', background: 'rgba(248,81,73,0.1)', borderRadius: 4 }}>{error}</div>}
+
+      {/* Add submodule */}
+      <div style={{ display: 'flex', gap: 6 }}>
+        <input value={addUrl} onChange={e => setAddUrl(e.target.value)} placeholder="Repository URL" style={{ flex: 2, padding: '6px 8px', fontSize: 12, background: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 4, color: 'var(--text-primary)' }} />
+        <input value={addPath} onChange={e => setAddPath(e.target.value)} placeholder="Path (optional)" style={{ flex: 1, padding: '6px 8px', fontSize: 12, background: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 4, color: 'var(--text-primary)' }} />
+        <button onClick={handleAdd} disabled={adding || !addUrl.trim()} style={{ padding: '6px 12px', fontSize: 12, borderRadius: 4, border: 'none', background: 'var(--accent-color)', color: '#fff', cursor: 'pointer' }}>
+          {adding ? '…' : 'Add'}
+        </button>
+      </div>
+
+      {/* Submodule list */}
+      {loading ? <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Loading…</div> : submodules.length === 0 ? (
+        <div style={{ fontSize: 12, color: 'var(--text-secondary)', opacity: 0.6 }}>No submodules found.</div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {submodules.map(s => (
+            <div key={s.path} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', background: 'var(--bg-primary)', borderRadius: 4, border: '1px solid var(--border-primary)' }}>
+              <span style={{ fontSize: 10, color: s.status === '+' ? '#f0883e' : s.status === '-' ? '#f85149' : '#3fb950', fontWeight: 700 }}>{s.status || '✓'}</span>
+              <span style={{ flex: 1, fontSize: 12, fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.path}</span>
+              <span style={{ fontSize: 10, color: 'var(--text-secondary)', fontFamily: 'monospace' }}>{s.hash?.slice(0, 7)}</span>
+              <button onClick={() => handleUpdate(s.path)} style={{ fontSize: 10, padding: '2px 7px', borderRadius: 3, border: '1px solid var(--border-primary)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }}>Update</button>
+              <button onClick={() => handleRemove(s.path)} style={{ fontSize: 10, padding: '2px 7px', borderRadius: 3, border: '1px solid rgba(248,81,73,0.4)', background: 'rgba(248,81,73,0.08)', color: '#f85149', cursor: 'pointer' }}>Remove</button>
+            </div>
+          ))}
+          <button onClick={() => handleUpdate()} style={{ alignSelf: 'flex-start', fontSize: 11, padding: '4px 10px', borderRadius: 4, border: '1px solid var(--border-primary)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+            ↻ Update All
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const settingsCategories = [
-  { id: 'models', name: 'LLM Models' },
-  { id: 'prompts', name: 'AI Prompts' },
-  { id: 'theme', name: 'Theme & Editor' },
-  { id: 'discord', name: 'Discord Rich Presence' },
-  { id: 'github', name: 'GitHub' },
-  { id: 'keybindings', name: 'Keybindings' },
-  { id: 'terminal', name: 'Terminal' },
-  { id: 'advanced', name: 'Advanced' },
+  { id: 'models',      name: 'Models',               group: 'AI' },
+  { id: 'ai-behavior', name: 'AI Behavior',           group: 'AI' },
+  { id: 'prompts',     name: 'AI Prompts',            group: 'AI' },
+  { id: 'theme',       name: 'Theme & Editor',        group: 'Editor' },
+  { id: 'terminal',    name: 'Terminal',              group: 'Editor' },
+  { id: 'keybindings', name: 'Keybindings',           group: 'Editor' },
+  { id: 'discord',     name: 'Discord RPC',           group: 'Other' },
+  { id: 'github',      name: 'GitHub',                group: 'Other' },
+  { id: 'git-config',  name: 'Git',                   group: 'Other' },
+  { id: 'advanced',    name: 'Advanced',              group: 'Other' },
 ];
 
 // Path configuration moved to PathConfig.getActiveSettingsPath()
@@ -805,12 +943,13 @@ export function Settings({ isVisible, onClose, initialSettings }: SettingsProps)
   useEffect(() => {
     if (activeTab && modelConfigs[activeTab]) {
       const config = modelConfigs[activeTab];
-      if ((!config.id || config.id.trim() === '') && config.apiEndpoint) {
-        // Discover models in the background
+      if (config.modelProvider !== 'ollama-embedded' && config.apiEndpoint) {
         fetchAvailableModels(config.apiEndpoint, config.apiKey);
+      } else {
+        setAvailableModels([]);
       }
     }
-  }, [activeTab, modelConfigs]);
+  }, [activeTab]);
 
   // Close model suggestions when clicking outside
   useEffect(() => {
@@ -1426,24 +1565,63 @@ export function Settings({ isVisible, onClose, initialSettings }: SettingsProps)
             display: 'flex',
             flexDirection: 'column',
             overflow: 'auto',
+            paddingBottom: '8px',
           }}>
-            {settingsCategories.map(category => (
-              <button
-                key={category.id}
-                onClick={() => setActiveCategory(category.id)}
-                style={{
-                  padding: '10px 16px',
-                  textAlign: 'left',
-                  background: activeCategory === category.id ? 'var(--bg-hover)' : 'transparent',
-                  border: 'none',
-                  borderBottom: '1px solid var(--border-secondary)',
-                  color: 'var(--text-primary)',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                }}
-              >
-                {category.name}
-              </button>
+            {(['AI', 'Editor', 'Other'] as const).map((group, groupIdx) => (
+              <div key={group} style={{ marginBottom: groupIdx < 2 ? '4px' : 0 }}>
+                {/* Group header */}
+                <div style={{
+                  padding: '10px 16px 4px',
+                  fontSize: '10px',
+                  fontWeight: 700,
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase',
+                  color: 'var(--text-secondary)',
+                  opacity: 0.55,
+                  userSelect: 'none',
+                }}>
+                  {group}
+                </div>
+                {/* Items in this group */}
+                {settingsCategories.filter(c => c.group === group).map(category => (
+                  <button
+                    key={category.id}
+                    onClick={() => setActiveCategory(category.id)}
+                    style={{
+                      padding: '7px 16px 7px 20px',
+                      textAlign: 'left',
+                      background: activeCategory === category.id ? 'var(--bg-hover)' : 'transparent',
+                      border: 'none',
+                      borderLeft: activeCategory === category.id
+                        ? '2px solid var(--accent-color)'
+                        : '2px solid transparent',
+                      color: activeCategory === category.id ? 'var(--text-primary)' : 'var(--text-secondary)',
+                      cursor: 'pointer',
+                      fontSize: '13px',
+                      width: '100%',
+                      transition: 'background 0.1s, color 0.1s',
+                    }}
+                    onMouseEnter={e => {
+                      if (activeCategory !== category.id)
+                        (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)';
+                    }}
+                    onMouseLeave={e => {
+                      if (activeCategory !== category.id)
+                        (e.currentTarget as HTMLElement).style.background = 'transparent';
+                    }}
+                  >
+                    {category.name}
+                  </button>
+                ))}
+                {/* Divider after each group except the last */}
+                {groupIdx < 2 && (
+                  <div style={{
+                    margin: '6px 16px 2px',
+                    borderBottom: '1px solid var(--border-primary)',
+                    opacity: 0.5,
+                  }} />
+                )}
+              </div>
             ))}
           </div>
 
@@ -1667,128 +1845,165 @@ export function Settings({ isVisible, onClose, initialSettings }: SettingsProps)
                           )}
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-          <div>
-            <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: modelConfigs[activeTab]?.modelProvider === 'ollama-embedded' ? '1fr' : '1fr 1fr', gap: '16px' }}>
+                          <div>
+                            <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px' }}>
                               Display Name
-            </label>
-            <input
-              type="text"
+                            </label>
+                            <input
+                              type="text"
                               value={modelConfigs[activeTab].name}
                               onChange={(e) => handleModelConfigChange(activeTab, 'name', e.target.value)}
-              style={{
-                width: '100%',
-                padding: '8px',
-                background: 'var(--bg-secondary)',
-                border: '1px solid var(--border-primary)',
-                borderRadius: '4px',
-                color: 'var(--text-primary)',
-              }}
-            />
-          </div>
-
-          <div>
-            <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px' }}>
-                              Model ID
-                            </label>
-                            <div style={{ position: 'relative' }} className="model-id-container">
-                              <input
-                                type="text"
-                                value={modelConfigs[activeTab].id || ''}
-                                onChange={(e) => handleModelIdInputChange(activeTab, 'id', e.target.value)}
-                                onFocus={() => handleModelIdFocus(activeTab)}
-                                style={{
-                                  width: '100%',
-                                  padding: '8px',
-                                  background: 'var(--bg-secondary)',
-                                  border: '1px solid var(--border-primary)',
-                                  borderRadius: '4px',
-                                  color: 'var(--text-primary)',
-                                }}
-                                placeholder="Enter the model ID"
-                              />
-                              {isLoadingModels && !autocompletionConnectionStatus.error && (
-                                <div style={{
-                                  position: 'absolute',
-                                  right: '8px',
-                                  top: '50%',
-                                  transform: 'translateY(-50%)',
-                                  fontSize: '12px',
-                                  color: 'var(--text-secondary)'
-                                }}>
-                                  Loading...
-                                </div>
-                              )}
-                              {autocompletionConnectionStatus.error && modelAssignments.autocompletion === activeTab && (
-                                <div style={{
-                                  position: 'absolute',
-                                  right: '8px',
-                                  top: '50%',
-                                  transform: 'translateY(-50%)',
-                                  fontSize: '16px',
-                                  color: 'red',
-                                  fontWeight: 'bold',
-                                  cursor: 'help'
-                                }}
-                                title={`${autocompletionConnectionStatus.error}${autocompletionConnectionStatus.url ? `\nURL: ${autocompletionConnectionStatus.url}/models` : ''}`}
-                                >
-                                  !
-                                </div>
-                              )}
-                              {showModelSuggestions && (
-                                <div style={{
-                                  position: 'absolute',
-                                  top: '100%',
-                                  left: 0,
-                                  right: 0,
-                                  background: 'var(--bg-primary)',
-                                  border: '1px solid var(--border-primary)',
-                                  borderRadius: '4px',
-                                  maxHeight: '200px',
-                                  overflowY: 'auto',
-                                  zIndex: 1000,
-                                  boxShadow: '0 4px 8px rgba(0,0,0,0.2)'
-                                }}>
-                                  {filteredModels.map((model, index) => (
-                                    <div
-                                      key={model.id}
-                                      onClick={() => selectModelSuggestion(activeTab, model)}
-                                      style={{
-                                        padding: '8px 12px',
-                                        cursor: 'pointer',
-                                        borderBottom: index < filteredModels.length - 1 ? '1px solid var(--border-primary)' : 'none'
-                                      }}
-                                      onMouseEnter={(e) => {
-                                        e.currentTarget.style.background = 'var(--bg-hover)';
-                                      }}
-                                      onMouseLeave={(e) => {
-                                        e.currentTarget.style.background = 'var(--bg-primary)';
-                                      }}
-                                    >
-                                      <div style={{ fontWeight: 'bold' }}>{model.id}</div>
-                                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
-                                        {model.owned_by}
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                            <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                              {autocompletionConnectionStatus.testing && modelAssignments.autocompletion === activeTab && (
-                                <span>Testing connection...</span>
-                              )}
-                              {autocompletionConnectionStatus.error && modelAssignments.autocompletion === activeTab && (
-                                <span style={{ color: '#ff4d4f' }}>Error: {autocompletionConnectionStatus.error}</span>
-                              )}
-                              {availableModelsError && modelAssignments.autocompletion === activeTab && (
-                                <span style={{ color: '#ffa500' }}>Model discovery warning: {availableModelsError}</span>
-                              )}
-                            </p>
+                              style={{
+                                width: '100%',
+                                padding: '8px',
+                                background: 'var(--bg-secondary)',
+                                border: '1px solid var(--border-primary)',
+                                borderRadius: '4px',
+                                color: 'var(--text-primary)',
+                              }}
+                            />
                           </div>
+
+                          {modelConfigs[activeTab]?.modelProvider !== 'ollama-embedded' && (
+                            <div>
+                              <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px' }}>
+                                Model
+                              </label>
+                              {/* Dropdown when models are available, text input as fallback */}
+                              {availableModels.length > 0 ? (
+                                <div style={{ display: 'flex', gap: '6px' }}>
+                                  <select
+                                    value={modelConfigs[activeTab].id || ''}
+                                    onChange={(e) => handleModelConfigChange(activeTab, 'id', e.target.value)}
+                                    style={{
+                                      flex: 1,
+                                      padding: '8px',
+                                      background: 'var(--bg-primary)',
+                                      border: '1px solid var(--border-primary)',
+                                      borderRadius: '4px',
+                                      color: 'var(--text-primary)',
+                                    }}
+                                  >
+                                    {!modelConfigs[activeTab].id && (
+                                      <option value="">— select a model —</option>
+                                    )}
+                                    {availableModels.map(m => (
+                                      <option key={m.id} value={m.id}>{m.id}</option>
+                                    ))}
+                                  </select>
+                                  <button
+                                    onClick={() => fetchAvailableModels(modelConfigs[activeTab].apiEndpoint, modelConfigs[activeTab].apiKey)}
+                                    title="Refresh model list"
+                                    style={{
+                                      padding: '6px 10px',
+                                      background: 'var(--bg-secondary)',
+                                      border: '1px solid var(--border-primary)',
+                                      borderRadius: '4px',
+                                      color: 'var(--text-secondary)',
+                                      cursor: 'pointer',
+                                      fontSize: '13px',
+                                    }}
+                                  >
+                                    ↻
+                                  </button>
+                                </div>
+                              ) : (
+                                <div style={{ position: 'relative' }} className="model-id-container">
+                                  <input
+                                    type="text"
+                                    value={modelConfigs[activeTab].id || ''}
+                                    onChange={(e) => handleModelIdInputChange(activeTab, 'id', e.target.value)}
+                                    onFocus={() => handleModelIdFocus(activeTab)}
+                                    style={{
+                                      width: '100%',
+                                      padding: '8px',
+                                      background: 'var(--bg-secondary)',
+                                      border: '1px solid var(--border-primary)',
+                                      borderRadius: '4px',
+                                      color: 'var(--text-primary)',
+                                    }}
+                                    placeholder={
+                                      modelConfigs[activeTab].modelProvider === 'openai'
+                                        ? 'e.g. gpt-4o'
+                                        : modelConfigs[activeTab].modelProvider === 'anthropic'
+                                        ? 'e.g. claude-3-5-sonnet-20241022'
+                                        : modelConfigs[activeTab].modelProvider === 'grok'
+                                        ? 'e.g. grok-3'
+                                        : modelConfigs[activeTab].modelProvider === 'local'
+                                        ? 'Enter model ID or connect to discover'
+                                        : 'Enter the model ID'
+                                    }
+                                  />
+                                  {isLoadingModels && (
+                                    <div style={{
+                                      position: 'absolute', right: '8px', top: '50%',
+                                      transform: 'translateY(-50%)', fontSize: '12px',
+                                      color: 'var(--text-secondary)',
+                                    }}>
+                                      Loading...
+                                    </div>
+                                  )}
+                                  {autocompletionConnectionStatus.error && modelAssignments.autocompletion === activeTab && (
+                                    <div
+                                      style={{
+                                        position: 'absolute', right: '8px', top: '50%',
+                                        transform: 'translateY(-50%)', fontSize: '16px',
+                                        color: 'red', fontWeight: 'bold', cursor: 'help',
+                                      }}
+                                      title={`${autocompletionConnectionStatus.error}${autocompletionConnectionStatus.url ? `\nURL: ${autocompletionConnectionStatus.url}/models` : ''}`}
+                                    >
+                                      !
+                                    </div>
+                                  )}
+                                  {showModelSuggestions && (
+                                    <div style={{
+                                      position: 'absolute', top: '100%', left: 0, right: 0,
+                                      background: 'var(--bg-primary)', border: '1px solid var(--border-primary)',
+                                      borderRadius: '4px', maxHeight: '200px', overflowY: 'auto',
+                                      zIndex: 1000, boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+                                    }}>
+                                      {filteredModels.map((model, index) => (
+                                        <div
+                                          key={model.id}
+                                          onClick={() => selectModelSuggestion(activeTab, model)}
+                                          style={{
+                                            padding: '8px 12px', cursor: 'pointer',
+                                            borderBottom: index < filteredModels.length - 1 ? '1px solid var(--border-primary)' : 'none',
+                                          }}
+                                          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-hover)'; }}
+                                          onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-primary)'; }}
+                                        >
+                                          <div style={{ fontWeight: 'bold' }}>{model.id}</div>
+                                          <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{model.owned_by}</div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                                {isLoadingModels && <span>Discovering models…</span>}
+                                {!isLoadingModels && availableModels.length === 0 && modelConfigs[activeTab].apiEndpoint && modelConfigs[activeTab].modelProvider !== 'openai' && (
+                                  <span
+                                    style={{ cursor: 'pointer', textDecoration: 'underline', opacity: 0.7 }}
+                                    onClick={() => fetchAvailableModels(modelConfigs[activeTab].apiEndpoint, modelConfigs[activeTab].apiKey)}
+                                  >
+                                    Click to discover models from endpoint
+                                  </span>
+                                )}
+                                {autocompletionConnectionStatus.error && modelAssignments.autocompletion === activeTab && (
+                                  <span style={{ color: '#ff4d4f' }}>Error: {autocompletionConnectionStatus.error}</span>
+                                )}
+                                {availableModelsError && modelAssignments.autocompletion === activeTab && (
+                                  <span style={{ color: '#ffa500' }}>Model discovery warning: {availableModelsError}</span>
+                                )}
+                              </p>
+                            </div>
+                          )}
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: modelConfigs[activeTab]?.modelProvider === 'ollama-embedded' ? '1fr' : '1fr 1fr', gap: '16px' }}>
                           <div>
                             <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px' }}>
                               Model Provider
@@ -1798,10 +2013,46 @@ export function Settings({ isVisible, onClose, initialSettings }: SettingsProps)
                               onChange={async (e) => {
                                 const newProvider = e.target.value;
                                 handleModelConfigChange(activeTab, 'modelProvider', newProvider);
-                                
-                                // Auto-discover models when provider changes (if no model ID is set)
-                                if (newProvider && modelConfigs[activeTab].apiEndpoint && 
-                                    (!modelConfigs[activeTab].id || modelConfigs[activeTab].id.trim() === '')) {
+                                setAvailableModels([]); // reset so dropdown re-fetches
+
+                                if (newProvider === 'openai') {
+                                  // OpenAI: fetch with known endpoint + key
+                                  const endpoint = modelConfigs[activeTab].apiEndpoint || 'https://api.openai.com/v1';
+                                  handleModelConfigChange(activeTab, 'apiEndpoint', 'https://api.openai.com/v1');
+                                  if (modelConfigs[activeTab].apiKey) {
+                                    await fetchAvailableModels(endpoint, modelConfigs[activeTab].apiKey);
+                                  }
+                                } else if (newProvider === 'anthropic') {
+                                  handleModelConfigChange(activeTab, 'apiEndpoint', 'https://api.anthropic.com/v1');
+                                  // Anthropic doesn't support /models listing — set known models
+                                  setAvailableModels([
+                                    { id: 'claude-opus-4-5', object: 'model', created: 0, owned_by: 'anthropic' },
+                                    { id: 'claude-sonnet-4-5', object: 'model', created: 0, owned_by: 'anthropic' },
+                                    { id: 'claude-haiku-4-5', object: 'model', created: 0, owned_by: 'anthropic' },
+                                    { id: 'claude-3-7-sonnet-20250219', object: 'model', created: 0, owned_by: 'anthropic' },
+                                    { id: 'claude-3-5-sonnet-20241022', object: 'model', created: 0, owned_by: 'anthropic' },
+                                    { id: 'claude-3-5-haiku-20241022', object: 'model', created: 0, owned_by: 'anthropic' },
+                                    { id: 'claude-3-opus-20240229', object: 'model', created: 0, owned_by: 'anthropic' },
+                                    { id: 'claude-3-sonnet-20240229', object: 'model', created: 0, owned_by: 'anthropic' },
+                                    { id: 'claude-3-haiku-20240307', object: 'model', created: 0, owned_by: 'anthropic' },
+                                  ]);
+                                } else if (newProvider === 'grok') {
+                                  handleModelConfigChange(activeTab, 'apiEndpoint', 'https://api.x.ai/v1');
+                                  // xAI supports OpenAI-compatible /models — fetch if key available
+                                  if (modelConfigs[activeTab].apiKey) {
+                                    await fetchAvailableModels('https://api.x.ai/v1', modelConfigs[activeTab].apiKey);
+                                  } else {
+                                    setAvailableModels([
+                                      { id: 'grok-3', object: 'model', created: 0, owned_by: 'xai' },
+                                      { id: 'grok-3-fast', object: 'model', created: 0, owned_by: 'xai' },
+                                      { id: 'grok-3-mini', object: 'model', created: 0, owned_by: 'xai' },
+                                      { id: 'grok-3-mini-fast', object: 'model', created: 0, owned_by: 'xai' },
+                                      { id: 'grok-2-1212', object: 'model', created: 0, owned_by: 'xai' },
+                                      { id: 'grok-2-vision-1212', object: 'model', created: 0, owned_by: 'xai' },
+                                      { id: 'grok-vision-beta', object: 'model', created: 0, owned_by: 'xai' },
+                                    ]);
+                                  }
+                                } else if (newProvider !== 'ollama-embedded' && modelConfigs[activeTab].apiEndpoint) {
                                   await fetchAvailableModels(modelConfigs[activeTab].apiEndpoint, modelConfigs[activeTab].apiKey);
                                 }
                               }}
@@ -1817,9 +2068,12 @@ export function Settings({ isVisible, onClose, initialSettings }: SettingsProps)
                               <option value="local">Local (LMStudio/Ollama)</option>
                               <option value="ollama-embedded">Embedded (no install needed)</option>
                               <option value="openai">OpenAI</option>
+                              <option value="anthropic">Anthropic (Claude)</option>
+                              <option value="grok">xAI (Grok)</option>
                             </select>
                           </div>
 
+                          {modelConfigs[activeTab]?.modelProvider !== 'ollama-embedded' && (
                           <div>
                             <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px' }}>
                               API Endpoint
@@ -1844,33 +2098,52 @@ export function Settings({ isVisible, onClose, initialSettings }: SettingsProps)
                                 borderRadius: '4px',
                                 color: 'var(--text-primary)',
                               }}
-                              placeholder={modelConfigs[activeTab].modelProvider === 'openai' ? 'https://api.openai.com/v1' : 'http://localhost:1234/v1'}
+                              placeholder={
+                                modelConfigs[activeTab].modelProvider === 'openai' ? 'https://api.openai.com/v1'
+                                : modelConfigs[activeTab].modelProvider === 'anthropic' ? 'https://api.anthropic.com/v1'
+                                : modelConfigs[activeTab].modelProvider === 'grok' ? 'https://api.x.ai/v1'
+                                : 'http://localhost:1234/v1'
+                              }
                             />
                           </div>
+                          )}
+                          {modelConfigs[activeTab]?.modelProvider === 'ollama-embedded' && <div />}
                         </div>
 
-                        {modelConfigs[activeTab].modelProvider === 'openai' && (
+                        {(modelConfigs[activeTab].modelProvider === 'openai' ||
+                          modelConfigs[activeTab].modelProvider === 'anthropic' ||
+                          modelConfigs[activeTab].modelProvider === 'grok') && (
                           <div>
                             <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px' }}>
-                              OpenAI API Key
+                              {modelConfigs[activeTab].modelProvider === 'openai' ? 'OpenAI API Key'
+                               : modelConfigs[activeTab].modelProvider === 'anthropic' ? 'Anthropic API Key'
+                               : 'xAI API Key'}
                             </label>
                             <PasswordInput
                               value={modelConfigs[activeTab].apiKey || ''}
                               onChange={async (value) => {
                                 handleModelConfigChange(activeTab, 'apiKey', value);
-                                
-                                // Auto-discover models when API key changes (if no model ID is set)
-                                if (value && modelConfigs[activeTab].apiEndpoint && 
+                                if (value && modelConfigs[activeTab].apiEndpoint &&
                                     (!modelConfigs[activeTab].id || modelConfigs[activeTab].id.trim() === '')) {
-                                  await fetchAvailableModels(modelConfigs[activeTab].apiEndpoint, value);
+                                  if (modelConfigs[activeTab].modelProvider !== 'anthropic') {
+                                    await fetchAvailableModels(modelConfigs[activeTab].apiEndpoint, value);
+                                  }
                                 }
                               }}
-                              placeholder="Enter your OpenAI API key"
+                              placeholder={
+                                modelConfigs[activeTab].modelProvider === 'openai' ? 'sk-...'
+                                : modelConfigs[activeTab].modelProvider === 'anthropic' ? 'sk-ant-...'
+                                : 'xai-...'
+                              }
                               showPassword={showPassword}
                               onToggleVisibility={handleTogglePasswordVisibility}
                             />
                             <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                              Your API key will be stored securely and only used for API calls
+                              {modelConfigs[activeTab].modelProvider === 'anthropic'
+                                ? 'Get your key at console.anthropic.com'
+                                : modelConfigs[activeTab].modelProvider === 'grok'
+                                ? 'Get your key at console.x.ai'
+                                : 'Your API key is stored locally and only used for API calls'}
                             </p>
                           </div>
                         )}
@@ -3450,10 +3723,266 @@ export function Settings({ isVisible, onClose, initialSettings }: SettingsProps)
                   </div>
                 )}
 
+                {/* AI Behavior Settings */}
+                {activeCategory === 'ai-behavior' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <h3 style={{ margin: 0, fontSize: '16px' }}>AI Behavior</h3>
+
+                    {/* Background & Resume */}
+                    <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-primary)' }}>
+                      <h4 style={{ margin: '0 0 14px 0', fontSize: '14px' }}>Background & Resume</h4>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'pointer' }}>
+                          <input type="checkbox" style={{ marginTop: '2px' }}
+                            checked={advanced.aiContinueInBackground ?? true}
+                            onChange={e => handleAdvancedSettingChange('aiContinueInBackground', e.target.checked)} />
+                          <div>
+                            <div style={{ fontWeight: 500 }}>Continue working when window is closed</div>
+                            <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                              When you close the window, the app stays in the system tray and the AI keeps working until the task is done.
+                            </div>
+                          </div>
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'pointer' }}>
+                          <input type="checkbox" style={{ marginTop: '2px' }}
+                            checked={advanced.aiAutoResume ?? true}
+                            onChange={e => handleAdvancedSettingChange('aiAutoResume', e.target.checked)} />
+                          <div>
+                            <div style={{ fontWeight: 500 }}>Auto-resume unfinished tasks on startup</div>
+                            <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                              If the app was force-closed while the AI was working, automatically resume the task when you reopen the app.
+                            </div>
+                          </div>
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'pointer' }}>
+                          <input type="checkbox" style={{ marginTop: '2px' }}
+                            checked={advanced.aiNotifyOnComplete ?? true}
+                            onChange={e => handleAdvancedSettingChange('aiNotifyOnComplete', e.target.checked)} />
+                          <div>
+                            <div style={{ fontWeight: 500 }}>Notify when AI finishes in background</div>
+                            <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                              Flash the taskbar and update the tray tooltip when the AI completes a task while the window is hidden.
+                            </div>
+                          </div>
+                        </label>
+                        <div>
+                          <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px', fontWeight: 500 }}>Resume task age limit</label>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <input type="number" min={1} max={24}
+                              value={advanced.aiResumeMaxAgeHours ?? 2}
+                              onChange={e => handleAdvancedSettingChange('aiResumeMaxAgeHours', parseInt(e.target.value))}
+                              style={{ width: '70px', padding: '6px 8px', background: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '13px' }} />
+                            <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>hours — tasks older than this are discarded</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Agent Behavior */}
+                    <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-primary)' }}>
+                      <h4 style={{ margin: '0 0 14px 0', fontSize: '14px' }}>Agent Behavior</h4>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'pointer' }}>
+                          <input type="checkbox" style={{ marginTop: '2px' }}
+                            checked={advanced.aiAutoRunTerminal ?? true}
+                            onChange={e => handleAdvancedSettingChange('aiAutoRunTerminal', e.target.checked)} />
+                          <div>
+                            <div style={{ fontWeight: 500 }}>Allow terminal command execution</div>
+                            <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                              The AI can run shell commands (npm install, tests, builds) and see the output. Commands are shown in the terminal in real time.
+                            </div>
+                          </div>
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'pointer' }}>
+                          <input type="checkbox" style={{ marginTop: '2px' }}
+                            checked={advanced.aiAutoAcceptEdits ?? false}
+                            onChange={e => handleAdvancedSettingChange('aiAutoAcceptEdits', e.target.checked)} />
+                          <div>
+                            <div style={{ fontWeight: 500 }}>Auto-accept file edits</div>
+                            <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                              Automatically apply AI-suggested file changes without showing a diff preview. Not recommended for large changes.
+                            </div>
+                          </div>
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'pointer' }}>
+                          <input type="checkbox" style={{ marginTop: '2px' }}
+                            checked={advanced.aiExploreBeforeEdit ?? true}
+                            onChange={e => handleAdvancedSettingChange('aiExploreBeforeEdit', e.target.checked)} />
+                          <div>
+                            <div style={{ fontWeight: 500 }}>Explore codebase before editing</div>
+                            <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                              Instruct the AI to read relevant files before making changes. Produces more accurate edits but uses more tokens.
+                            </div>
+                          </div>
+                        </label>
+                        <div>
+                          <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px', fontWeight: 500 }}>Max tool calls per response</label>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <input type="number" min={1} max={50}
+                              value={advanced.aiMaxToolCalls ?? 20}
+                              onChange={e => handleAdvancedSettingChange('aiMaxToolCalls', parseInt(e.target.value))}
+                              style={{ width: '70px', padding: '6px 8px', background: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '13px' }} />
+                            <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>calls — prevents runaway agent loops</span>
+                          </div>
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px', fontWeight: 500 }}>Terminal command timeout</label>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <input type="number" min={5} max={300}
+                              value={advanced.aiTerminalTimeoutSec ?? 30}
+                              onChange={e => handleAdvancedSettingChange('aiTerminalTimeoutSec', parseInt(e.target.value))}
+                              style={{ width: '70px', padding: '6px 8px', background: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '13px' }} />
+                            <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>seconds per command</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Chat & Context */}
+                    <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-primary)' }}>
+                      <h4 style={{ margin: '0 0 14px 0', fontSize: '14px' }}>Chat & Context</h4>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'pointer' }}>
+                          <input type="checkbox" style={{ marginTop: '2px' }}
+                            checked={advanced.aiIncludeOpenFiles ?? true}
+                            onChange={e => handleAdvancedSettingChange('aiIncludeOpenFiles', e.target.checked)} />
+                          <div>
+                            <div style={{ fontWeight: 500 }}>Include open files as context</div>
+                            <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                              Automatically attach currently open editor files to the AI context.
+                            </div>
+                          </div>
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'pointer' }}>
+                          <input type="checkbox" style={{ marginTop: '2px' }}
+                            checked={advanced.aiStreamResponses ?? true}
+                            onChange={e => handleAdvancedSettingChange('aiStreamResponses', e.target.checked)} />
+                          <div>
+                            <div style={{ fontWeight: 500 }}>Stream responses</div>
+                            <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                              Show AI responses as they are generated. Disable for a cleaner experience with slower models.
+                            </div>
+                          </div>
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'pointer' }}>
+                          <input type="checkbox" style={{ marginTop: '2px' }}
+                            checked={advanced.aiSaveHistory ?? true}
+                            onChange={e => handleAdvancedSettingChange('aiSaveHistory', e.target.checked)} />
+                          <div>
+                            <div style={{ fontWeight: 500 }}>Save chat history</div>
+                            <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                              Persist conversations to disk. Disable for privacy or to reduce disk usage.
+                            </div>
+                          </div>
+                        </label>
+                        <div>
+                          <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px', fontWeight: 500 }}>Max chat history to keep</label>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <input type="number" min={1} max={500}
+                              value={advanced.aiMaxHistoryChats ?? 50}
+                              onChange={e => handleAdvancedSettingChange('aiMaxHistoryChats', parseInt(e.target.value))}
+                              style={{ width: '70px', padding: '6px 8px', background: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '13px' }} />
+                            <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>conversations</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Inline AI */}
+                    <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-primary)' }}>
+                      <h4 style={{ margin: '0 0 14px 0', fontSize: '14px' }}>Inline AI (Editor)</h4>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'pointer' }}>
+                          <input type="checkbox" style={{ marginTop: '2px' }}
+                            checked={advanced.aiInlineCompletion ?? true}
+                            onChange={e => handleAdvancedSettingChange('aiInlineCompletion', e.target.checked)} />
+                          <div>
+                            <div style={{ fontWeight: 500 }}>Inline code completion</div>
+                            <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                              Show ghost-text suggestions as you type. Accept with Tab.
+                            </div>
+                          </div>
+                        </label>
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'pointer' }}>
+                          <input type="checkbox" style={{ marginTop: '2px' }}
+                            checked={advanced.aiBlameOnOpen ?? false}
+                            onChange={e => handleAdvancedSettingChange('aiBlameOnOpen', e.target.checked)} />
+                          <div>
+                            <div style={{ fontWeight: 500 }}>Show git blame on file open</div>
+                            <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                              Automatically load blame annotations when opening a file in a git repository.
+                            </div>
+                          </div>
+                        </label>
+                        <div>
+                          <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px', fontWeight: 500 }}>Completion trigger delay</label>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <input type="number" min={100} max={3000} step={100}
+                              value={advanced.aiCompletionDelayMs ?? 600}
+                              onChange={e => handleAdvancedSettingChange('aiCompletionDelayMs', parseInt(e.target.value))}
+                              style={{ width: '80px', padding: '6px 8px', background: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '13px' }} />
+                            <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>ms after last keystroke</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Git Settings */}
+                {activeCategory === 'git-config' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <h3 style={{ margin: 0, fontSize: '16px' }}>Git Configuration</h3>
+
+                    {/* GPG Signing */}
+                    <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-primary)' }}>
+                      <h4 style={{ margin: '0 0 4px 0', fontSize: '14px' }}>Commit Signing (GPG)</h4>
+                      <p style={{ margin: '0 0 14px 0', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                        Sign commits with your GPG key. Requires GPG to be installed.
+                      </p>
+                      <GPGSettings />
+                    </div>
+
+                    {/* Submodules */}
+                    <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-primary)' }}>
+                      <h4 style={{ margin: '0 0 4px 0', fontSize: '14px' }}>Submodules</h4>
+                      <p style={{ margin: '0 0 14px 0', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                        Manage Git submodules in the current workspace.
+                      </p>
+                      <SubmoduleManager />
+                    </div>
+                  </div>
+                )}
+
                 {/* Advanced Settings */}
                 {activeCategory === 'advanced' && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                     <h3 style={{ margin: 0, fontSize: '16px' }}>Advanced Settings</h3>
+
+                    {/* Language */}
+                    <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-primary)' }}>
+                      <h4 style={{ margin: '0 0 14px 0', fontSize: '14px' }}>Language</h4>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <select
+                          value={advanced.language ?? 'en'}
+                          onChange={e => {
+                            handleAdvancedSettingChange('language', e.target.value);
+                            import('../services/i18n').then(({ setLanguage }) => setLanguage(e.target.value as any));
+                          }}
+                          style={{ padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '13px' }}
+                        >
+                          <option value="en">English</option>
+                          <option value="de">Deutsch</option>
+                          <option value="fr">Français</option>
+                          <option value="es">Español</option>
+                          <option value="zh">中文</option>
+                          <option value="ja">日本語</option>
+                        </select>
+                        <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                          UI language — takes effect immediately
+                        </span>
+                      </div>
+                    </div>
 
                     {/* Window & UI */}
                     <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-primary)' }}>
@@ -3790,7 +4319,7 @@ export function Settings({ isVisible, onClose, initialSettings }: SettingsProps)
                             type="url"
                             value={discordRpcSettings.button1Url || ''}
                             onChange={(e) => handleDiscordRpcSettingChange('button1Url', e.target.value)}
-                            placeholder="https://pointr.sh"
+                            placeholder="https://pointer.f1shy312.com"
                             style={{
                               width: '100%',
                               padding: '8px',

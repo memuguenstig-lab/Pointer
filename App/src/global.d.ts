@@ -1,4 +1,4 @@
-import { FileSystemItem, ThemeSettings } from './types';
+import { FileSystemItem, ThemeSettings, ElectronAPI } from './types';
 import * as monaco from 'monaco-editor';
 
 declare global {
@@ -14,6 +14,7 @@ declare global {
       theme?: ThemeSettings;
     };
     isSavingChat?: boolean;
+    electron?: ElectronAPI;
   }
 }
 

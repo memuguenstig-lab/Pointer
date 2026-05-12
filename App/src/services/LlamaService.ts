@@ -34,13 +34,28 @@ export interface DownloadState {
   bytesReceived: number;
   bytesTotal: number;
   percent: number;
-  speed: number;       // bytes/sec
-  eta: number | null;  // seconds remaining
+  speed: number;
+  eta: number | null;
   error: string | null;
   done: boolean;
+  queue: string[];
+  history: { modelId: string; fileName: string; success: boolean; error?: string; completedAt: number }[];
+}
+
+export interface GpuInfo {
+  gpus: { name: string; vramMb: number }[];
+  totalRamMb: number;
+  freeRamMb: number;
+  platform: string;
 }
 
 class LlamaService {
+  async getGpuInfo(): Promise<GpuInfo> {
+    const res = await fetch(`${BACKEND}/api/system/gpu`);
+    if (!res.ok) throw new Error('GPU info unavailable');
+    return res.json();
+  }
+
   async getStatus(): Promise<LlamaStatus> {
     const res = await fetch(`${BACKEND}/api/llama/status`);
     if (!res.ok) throw new Error('Llama backend unavailable');
@@ -70,6 +85,35 @@ class LlamaService {
       try { msg = JSON.parse(text).error || msg; } catch (_) { msg = text.slice(0, 200) || msg; }
       throw new Error(msg);
     }
+  }
+
+  async queueModels(modelIds: string[]): Promise<void> {
+    await fetch(`${BACKEND}/api/llama/download/queue`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ modelIds }),
+    });
+  }
+
+  async removeFromQueue(modelId: string): Promise<void> {
+    await fetch(`${BACKEND}/api/llama/download/queue/remove`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ modelId }),
+    });
+  }
+
+  async cancelDownload(modelId?: string): Promise<void> {
+    const url = modelId
+      ? `${BACKEND}/api/llama/download/cancel/${modelId}`
+      : `${BACKEND}/api/llama/download/cancel`;
+    await fetch(url, { method: 'POST' });
+  }
+
+  async benchmarkModel(modelId: string): Promise<{ diskReadSpeedMBs: number; fileSizeMb: number; readTimeMs: number; note: string }> {
+    const res = await fetch(`${BACKEND}/api/llama/benchmark/${modelId}`, { method: 'POST' });
+    if (!res.ok) throw new Error('Benchmark failed');
+    return res.json();
   }
 
   async getDownloadStatus(): Promise<DownloadState> {

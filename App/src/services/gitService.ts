@@ -711,4 +711,226 @@ export class GitService {
       };
     }
   }
-} 
+
+  // ── File diff ──────────────────────────────────────────────────────────
+
+  static async diffFile(directory: string, filePath: string, staged = false): Promise<string> {
+    const res = await fetch(`${this.API_URL}/git/diff-file`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ directory, filePath, staged }),
+    });
+    const data = await res.json();
+    return data.diff ?? '';
+  }
+
+  static async diffCommits(directory: string, from: string, to: string, filePath?: string): Promise<string> {
+    const res = await fetch(`${this.API_URL}/git/diff-commits`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ directory, from, to, filePath }),
+    });
+    const data = await res.json();
+    return data.diff ?? '';
+  }
+
+  static async showFile(directory: string, commit: string, filePath: string): Promise<string> {
+    const res = await fetch(`${this.API_URL}/git/show-file`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ directory, commit, filePath }),
+    });
+    const data = await res.json();
+    return data.content ?? '';
+  }
+
+  // ── Remotes ────────────────────────────────────────────────────────────
+
+  static async getRemotes(directory: string): Promise<{ name: string; refs: { fetch: string; push: string } }[]> {
+    const res = await fetch(`${this.API_URL}/git/remotes`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ directory }),
+    });
+    const data = await res.json();
+    return data.remotes ?? [];
+  }
+
+  static async addRemote(directory: string, name: string, url: string): Promise<void> {
+    await fetch(`${this.API_URL}/git/remote-add`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ directory, name, url }),
+    });
+  }
+
+  static async removeRemote(directory: string, name: string): Promise<void> {
+    await fetch(`${this.API_URL}/git/remote-remove`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ directory, name }),
+    });
+  }
+
+  static async fetch(directory: string, remote = 'origin'): Promise<void> {
+    await fetch(`${this.API_URL}/git/fetch`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ directory, remote }),
+    });
+  }
+
+  // ── Branches (extended) ────────────────────────────────────────────────
+
+  static async getAllBranches(directory: string): Promise<{ local: string[]; current: string; all: string[] }> {
+    const res = await fetch(`${this.API_URL}/git/branches-all`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ directory }),
+    });
+    const data = await res.json();
+    return { local: data.local ?? [], current: data.current ?? '', all: data.all ?? [] };
+  }
+
+  static async createBranch(directory: string, name: string): Promise<GitCommandResult> {
+    const res = await fetch(`${this.API_URL}/git/branch-create`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ directory, name }),
+    });
+    return res.json();
+  }
+
+  static async checkoutBranch(directory: string, name: string): Promise<GitCommandResult> {
+    const res = await fetch(`${this.API_URL}/git/branch-checkout`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ directory, name }),
+    });
+    return res.json();
+  }
+
+  static async deleteBranch(directory: string, name: string, force = false): Promise<GitCommandResult> {
+    const res = await fetch(`${this.API_URL}/git/branch-delete`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ directory, name, force }),
+    });
+    return res.json();
+  }
+
+  static async renameBranch(directory: string, oldName: string, newName: string): Promise<GitCommandResult> {
+    const res = await fetch(`${this.API_URL}/git/branch-rename`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ directory, oldName, newName }),
+    });
+    return res.json();
+  }
+
+  static async mergeBranch(directory: string, branch: string): Promise<GitCommandResult> {
+    const res = await fetch(`${this.API_URL}/git/branch-merge`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ directory, branch }),
+    });
+    return res.json();
+  }
+
+  // ── Tags ───────────────────────────────────────────────────────────────
+
+  static async getTags(directory: string): Promise<string[]> {
+    const res = await fetch(`${this.API_URL}/git/tags`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ directory }),
+    });
+    const data = await res.json();
+    return data.tags ?? [];
+  }
+
+  static async createTag(directory: string, name: string, message?: string): Promise<GitCommandResult> {
+    const res = await fetch(`${this.API_URL}/git/tag-create`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ directory, name, message }),
+    });
+    return res.json();
+  }
+
+  static async deleteTag(directory: string, name: string): Promise<GitCommandResult> {
+    const res = await fetch(`${this.API_URL}/git/tag-delete`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ directory, name }),
+    });
+    return res.json();
+  }
+
+  // ── Conflicts ──────────────────────────────────────────────────────────
+
+  static async getConflicts(directory: string): Promise<string[]> {
+    const res = await fetch(`${this.API_URL}/git/conflicts`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ directory }),
+    });
+    const data = await res.json();
+    return data.conflicted ?? [];
+  }
+
+  static async getConflictVersions(directory: string, filePath: string): Promise<{ ours: string; theirs: string; base: string }> {
+    const res = await fetch(`${this.API_URL}/git/conflict-versions`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ directory, filePath }),
+    });
+    return res.json();
+  }
+
+  static async resolveConflict(directory: string, filePath: string): Promise<void> {
+    await fetch(`${this.API_URL}/git/conflict-resolve`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ directory, filePath }),
+    });
+  }
+
+  // ── Cherry-pick ────────────────────────────────────────────────────────
+
+  static async cherryPick(directory: string, commit: string): Promise<GitCommandResult> {
+    const res = await fetch(`${this.API_URL}/git/cherry-pick`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ directory, commit }),
+    });
+    return res.json();
+  }
+
+  // ── Blame ──────────────────────────────────────────────────────────────
+
+  static async blame(directory: string, filePath: string): Promise<{ hash: string; lineNum: number; author: string; date: string; summary: string; content: string }[]> {
+    const res = await fetch(`${this.API_URL}/git/blame`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ directory, filePath }),
+    });
+    const data = await res.json();
+    return data.lines ?? [];
+  }
+
+  // ── Amend ──────────────────────────────────────────────────────────────
+
+  static async amendCommit(directory: string, message?: string): Promise<GitCommandResult> {
+    const res = await fetch(`${this.API_URL}/git/commit-amend`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ directory, message }),
+    });
+    return res.json();
+  }
+
+  static async getStashDiff(directory: string, stashIndex = 0): Promise<string> {
+    const res = await fetch(`${this.API_URL}/git/stash-diff`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ directory, stash_index: stashIndex }),
+    });
+    const data = await res.json();
+    return data.diff ?? '';
+  }
+
+  static async searchLog(directory: string, query: string, limit = 50): Promise<{ hash: string; author: string; date: string; message: string }[]> {
+    const res = await fetch(`${this.API_URL}/git/log-search`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ directory, query, limit }),
+    });
+    const data = await res.json();
+    return data.results ?? [];
+  }
+
+  static async getPRCommits(directory: string, base = 'main', head?: string): Promise<{ commits: any[]; branch: string; base: string }> {
+    const res = await fetch(`${this.API_URL}/git/pr-commits`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ directory, base, head }),
+    });
+    return res.json();
+  }
+}

@@ -469,7 +469,7 @@ Configure Discord integration by editing settings in the application or manually
   "state": "Workspace: {workspace}",
   "largeImageKey": "pointer_logo",
   "button1Label": "Website",
-  "button1Url": "https://pointr.sh"
+  "button1Url": "https://pointer.f1shy312.com"
 }
 ```
 

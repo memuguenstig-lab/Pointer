@@ -528,7 +528,121 @@ app.get('/api/output', (req, res) => {
   res.json({ lines, lastTs: outputLog.length ? outputLog[outputLog.length - 1].ts : 0 });
 });
 
-// ── Git ────────────────────────────────────────────────────────────────────
+// ── System / GPU info ──────────────────────────────────────────────────────
+app.get('/api/system/gpu', async (req, res) => {
+  const isWin = process.platform === 'win32';
+  const isMac = process.platform === 'darwin';
+  let gpus = [];
+
+  try {
+    if (isWin) {
+      // Query VRAM via WMIC (works without admin rights)
+      const { stdout } = await execAsync(
+        'wmic path Win32_VideoController get Name,AdapterRAM /format:csv',
+        { timeout: 6000 }
+      ).catch(() => ({ stdout: '' }));
+      for (const line of stdout.split('\n')) {
+        const parts = line.split(',');
+        if (parts.length < 3) continue;
+        const ram = parseInt(parts[1]);
+        const name = (parts[2] || '').trim();
+        if (!name || name === 'Name') continue;
+        if (ram > 0) gpus.push({ name, vramMb: Math.round(ram / 1024 / 1024) });
+      }
+      // Also try nvidia-smi for more accurate VRAM
+      const { stdout: smi } = await execAsync(
+        'nvidia-smi --query-gpu=name,memory.total --format=csv,noheader,nounits',
+        { timeout: 5000 }
+      ).catch(() => ({ stdout: '' }));
+      if (smi.trim()) {
+        gpus = []; // prefer nvidia-smi data
+        for (const line of smi.trim().split('\n')) {
+          const [name, vram] = line.split(',').map(s => s.trim());
+          if (name && vram) gpus.push({ name, vramMb: parseInt(vram) });
+        }
+      }
+    } else if (isMac) {
+      // macOS: use system_profiler for GPU info
+      const { stdout } = await execAsync(
+        'system_profiler SPDisplaysDataType -json',
+        { timeout: 8000 }
+      ).catch(() => ({ stdout: '{}' }));
+      try {
+        const data = JSON.parse(stdout);
+        const displays = data?.SPDisplaysDataType || [];
+        for (const d of displays) {
+          const name = d.sppci_model || d._name || 'Unknown GPU';
+          // VRAM string like "8 GB" or "1536 MB"
+          const vramStr = d.spdisplays_vram || d.spdisplays_vram_shared || '';
+          let vramMb = 0;
+          const gbMatch = vramStr.match(/([\d.]+)\s*GB/i);
+          const mbMatch = vramStr.match(/([\d.]+)\s*MB/i);
+          if (gbMatch) vramMb = Math.round(parseFloat(gbMatch[1]) * 1024);
+          else if (mbMatch) vramMb = Math.round(parseFloat(mbMatch[1]));
+          gpus.push({ name, vramMb });
+        }
+      } catch (_) {}
+    } else {
+      // Linux: try nvidia-smi first, then lspci
+      const { stdout: smi } = await execAsync(
+        'nvidia-smi --query-gpu=name,memory.total --format=csv,noheader,nounits',
+        { timeout: 5000 }
+      ).catch(() => ({ stdout: '' }));
+      if (smi.trim()) {
+        for (const line of smi.trim().split('\n')) {
+          const [name, vram] = line.split(',').map(s => s.trim());
+          if (name && vram) gpus.push({ name, vramMb: parseInt(vram) });
+        }
+      }
+      if (gpus.length === 0) {
+        // Fallback: lspci for GPU name (no VRAM info)
+        const { stdout: lspci } = await execAsync(
+          'lspci | grep -i "vga\\|3d\\|display"',
+          { timeout: 4000 }
+        ).catch(() => ({ stdout: '' }));
+        for (const line of lspci.trim().split('\n')) {
+          if (line.trim()) gpus.push({ name: line.replace(/.*:\s*/, '').trim(), vramMb: 0 });
+        }
+      }
+    }
+  } catch (_) {}
+
+  // Also get system RAM
+  const totalRamMb = Math.round(os.totalmem() / 1024 / 1024);
+  const freeRamMb  = Math.round(os.freemem()  / 1024 / 1024);
+
+  res.json({ gpus, totalRamMb, freeRamMb, platform: process.platform });
+});
+
+
+// ── Pending task (AI resume after crash) ──────────────────────────────────
+const pendingTaskFile = () => path.join(getAppDataPath(), 'pending-task.json');
+
+app.get('/api/pending-task', (req, res) => {
+  try {
+    const f = pendingTaskFile();
+    if (!fs.existsSync(f)) return res.json({ task: null });
+    const task = JSON.parse(fs.readFileSync(f, 'utf8'));
+    res.json({ task });
+  } catch (_) { res.json({ task: null }); }
+});
+
+app.post('/api/pending-task', (req, res) => {
+  try {
+    fs.mkdirSync(path.dirname(pendingTaskFile()), { recursive: true });
+    fs.writeFileSync(pendingTaskFile(), JSON.stringify(req.body, null, 2), 'utf8');
+    res.json({ success: true });
+  } catch (e) { res.status(500).json({ success: false, error: e.message }); }
+});
+
+app.delete('/api/pending-task', (req, res) => {
+  try {
+    const f = pendingTaskFile();
+    if (fs.existsSync(f)) fs.unlinkSync(f);
+    res.json({ success: true });
+  } catch (_) { res.json({ success: true }); }
+});
+
 const gitRoutes = require('./git-routes');
 app.use('/git', gitRoutes);
 
