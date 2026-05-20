@@ -42,6 +42,81 @@ let downloadState = {
 let downloadHistory = []; // { modelId, fileName, success, error, completedAt }
 
 let cancelRequested = false;
+let lastLoadedModelId = null;
+
+function getStateFilePath() {
+  return path.join(getModelsDir(), '.last-loaded-model.json');
+}
+
+function loadPersistedLastModelId() {
+  try {
+    const file = getStateFilePath();
+    if (!fs.existsSync(file)) return null;
+    const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+    return typeof data?.modelId === 'string' && data.modelId.trim() ? data.modelId.trim() : null;
+  } catch (err) {
+    console.warn('[llama] Failed to read persisted model state:', err.message);
+    return null;
+  }
+}
+
+function persistLastModelId(modelId) {
+  try {
+    fs.writeFileSync(getStateFilePath(), JSON.stringify({
+      modelId,
+      updatedAt: Date.now(),
+    }), 'utf8');
+  } catch (err) {
+    console.warn('[llama] Failed to persist model state:', err.message);
+  }
+}
+
+function getModelById(modelId) {
+  return MODELS.find(m => m.id === modelId);
+}
+
+async function unloadCurrentModel() {
+  if (loadedContext) {
+    try { await loadedContext.dispose(); } catch (_) {}
+    loadedContext = null;
+  }
+  if (loadedModel) {
+    try { await loadedModel.dispose(); } catch (_) {}
+    loadedModel = null;
+  }
+  loadedModelId = null;
+}
+
+async function loadModelById(modelId) {
+  const model = getModelById(modelId);
+  if (!model) {
+    throw new Error(`Unknown model: ${modelId}`);
+  }
+
+  const dest = path.join(getModelsDir(), model.file);
+  if (!fs.existsSync(dest)) {
+    throw new Error('Model not downloaded');
+  }
+
+  await unloadCurrentModel();
+
+  const llama = await getLlama();
+  loadedModel = await llama.loadModel({
+    modelPath: dest,
+    gpuLayers: 'auto',
+    useMmap: true,
+    vocabOnly: false,
+  });
+  loadedContext = await loadedModel.createContext({
+    contextSize: Math.min(model.contextLength ?? 4096, 8192),
+    batchSize: 512,
+  });
+  loadedModelId = modelId;
+  lastLoadedModelId = modelId;
+  persistLastModelId(modelId);
+  console.log(`[llama] Loaded model: ${model.file}`);
+  return { model, dest };
+}
 
 /** Start the next item in the queue if nothing is currently downloading */
 async function processQueue() {
@@ -300,6 +375,7 @@ router.get('/status', (req, res) => {
   res.json({
     available: loadedModel !== null,
     modelLoaded: loadedModel !== null,
+    loadedModelId,
     loadedModelPath: loadedModelId ? path.join(getModelsDir(), MODELS.find(m => m.id === loadedModelId)?.file ?? '') : null,
     modelsDir: getModelsDir(),
     localModels: modelStatus(),
@@ -481,35 +557,8 @@ setTimeout(() => {
 
 router.post('/load', async (req, res) => {
   const { modelId } = req.body || {};
-  const model = MODELS.find(m => m.id === modelId);
-  if (!model) return res.status(404).json({ error: `Unknown model: ${modelId}` });
-
-  const dest = path.join(getModelsDir(), model.file);
-  if (!fs.existsSync(dest)) return res.status(400).json({ error: 'Model not downloaded' });
-
   try {
-    // Unload previous model
-    if (loadedContext) { try { await loadedContext.dispose(); } catch (_) {} loadedContext = null; }
-    if (loadedModel) { try { await loadedModel.dispose(); } catch (_) {} loadedModel = null; }
-
-    const llama = await getLlama();
-    loadedModel = await llama.loadModel({
-      modelPath: dest,
-      // Use GPU if available for faster inference
-      gpuLayers: 'auto',
-      // Memory-map the file for faster loading
-      useMmap: true,
-      // Reduce vocab only to what's needed
-      vocabOnly: false,
-    });
-    loadedContext = await loadedModel.createContext({
-      contextSize: Math.min(model.contextLength ?? 4096, 8192),
-      // Use batched processing for speed
-      batchSize: 512,
-    });
-    loadedModelId = modelId;
-
-    console.log(`[llama] Loaded model: ${model.file}`);
+    await loadModelById(modelId);
     res.json({ success: true, modelId });
   } catch (err) {
     console.error('[llama] Load failed:', err.message);
@@ -519,10 +568,26 @@ router.post('/load', async (req, res) => {
 
 router.post('/unload', async (req, res) => {
   try {
-    if (loadedContext) { await loadedContext.dispose(); loadedContext = null; }
-    if (loadedModel) { await loadedModel.dispose(); loadedModel = null; }
-    loadedModelId = null;
+    await unloadCurrentModel();
     res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/autoload', async (req, res) => {
+  try {
+    if (loadedModel && loadedContext) {
+      return res.json({ success: true, modelId: loadedModelId, alreadyLoaded: true });
+    }
+
+    const persistedModelId = lastLoadedModelId || loadPersistedLastModelId();
+    if (!persistedModelId) {
+      return res.status(404).json({ error: 'No previously loaded model found' });
+    }
+
+    await loadModelById(persistedModelId);
+    res.json({ success: true, modelId: persistedModelId });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -535,22 +600,41 @@ router.post('/chat', async (req, res) => {
 
   const { messages = [], temperature = 0.7, max_tokens, stream = false } = req.body || {};
 
+  let session = null;
   try {
     const { LlamaChatSession } = await import('node-llama-cpp');
-    const session = new LlamaChatSession({ contextSequence: loadedContext.getSequence() });
+    const sequence = loadedContext.getSequence();
+    const systemMessages = messages
+      .filter(m => m && m.role === 'system' && typeof m.content === 'string' && m.content.trim())
+      .map(m => String(m.content).trim());
+    const promptMessages = messages.filter(m => m && m.role !== 'system');
+    const lastUserIndex = [...promptMessages].map((m, idx) => ({ m, idx })).reverse().find(entry => entry.m.role === 'user')?.idx ?? -1;
+    const lastUser = lastUserIndex >= 0 ? String(promptMessages[lastUserIndex]?.content ?? '') : '';
+    const historyMessages = promptMessages.slice(0, Math.max(0, lastUserIndex));
 
-    // Build conversation from messages
-    const systemMsg = messages.find(m => m.role === 'system')?.content ?? '';
-    const userMessages = messages.filter(m => m.role !== 'system');
+    session = new LlamaChatSession({
+      contextSequence: sequence,
+      autoDisposeSequence: true,
+      systemPrompt: systemMessages.join('\n\n') || undefined,
+    });
 
-    // Replay history except last user message
-    for (let i = 0; i < userMessages.length - 1; i += 2) {
-      const user = userMessages[i]?.content ?? '';
-      const assistant = userMessages[i + 1]?.content ?? '';
-      if (user) await session.prompt(user, { temperature, maxTokens: max_tokens ?? undefined, onTextChunk: () => {} });
+    const history = historyMessages.flatMap((message) => {
+      if (!message || typeof message.content !== 'string') return [];
+      if (message.role === 'user') {
+        return [{ type: 'user', text: message.content }];
+      }
+      if (message.role === 'assistant') {
+        return [{ type: 'model', response: [message.content] }];
+      }
+      if (message.role === 'tool') {
+        return [{ type: 'user', text: `[Tool result]\n${message.content}` }];
+      }
+      return [];
+    });
+
+    if (history.length > 0) {
+      session.setChatHistory(history);
     }
-
-    const lastUser = userMessages[userMessages.length - 1]?.content ?? '';
 
     if (stream) {
       res.setHeader('Content-Type', 'text/event-stream');
@@ -579,7 +663,29 @@ router.post('/chat', async (req, res) => {
   } catch (err) {
     console.error('[llama] Chat error:', err.message);
     if (!res.headersSent) res.status(500).json({ error: err.message });
+  } finally {
+    try {
+      if (session) session.dispose({ disposeSequence: true });
+    } catch (_) {}
   }
 });
+
+async function autoLoadLastModelOnStart() {
+  try {
+    const persistedModelId = lastLoadedModelId || loadPersistedLastModelId();
+    if (!persistedModelId) return;
+    const model = getModelById(persistedModelId);
+    if (!model) return;
+    if (!fs.existsSync(path.join(getModelsDir(), model.file))) return;
+    if (loadedModel && loadedContext) return;
+    await loadModelById(persistedModelId);
+  } catch (err) {
+    console.warn('[llama] Auto-load on startup failed:', err.message);
+  }
+}
+
+setTimeout(() => {
+  autoLoadLastModelOnStart();
+}, 1500);
 
 module.exports = router;

@@ -46,6 +46,24 @@ const ChatMessage = memo(({ message, index, isAnyProcessing = false, onEditMessa
     return errorPatterns.some(pattern => pattern.test(content));
   };
 
+  const isNoModelLoadedError = (content: string): boolean => {
+    return /No model loaded\. Load a model first\.|No previously loaded model found/i.test(content);
+  };
+
+  const openModelSettings = () => {
+    if (typeof window.loadSettings === 'function') {
+      void window.loadSettings().catch((error) => {
+        console.warn('Failed to reload settings before opening model settings:', error);
+      });
+    }
+
+    window.dispatchEvent(new CustomEvent('pointer-open-settings', {
+      detail: {
+        category: 'models',
+      },
+    }));
+  };
+
   // Extract error details if available
   const extractErrorDetails = (content: string): string | null => {
     // Look for common error detail patterns
@@ -331,6 +349,7 @@ const ChatMessage = memo(({ message, index, isAnyProcessing = false, onEditMessa
 
   const messageContent = typeof message.content === 'string' ? message.content : '';
   const isError = isErrorMessage(messageContent);
+  const isNoModelLoaded = isNoModelLoadedError(messageContent);
   const errorDetails = isError ? extractErrorDetails(messageContent) : null;
 
   return (
@@ -363,7 +382,14 @@ const ChatMessage = memo(({ message, index, isAnyProcessing = false, onEditMessa
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {isError && onContinue && (
             <button
-              onClick={() => onContinue(index)}
+              onClick={() => {
+                const content = typeof message.content === 'string' ? message.content : '';
+                if (isNoModelLoadedError(content)) {
+                  openModelSettings();
+                  return;
+                }
+                onContinue(index);
+              }}
               disabled={isAnyProcessing}
               style={{
                 background: 'var(--accent-color)',
@@ -377,7 +403,13 @@ const ChatMessage = memo(({ message, index, isAnyProcessing = false, onEditMessa
                 transition: 'all 0.2s ease',
                 opacity: isAnyProcessing ? 0.6 : 1,
               }}
-              title={isAnyProcessing ? "Processing..." : "Retry this conversation"}
+              title={
+                isAnyProcessing
+                  ? "Processing..."
+                  : isNoModelLoaded
+                    ? "Open model settings"
+                    : "Retry this conversation"
+              }
               onMouseEnter={(e) => {
                 if (!isAnyProcessing) {
                   e.currentTarget.style.background = 'var(--accent-hover)';
@@ -391,7 +423,7 @@ const ChatMessage = memo(({ message, index, isAnyProcessing = false, onEditMessa
                 }
               }}
             >
-              {isAnyProcessing ? 'Processing...' : 'Continue'}
+              {isAnyProcessing ? 'Processing...' : isNoModelLoaded ? 'Model Settings' : 'Continue'}
             </button>
           )}
           {isError && errorDetails && (

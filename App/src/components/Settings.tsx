@@ -70,6 +70,8 @@ interface SettingsProps {
     onDiscordSettingsChange?: (settings: Partial<DiscordRpcSettings>) => void;
     [key: string]: any;
   };
+  initialCategory?: string;
+  initialModelId?: string;
 }
 
 const defaultConfig: ModelConfig = {
@@ -393,8 +395,8 @@ const ThemeLibraryModal: React.FC<{ isVisible: boolean; onClose: () => void; onS
     </div>
   );
 };
-export function Settings({ isVisible, onClose, initialSettings }: SettingsProps) {
-  const [activeCategory, setActiveCategory] = useState('models');
+export function Settings({ isVisible, onClose, initialSettings, initialCategory, initialModelId }: SettingsProps) {
+  const [activeCategory, setActiveCategory] = useState(initialCategory || 'models');
   const [activeTab, setActiveTab] = useState('default');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [modelConfigs, setModelConfigs] = useState<Record<string, ModelConfig>>({
@@ -697,6 +699,16 @@ export function Settings({ isVisible, onClose, initialSettings }: SettingsProps)
       delete window.loadSettings;
     };
   }, []);
+
+  useEffect(() => {
+    if (!isVisible) return;
+    if (initialCategory) {
+      setActiveCategory(initialCategory);
+    }
+    if (initialModelId) {
+      setActiveTab(initialModelId);
+    }
+  }, [isVisible, initialCategory, initialModelId]);
 
   const saveAllSettings = async () => {
     setIsLoading(true);

@@ -164,9 +164,7 @@ export function getLanguageFromFilename(filename: string): string {
  * @returns The text with thinking blocks removed
  */
 export const stripThinkTags = (text: string): string => {
-  // Remove <think>...</think> blocks (case insensitive, handles multiline)
-  // return text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
-  return text;
+  return text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
 };
 
 /**
@@ -176,30 +174,27 @@ export const stripThinkTags = (text: string): string => {
  */
 export const extractCodeBlocks = (content: string) => {
   const codeBlocks: {
-    language: string; 
-    filename: string; 
-    content: string; 
-    startLine?: number; 
+    language: string;
+    filename: string;
+    content: string;
+    startLine?: number;
     endLine?: number;
     isLineEdit?: boolean;
   }[] = [];
-  
+
   if (!content || typeof content !== 'string') {
     return codeBlocks;
   }
-  
-  // First, find all thinking blocks to exclude code blocks within them
-  // Use a more robust approach to handle nested or malformed thinking blocks
+
   const thinkBlocks: Array<{start: number; end: number}> = [];
   let searchStart = 0;
-  
+
   while (searchStart < content.length) {
     const thinkStartIndex = content.indexOf('<think>', searchStart);
     if (thinkStartIndex === -1) break;
-    
+
     const thinkEndIndex = content.indexOf('</think>', thinkStartIndex);
     if (thinkEndIndex === -1) {
-      // Handle malformed thinking block - exclude everything from start to end of content
       thinkBlocks.push({
         start: thinkStartIndex,
         end: content.length
@@ -208,138 +203,197 @@ export const extractCodeBlocks = (content: string) => {
     } else {
       thinkBlocks.push({
         start: thinkStartIndex,
-        end: thinkEndIndex + 8 // 8 is length of '</think>'
+        end: thinkEndIndex + 8
       });
       searchStart = thinkEndIndex + 8;
     }
   }
-  
-  // Function to check if a position is within any thinking block
+
   const isInThinkBlock = (position: number) => {
     return thinkBlocks.some(block => position >= block.start && position <= block.end);
   };
 
-  // Use a non-global regex to prevent infinite loops
-  // More specific pattern to ensure we only match triple backticks
-  const codeBlockRegex = /```(\w+)(?::([^\n]+))?\n([\s\S]*?)```/;
-  let remainingContent = content;
-  let currentOffset = 0;
-  let iterationCount = 0;
-  const maxIterations = 100; // Safety limit to prevent infinite loops
-  
-  while (remainingContent && iterationCount < maxIterations) {
-    const match = codeBlockRegex.exec(remainingContent);
-    if (!match) break;
-    
-    iterationCount++;
-    
-    const [fullMatch, language, explicitFilename, code] = match;
-    const matchStart = currentOffset + match.index;
-    
-    // Skip this code block if it's within a thinking block
-    if (isInThinkBlock(matchStart)) {
-      console.log(`Skipping code block as it's within a thinking block at position ${matchStart}`);
-      // Move past this match and continue searching
-      const nextSearchStart = match.index + fullMatch.length;
-      remainingContent = remainingContent.substring(nextSearchStart);
-      currentOffset += nextSearchStart;
-      continue;
+  const parseCodeFenceHeader = (header: string) => {
+    const result = {
+      language: '',
+      filename: '',
+      startLine: undefined as number | undefined,
+      endLine: undefined as number | undefined,
+      isLineEdit: false,
+    };
+
+    if (!header) return result;
+
+    const trimmedHeader = header.trim();
+    const windowsPathOnly = trimmedHeader.match(/^[A-Za-z]:[\\/].+$/);
+    if (windowsPathOnly) {
+      result.filename = windowsPathOnly[0];
+      return result;
     }
-    
-    let filename = explicitFilename;
-    let cleanedCode = code;
-    let startLine: number | undefined;
-    let endLine: number | undefined;
-    let isLineEdit = false;
-    
-    // Check for line-specific editing format: startline:endline:filename
-    if (filename) {
-      const lineEditMatch = filename.match(/^(\d+):(\d+):(.+)$/);
-      if (lineEditMatch) {
-        startLine = parseInt(lineEditMatch[1], 10);
-        endLine = parseInt(lineEditMatch[2], 10);
-        filename = lineEditMatch[3];
-        
-        // Validate line numbers
-        if (startLine < 1 || endLine < 1) {
-          console.warn(`Invalid line numbers: ${startLine}-${endLine}. Line numbers must be >= 1`);
-          startLine = undefined;
-          endLine = undefined;
-        } else if (startLine > endLine) {
-          console.warn(`Invalid line range: ${startLine}-${endLine}. Start line must be <= end line`);
-          startLine = undefined;
-          endLine = undefined;
-        } else {
-          isLineEdit = true;
-          console.log(`Found line-specific edit for ${filename}, lines ${startLine}-${endLine} (inclusive)`);
-        }
+
+    const windowsLangPath = trimmedHeader.match(/^([\w-]+):([A-Za-z]:[\\/].+)$/);
+    if (windowsLangPath) {
+      result.language = windowsLangPath[1];
+      result.filename = windowsLangPath[2];
+      return result;
+    }
+
+    const parts = trimmedHeader.split(':').map(part => part.trim()).filter(Boolean);
+    if (parts.length >= 3 && /^\d+$/.test(parts[0]) && /^\d+$/.test(parts[1])) {
+      result.startLine = parseInt(parts[0], 10);
+      result.endLine = parseInt(parts[1], 10);
+      result.filename = parts.slice(2).join(':');
+      result.isLineEdit = true;
+      return result;
+    }
+
+    if (parts.length >= 4 && /^\d+$/.test(parts[1]) && /^\d+$/.test(parts[2])) {
+      result.language = parts[0];
+      result.startLine = parseInt(parts[1], 10);
+      result.endLine = parseInt(parts[2], 10);
+      result.filename = parts.slice(3).join(':');
+      result.isLineEdit = true;
+      return result;
+    }
+
+    const lastPart = parts[parts.length - 1] || '';
+    if (lastPart && (/\.[a-zA-Z0-9]+$/.test(lastPart) || lastPart.includes('/') || lastPart.includes('\\'))) {
+      result.filename = lastPart;
+      result.language = parts.slice(0, -1).join(':');
+      return result;
+    }
+
+    if (parts.length === 1) {
+      if (/\.[a-zA-Z0-9]+$/.test(parts[0]) || parts[0].includes('/') || parts[0].includes('\\')) {
+        result.filename = parts[0];
+      } else {
+        result.language = parts[0];
       }
+      return result;
     }
-    
-    // If no explicit filename was provided, try to extract it from the first line of code
-    if (!filename && code) {
-      const lines = code.split('\n');
+
+    result.language = parts.join(':');
+    return result;
+  };
+
+  const pointerRegex = /Pointer:Code\+(.+?):start\s*([\s\S]*?)\s*Pointer:Code\+\1:end/g;
+  let pointerMatch;
+  while ((pointerMatch = pointerRegex.exec(content)) !== null) {
+    const filename = pointerMatch[1].trim();
+    const code = pointerMatch[2].trim();
+    if (filename && code) {
+      codeBlocks.push({
+        language: '',
+        filename,
+        content: stripThinkTags(code)
+      });
+    }
+  }
+
+  const codeBlockRegex = /```([^\n]*)\n([\s\S]*?)```/g;
+  let match;
+  let iterationCount = 0;
+  const maxIterations = 200;
+
+  while ((match = codeBlockRegex.exec(content)) !== null && iterationCount < maxIterations) {
+    iterationCount++;
+
+    const [fullMatch, header, code] = match;
+    const matchStart = match.index;
+    if (isInThinkBlock(matchStart)) continue;
+
+    const { language, filename, startLine, endLine, isLineEdit } = parseCodeFenceHeader(header || '');
+    let cleanedCode = code.trim();
+    let finalFilename = filename;
+    let finalLanguage = language;
+    let finalStartLine = startLine;
+    let finalEndLine = endLine;
+    let finalIsLineEdit = isLineEdit;
+
+    if (!finalFilename) {
+      const lines = cleanedCode.split('\n');
       const firstLine = lines[0]?.trim() || '';
-      
-      // Extract potential filename from any comment style
       const commentPatterns = [
-        /^<!--\s*(.*?\.[\w]+)\s*-->/, // HTML comments
-        /^\/\/\s*(.*?\.[\w]+)\s*$/, // Single line comments
-        /^#\s*(.*?\.[\w]+)\s*$/, // Hash comments
-        /^\/\*\s*(.*?\.[\w]+)\s*\*\/$/, // Multi-line comments
-        /^--\s*(.*?\.[\w]+)\s*$/, // SQL comments
-        /^%\s*(.*?\.[\w]+)\s*$/, // Matlab/LaTeX comments
-        /^;\s*(.*?\.[\w]+)\s*$/, // Assembly/Lisp comments
-        // More flexible patterns
-        /^(?:\/\/|#|\/\*|--)\s*(?:filename|file|path):\s*([^\s\n]+)/i, // filename: pattern
-        /^(?:\/\/|#|\/\*|--)\s*@file:\s*([^\s\n]+)/i, // @file: pattern
+        /^<!--\s*([^\n]+?\.[a-zA-Z0-9]+)\s*-->/,
+        /^\/\/\s*([^\n]+?\.[a-zA-Z0-9]+)\s*$/,
+        /^#\s*([^\n]+?\.[a-zA-Z0-9]+)\s*$/,
+        /^\/\*\s*([^\n]+?\.[a-zA-Z0-9]+)\s*\*\//,
+        /^--\s*([^\n]+?\.[a-zA-Z0-9]+)\s*$/,
+        /^%\s*([^\n]+?\.[a-zA-Z0-9]+)\s*$/,
+        /^;\s*([^\n]+?\.[a-zA-Z0-9]+)\s*$/,
+        /^(?:\/\/|#|\/\*|--)\s*(?:filename|file|path):\s*([^\s\n]+)/i,
+        /^(?:\/\/|#|\/\*|--)\s*@file:\s*([^\s\n]+)/i,
       ];
 
       for (const pattern of commentPatterns) {
         const commentMatch = firstLine.match(pattern);
         if (commentMatch && commentMatch[1]) {
           const potentialPath = commentMatch[1].trim();
-          // Basic check if it looks like a file path (has extension, no spaces in the main part)
           if (potentialPath.includes('.') && !potentialPath.includes(' ')) {
-            filename = potentialPath;
-            // Remove the first line from the content since we're using it as the filename
+            finalFilename = potentialPath;
             cleanedCode = lines.slice(1).join('\n').trim();
             break;
           }
         }
       }
     }
-    
-    if (filename && cleanedCode) {
-      // Strip any think tags from the code content
-      const finalCode = stripThinkTags(cleanedCode);
-      
-      // Only add the code block if there's actual content after cleaning
-      if (finalCode.trim()) {
-        const blockType = isLineEdit ? 'line-specific edit' : 'auto-insertion';
-        console.log(`Found code block for ${blockType}: ${filename}`);
-        
-        codeBlocks.push({
-          language,
-          filename,
-          content: finalCode,
-          ...(isLineEdit && { startLine, endLine, isLineEdit })
-        });
-      } else {
-        console.log(`Skipping code block for ${filename} as it contains only thinking content`);
+
+    if (!finalFilename) {
+      const hint = header.trim();
+      if (hint && (/\.[a-zA-Z0-9]+$/.test(hint) || hint.includes('/') || hint.includes('\\'))) {
+        finalFilename = hint;
       }
     }
-    
-    // Move past this match and continue searching
-    const nextSearchStart = match.index + fullMatch.length;
-    remainingContent = remainingContent.substring(nextSearchStart);
-    currentOffset += nextSearchStart;
+
+    if (!finalFilename) {
+      const languageToExtension: Record<string, string> = {
+        python: 'py',
+        javascript: 'js',
+        typescript: 'ts',
+        tsx: 'tsx',
+        jsx: 'jsx',
+        html: 'html',
+        css: 'css',
+        bash: 'sh',
+        shell: 'sh',
+        json: 'json',
+        markdown: 'md',
+        md: 'md',
+        ruby: 'rb',
+        java: 'java',
+        cpp: 'cpp',
+        c: 'c',
+        go: 'go',
+        rust: 'rs',
+        php: 'php',
+        xml: 'xml',
+        yaml: 'yaml',
+        yml: 'yml',
+        swift: 'swift',
+        kotlin: 'kt',
+        sql: 'sql',
+      };
+
+      const extension = languageToExtension[finalLanguage.toLowerCase()] || '';
+      finalFilename = extension ? `new_file.${extension}` : 'new_file.txt';
+    }
+
+    if (finalFilename && cleanedCode) {
+      const finalCode = stripThinkTags(cleanedCode).trim();
+      if (finalCode) {
+        codeBlocks.push({
+          language: finalLanguage,
+          filename: finalFilename,
+          content: finalCode,
+          ...(finalIsLineEdit && { startLine: finalStartLine, endLine: finalEndLine, isLineEdit: true })
+        });
+      }
+    }
   }
-  
+
   if (iterationCount >= maxIterations) {
-    console.warn(`extractCodeBlocks: Hit iteration limit (${maxIterations}), stopping to prevent infinite loop`);
+    console.warn(`extractCodeBlocks: Hit iteration limit (${maxIterations}), stopping extraction`);
   }
-  
-  console.log(`extractCodeBlocks: Found ${codeBlocks.length} code blocks after ${iterationCount} iterations`);
+
   return codeBlocks;
-}; 
+};

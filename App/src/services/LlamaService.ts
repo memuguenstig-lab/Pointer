@@ -21,6 +21,7 @@ export interface LlamaModel {
 export interface LlamaStatus {
   available: boolean;
   modelLoaded: boolean;
+  loadedModelId: string | null;
   loadedModelPath: string | null;
   modelsDir: string;
   localModels: LlamaModel[];
@@ -60,6 +61,27 @@ class LlamaService {
     const res = await fetch(`${BACKEND}/api/llama/status`);
     if (!res.ok) throw new Error('Llama backend unavailable');
     return res.json();
+  }
+
+  async ensureModelLoaded(): Promise<void> {
+    const status = await this.getStatus();
+    if (status.modelLoaded) return;
+
+    const res = await fetch(`${BACKEND}/api/llama/autoload`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      let msg = 'No model loaded';
+      try {
+        msg = JSON.parse(text).error || msg;
+      } catch (_) {
+        msg = text.trim() || msg;
+      }
+      throw new Error(msg);
+    }
   }
 
   async getModels(): Promise<LlamaModel[]> {
@@ -156,6 +178,10 @@ class LlamaService {
     options: { temperature?: number; max_tokens?: number; onChunk?: (token: string) => void; signal?: AbortSignal } = {}
   ): Promise<string> {
     const { temperature = 0.7, max_tokens, onChunk, signal } = options;
+
+    await this.ensureModelLoaded().catch((error) => {
+      throw error;
+    });
 
     const res = await fetch(`${BACKEND}/api/llama/chat`, {
       method: 'POST',

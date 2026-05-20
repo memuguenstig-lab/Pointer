@@ -1,6 +1,6 @@
 import { FileService } from './FileService';
 import lmStudio from './LMStudioService';
-import { cleanAIResponse } from '../utils/textUtils';
+import { cleanAIResponse, extractCodeBlocks } from '../utils/textUtils';
 import { PathConfig } from '../config/paths';
 import { API_CONFIG } from '../config/apiConfig';
 import { logger } from './LoggerService';
@@ -153,95 +153,51 @@ Return ONLY the file extension.`;
     }
   }
 
-  private static extractFileOperations(aiResponse: string): Promise<FileOperation[]> {
-    return new Promise<FileOperation[]>(async (resolve) => {
-      const operations: FileOperation[] = [];
-      
-      // First try to extract Pointer:Code format
-      const pointerRegex = /Pointer:Code\+(.*?):start\s*([\s\S]*?)\s*Pointer:Code\+\1:end/g;
-      let match;
-      
-      while ((match = pointerRegex.exec(aiResponse)) !== null) {
-        const [_, filename, content] = match;
+  private static async extractFileOperations(aiResponse: string): Promise<FileOperation[]> {
+    const operations: FileOperation[] = [];
+    const pointerRegex = /Pointer:Code\+(.+?):start\s*([\s\S]*?)\s*Pointer:Code\+\1:end/g;
+    let match;
+
+    while ((match = pointerRegex.exec(aiResponse)) !== null) {
+      const [, filename, content] = match;
+      const trimmedFilename = filename.trim();
+      const trimmedContent = content.trim();
+      if (trimmedFilename && trimmedContent) {
         operations.push({
-          path: filename.trim(),
-          content: content.trim()
+          path: trimmedFilename,
+          content: trimmedContent
         });
       }
+    }
 
-      // If no Pointer:Code blocks found, try to extract regular markdown code blocks
-      if (operations.length === 0) {
-        // Only match proper code blocks (triple backticks with newlines or language)
-        // This excludes inline code (single backticks) which don't have newlines
-        // More specific pattern to ensure we only match triple backticks
-        // Each pattern must start and end with exactly three backticks
-        const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
-        const pendingOperations: Promise<FileOperation | null>[] = [];
-        
-        while ((match = codeBlockRegex.exec(aiResponse)) !== null) {
-          const [_, langHint, content] = match;
-          const trimmedContent = content.trim();
-          
-          if (trimmedContent) {
-            pendingOperations.push((async () => {
-              // Try to find the existing file this code belongs to
-              const existingFile = await this.findExistingFile(trimmedContent);
-              
-              if (existingFile) {
-                return {
-                  path: existingFile,
-                  content: trimmedContent
-                };
-              }
+    const codeBlocks = extractCodeBlocks(aiResponse);
+    const seenPaths = new Set<string>(operations.map(op => op.path));
 
-              // Look for filename hints in the content
-              const filenameHints = [
-                // Match "filename: something.ext" or "# filename: something.ext"
-                /(?:^|\n)(?:#\s*)?filename:\s*([^\n]+)/i,
-                // Match "@file: something.ext" or "# @file: something.ext"
-                /(?:^|\n)(?:#\s*)?@file:\s*([^\n]+)/i,
-                // Match "File: something.ext" or "# File: something.ext"
-                /(?:^|\n)(?:#\s*)?File:\s*([^\n]+)/i,
-                // Match "Path: something.ext" or "# Path: something.ext"
-                /(?:^|\n)(?:#\s*)?Path:\s*([^\n]+)/i,
-                // Match common shebang patterns with paths
-                /^#!.*?([^\/\n]+)$/m,
-              ];
+    for (const block of codeBlocks) {
+      let path = block.filename?.trim();
+      let content = block.content.trim();
 
-              for (const pattern of filenameHints) {
-                const match = trimmedContent.match(pattern);
-                if (match && match[1]) {
-                  const suggestedPath = match[1].trim();
-                  // If it's just a filename without path, keep it as is
-                  // If it's a full path, take just the filename part
-                  const filename = suggestedPath.includes('/')
-                    ? suggestedPath.split('/').pop()!
-                    : suggestedPath;
-                  return {
-                    path: filename,
-                    content: trimmedContent
-                  };
-                }
-              }
-              
-              // If no filename hints found, use language hint or AI detection
-              const detectedType = await this.detectFileType(trimmedContent);
-              const fileExt = langHint && langHint !== 'plaintext' ? langHint : detectedType;
-              return {
-                path: `new_file.${fileExt}`,
-                content: trimmedContent
-              };
-            })());
-          }
+      if (!content) continue;
+
+      if (!path || path === 'new_file') {
+        const existingFile = await this.findExistingFile(content);
+        if (existingFile) {
+          path = existingFile;
         }
-
-        // Wait for all file detections to complete
-        const results = await Promise.all(pendingOperations);
-        operations.push(...results.filter((op): op is FileOperation => op !== null));
       }
 
-      resolve(operations);
-    });
+      if (!path) {
+        const detectedType = await this.detectFileType(content);
+        path = `new_file.${detectedType}`;
+      }
+
+      if (!seenPaths.has(path)) {
+        seenPaths.add(path);
+        operations.push({ path, content });
+      }
+    }
+
+    return operations;
   }
 
   private static async fileExists(path: string): Promise<boolean> {

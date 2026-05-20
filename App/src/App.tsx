@@ -257,12 +257,32 @@ const App: React.FC = () => {
   // Add this for settings modal
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [settingsData, setSettingsData] = useState<Record<string, any>>({});
+  const [settingsInitialCategory, setSettingsInitialCategory] = useState<string | undefined>(undefined);
+  const [settingsInitialModelId, setSettingsInitialModelId] = useState<string | undefined>(undefined);
 
   // Add this inside the App component
   const loadChats = async () => {
     const loadedChats = await ChatService.listChats();
     setChats(loadedChats);
   };
+
+  const openSettingsModal = useCallback((category?: string, modelId?: string) => {
+    setSettingsInitialCategory(category);
+    setSettingsInitialModelId(modelId);
+    setIsSettingsModalOpen(true);
+  }, []);
+
+  useEffect(() => {
+    const handleOpenSettingsEvent = (event: Event) => {
+      const customEvent = event as CustomEvent<{ category?: string; modelId?: string }>;
+      openSettingsModal(customEvent.detail?.category, customEvent.detail?.modelId);
+    };
+
+    window.addEventListener('pointer-open-settings', handleOpenSettingsEvent as EventListener);
+    return () => {
+      window.removeEventListener('pointer-open-settings', handleOpenSettingsEvent as EventListener);
+    };
+  }, [openSettingsModal]);
 
   // Add this for Discord RPC settings
   const [discordRpcSettings, setDiscordRpcSettings] = useState({
@@ -1924,6 +1944,8 @@ const App: React.FC = () => {
           onClose={() => {
             setIsSettingsModalOpen(false);
             setDynamicTitleFormat(undefined); // Reset dynamic title format on close
+            setSettingsInitialCategory(undefined);
+            setSettingsInitialModelId(undefined);
             loadSettings();
           }}
           initialSettings={{
@@ -1932,6 +1954,8 @@ const App: React.FC = () => {
               setDiscordRpcSettings(prev => ({...prev, ...settings}));
             }
           }}
+          initialCategory={settingsInitialCategory}
+          initialModelId={settingsInitialModelId}
         />
 
         {/* Clone Repository Modal */}

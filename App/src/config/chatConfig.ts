@@ -9,6 +9,7 @@ export interface AttachedFile {
   lastModified?: string;
   type?: string;
   dataUrl?: string; // base64 data URL for image preview
+  isAutoContext?: boolean;
 }
 
 export interface ExtendedMessage extends Message {
@@ -62,7 +63,9 @@ const CORE_TRAITS = `You are an AI coding assistant embedded in Pointer IDE. You
 
 4. **Match the project's style.** Read existing files before writing new ones. Use the same patterns, naming conventions, and imports.
 
-5. **Be direct.** No filler phrases. Lead with the answer or the action.`;
+5. **Be direct.** No filler phrases. Lead with the answer or the action.
+
+6. **Match the user's language.** Always answer in the same language the user writes in, unless the user explicitly asks otherwise.`;
 
 const FILE_OPERATIONS = `## Code block formats for file edits
 
@@ -172,6 +175,11 @@ Working directory: ${currentWorkingDirectory || 'unknown'}
 
 You have tools to read/write files, search the codebase, run terminal commands, and browse the web. Use them when needed — don't guess about code you haven't read.
 
+Always answer in the same language the user writes in, unless they explicitly request a different language.
+
+If the user mentions a file name or path, such as "plan.txt" or "check out plan.txt", inspect that file before answering. If they ask about "the files" without naming one, look for the relevant files in the workspace instead of answering from general knowledge.
+If the user seems to be talking about code, files, folders, the project structure, bugs, or anything that probably depends on repository state, proactively inspect the workspace first.
+
 Be direct. Answer the question, show the code, skip the preamble.`;
 
 export const ADVANCED_AGENT_SYSTEM = (): string => `You are an AI coding agent embedded in Pointer IDE. You operate autonomously to complete tasks end-to-end.
@@ -194,6 +202,11 @@ export const ADVANCED_AGENT_SYSTEM = (): string => `You are an AI coding agent e
 **Be autonomous but transparent.** Briefly state what you're doing at each step. If you hit a blocker that requires user input, ask one specific question.
 
 **No partial work.** Every file you write must be complete and functional. No TODOs, no placeholders, no "fill this in later."
+
+**Match the user's language.** Respond in the same language as the user's latest message unless they explicitly ask for another language.
+
+**File-first behavior.** If the user names a file or path, read that file first before answering. If they say "check out the files" without naming one, inspect the workspace and identify the relevant files instead of replying from memory.
+**Proactive workspace search.** If the message sounds like it depends on repository state, search the workspace and inspect likely files automatically before responding.
 
 ## Workflow for any task
 
@@ -436,8 +449,14 @@ export const generateSystemMessage = (promptsSettings: any): ExtendedMessage => 
   
   // Add custom rules
   const enabledRules = promptsSettings.customRules?.filter((rule: any) => rule.enabled) || [];
+  const hasAnyConfiguredPrompt = enabledPrompts.length > 0 || enabledRules.length > 0;
   
   let content = '';
+  
+  if (!hasAnyConfiguredPrompt) {
+    // Default to the enhanced system prompt when no prompt settings are enabled.
+    return ENHANCED_SYSTEM_MESSAGE;
+  }
   
   if (enabledPrompts.includes('enhanced')) {
     content += ENHANCED_SYSTEM_MESSAGE.content + '\n\n';
@@ -462,7 +481,7 @@ export const generateSystemMessage = (promptsSettings: any): ExtendedMessage => 
   
   return {
     role: 'system',
-    content: content.trim() || 'You are a helpful AI assistant.'
+    content: content.trim() || ENHANCED_SYSTEM_MESSAGE.content
   };
 };
 

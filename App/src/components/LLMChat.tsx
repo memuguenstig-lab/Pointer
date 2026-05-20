@@ -45,6 +45,8 @@ declare global {
   lastSavedMessageCount?: number; // Track the number of messages saved
   highestMessageId?: number; // Track the highest message ID we've seen
   handleFileSelect?: (fileId: string) => void;
+  getCurrentFile?: () => { path: string } | null;
+  editor?: import('monaco-editor').editor.IStandaloneCodeEditor;
   electronAPI?: import('../types').ElectronAPI;
 }
 }
@@ -771,13 +773,14 @@ const LongMessageWrapper: React.FC<{
 });
 
 // Memoized MessageRenderer to prevent unnecessary re-renders during resize
-const MessageRenderer: React.FC<{ 
+  const MessageRenderer: React.FC<{ 
   message: ExtendedMessage; 
   isAnyProcessing?: boolean;
   onContinue?: (messageIndex: number) => void;
   messageIndex?: number;
 }> = React.memo(({ message, isAnyProcessing = false, onContinue, messageIndex }) => {
   const [thinkTimes] = useState<ThinkTimes>({});
+  const visibleAttachments = (message.attachments || []).filter(file => !file.isAutoContext);
   
   // Handle non-string content
   const messageContent = typeof message.content === 'string' 
@@ -805,16 +808,16 @@ const MessageRenderer: React.FC<{
     if (!parts[1] || !parts[1].trim()) {
       return (
         <div className="message-content">
-          {message.attachments && message.attachments.length > 0 && (
+          {visibleAttachments.length > 0 && (
             <div className="message-attachments">
               <div className="attachments-header">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
                 </svg>
-                <span>{message.attachments.length} attached {message.attachments.length === 1 ? 'file' : 'files'}</span>
+                <span>{visibleAttachments.length} attached {visibleAttachments.length === 1 ? 'file' : 'files'}</span>
               </div>
               <div className="attachments-list">
-                {message.attachments.map((file, index) => (
+                {visibleAttachments.map((file, index) => (
                   <div key={index} className="attachment-item">
                     <div className="attachment-name">
                       <span className="attachment-icon">📄</span>
@@ -1095,16 +1098,16 @@ const MessageRenderer: React.FC<{
         {/* Render content before <think> tag */}
         {parts[0] && (
           <div className="message-content">
-            {message.attachments && message.attachments.length > 0 && (
+            {visibleAttachments.length > 0 && (
               <div className="message-attachments">
                 <div className="attachments-header">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
                   </svg>
-                  <span>{message.attachments.length} attached {message.attachments.length === 1 ? 'file' : 'files'}</span>
+                  <span>{visibleAttachments.length} attached {visibleAttachments.length === 1 ? 'file' : 'files'}</span>
                 </div>
                 <div className="attachments-list">
-                  {message.attachments.map((file, index) => (
+                  {visibleAttachments.map((file, index) => (
                     <div key={index} className="attachment-item">
                       <div className="attachment-name">
                         <span className="attachment-icon">📄</span>
@@ -1393,16 +1396,16 @@ const MessageRenderer: React.FC<{
   if (parts.length === 1) {
     return (
       <div className="message-content">
-        {message.attachments && message.attachments.length > 0 && (
+        {visibleAttachments.length > 0 && (
           <div className="message-attachments">
             <div className="attachments-header">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
               </svg>
-              <span>{message.attachments.length} attached {message.attachments.length === 1 ? 'file' : 'files'}</span>
+              <span>{visibleAttachments.length} attached {visibleAttachments.length === 1 ? 'file' : 'files'}</span>
             </div>
             <div className="attachments-list">
-              {message.attachments.map((file, index) => (
+              {visibleAttachments.map((file, index) => (
                 <div key={index} className="attachment-item">
                   <div className="attachment-name">
                     <span className="attachment-icon">📄</span>
@@ -2488,6 +2491,281 @@ const normalizeConversationHistory = (messages: ExtendedMessage[]): Message[] =>
   return [refreshKnowledgeMessage, ...normalizedMessages];
 };
 
+const isNoModelLoadedError = (content: string): boolean => {
+  return /No model loaded\. Load a model first\.|No previously loaded model found/i.test(content);
+};
+
+const openModelSettings = (modelId?: string) => {
+  if (typeof window.loadSettings === 'function') {
+    void window.loadSettings().catch((error) => {
+      console.warn('Failed to reload settings before opening model settings:', error);
+    });
+  }
+
+  window.dispatchEvent(new CustomEvent('pointer-open-settings', {
+    detail: {
+      category: 'models',
+      modelId,
+    },
+  }));
+};
+
+const buildActiveEditorContextMessage = (): Message | null => {
+  const currentFile = window.getCurrentFile?.() ?? null;
+  const editor = window.editor;
+  const model = editor?.getModel?.() ?? null;
+  const selection = editor?.getSelection?.();
+
+  const fullText = model?.getValue?.() ?? editor?.getValue?.() ?? '';
+  const selectedText = selection && model?.getValueInRange ? model.getValueInRange(selection) : '';
+  const filePath = currentFile?.path || model?.uri?.fsPath || model?.uri?.path || '';
+  const languageId = model?.getLanguageId?.() || 'unknown';
+
+  if (!filePath && !fullText && !selectedText) {
+    return null;
+  }
+
+  const maxChars = 24000;
+  const truncatedText = fullText.length > maxChars
+    ? `${fullText.slice(0, maxChars)}\n\n...[truncated to keep context within limits]...`
+    : fullText;
+
+  const parts = [
+    '## Active Editor Context',
+    `- File: ${filePath || 'Unknown file'}`,
+    `- Language: ${languageId}`,
+    `- Has selection: ${selectedText.trim().length > 0 ? 'yes' : 'no'}`,
+  ];
+
+  if (selectedText.trim()) {
+    parts.push('', '### Selected Text', '```', selectedText, '```');
+  }
+
+  parts.push('', '### File Contents', '```');
+  parts.push(truncatedText || '');
+  parts.push('```');
+
+  return {
+    role: 'system',
+    content: parts.join('\n'),
+  };
+};
+
+const extractMentionedFileTokens = (content: string): string[] => {
+  const candidates = new Set<string>();
+  const regex = /(?:^|[\s"'`(<\[])([A-Za-z0-9._\-\\/]+?\.[A-Za-z0-9._-]+)/g;
+  let match: RegExpExecArray | null;
+
+  while ((match = regex.exec(content)) !== null) {
+    const token = match[1]?.trim();
+    if (token) {
+      candidates.add(token.replace(/^["'`(<\[]+|["'`)>.,;:!?\]]+$/g, ''));
+    }
+  }
+
+  return Array.from(candidates);
+};
+
+const AUTO_SEARCH_STOP_WORDS = new Set([
+  'the', 'and', 'for', 'with', 'from', 'that', 'this', 'these', 'those', 'what', 'where',
+  'when', 'why', 'how', 'can', 'could', 'would', 'should', 'please', 'show', 'check', 'look',
+  'open', 'read', 'inspect', 'search', 'find', 'files', 'file', 'folder', 'folders', 'directory',
+  'directories', 'project', 'workspace', 'code', 'repo', 'repository', 'need', 'want', 'help',
+  'about', 'into', 'out', 'all', 'any', 'some', 'just', 'like', 'maybe', 'something'
+]);
+
+const shouldAutoExploreWorkspace = (content: string): boolean => {
+  const text = content.trim().toLowerCase();
+  if (!text) return false;
+
+  if (/^(hi|hello|hey|yo|test|thanks|thank you)\b/.test(text)) {
+    return false;
+  }
+
+  const obviousFileRefs = [
+    /\bfile(s)?\b/i,
+    /\bfolder(s)?\b/i,
+    /\bdirectory\b/i,
+    /\bworkspace\b/i,
+    /\bproject\b/i,
+    /\bcode\b/i,
+    /\brepository\b/i,
+    /\brepo\b/i,
+    /\bbug\b/i,
+    /\berror\b/i,
+    /\bfix\b/i,
+    /\brefactor\b/i,
+    /\bimplement\b/i,
+    /\bchange\b/i,
+    /\bopen\b/i,
+    /\binspect\b/i,
+    /\blook(?: at)?\b/i,
+    /\bsearch\b/i,
+    /\bfind\b/i,
+    /\bwhere\b/i,
+    /\bwhat does\b/i,
+    /\bcheck out\b/i,
+    /\bshow me\b/i,
+  ];
+
+  if (obviousFileRefs.some(pattern => pattern.test(text))) {
+    return true;
+  }
+
+  return extractMentionedFileTokens(text).length > 0;
+};
+
+const extractWorkspaceKeywords = (content: string): string[] => {
+  const rawTokens = content
+    .toLowerCase()
+    .split(/[^a-z0-9._/-]+/g)
+    .map(token => token.trim())
+    .filter(Boolean);
+
+  const keywords = rawTokens.filter(token => {
+    if (AUTO_SEARCH_STOP_WORDS.has(token)) return false;
+    if (token.length <= 2 && !token.includes('.')) return false;
+    if (/^\d+$/.test(token)) return false;
+    return true;
+  });
+
+  return Array.from(new Set(keywords)).slice(0, 12);
+};
+
+const parseKeyFilesFromOverview = (overview: string): string[] => {
+  const keyFilesSection = overview.match(/## Key Configuration Files\s*\n([\s\S]*?)(?:\n## |\nThis project has been automatically indexed|\s*$)/i);
+  if (!keyFilesSection?.[1]) return [];
+
+  return keyFilesSection[1]
+    .split('\n')
+    .map(line => line.replace(/^\s*-\s*/, '').trim())
+    .filter(Boolean)
+    .slice(0, 12);
+};
+
+let cachedCodebaseOverview: { value: string; fetchedAt: number } | null = null;
+
+const getCodebaseOverviewCached = async (): Promise<string> => {
+  const now = Date.now();
+  if (cachedCodebaseOverview && now - cachedCodebaseOverview.fetchedAt < 60_000) {
+    return cachedCodebaseOverview.value;
+  }
+
+  const overview = await CodebaseContextService.getInitialCodebaseContext();
+  cachedCodebaseOverview = { value: overview, fetchedAt: now };
+  return overview;
+};
+
+const resolveAutoAttachedFiles = async (content: string, existingAttachments: AttachedFile[] = []): Promise<AttachedFile[]> => {
+  const tokens = extractMentionedFileTokens(content);
+  const shouldExplore = shouldAutoExploreWorkspace(content);
+  if (tokens.length === 0 && !shouldExplore) return existingAttachments;
+
+  const workspaceFiles = ((window as any).fileSystem || {}) as Record<string, FileSystemItem>;
+  const allFiles = Object.values(workspaceFiles).filter(item => item?.type === 'file' && typeof item.path === 'string');
+  const attachments = [...existingAttachments];
+  const seenPaths = new Set(attachments.map(file => file.path));
+
+  for (const token of tokens.slice(0, 4)) {
+    const tokenLower = token.toLowerCase();
+    const candidates = allFiles.filter(item => {
+      const itemPath = (item.path || '').replace(/\\/g, '/');
+      const fileName = itemPath.split('/').pop()?.toLowerCase() || '';
+      return itemPath.toLowerCase().endsWith(tokenLower) || fileName === tokenLower;
+    });
+
+    for (const candidate of candidates.slice(0, 2)) {
+      if (seenPaths.has(candidate.path)) continue;
+
+      try {
+        const contentText = await FileSystemService.readText(candidate.path);
+        if (!contentText) continue;
+
+        attachments.push({
+          name: candidate.name || candidate.path.split(/[/\\]/).pop() || token,
+          path: candidate.path,
+          content: contentText,
+          isAutoContext: true,
+        });
+        seenPaths.add(candidate.path);
+      } catch (error) {
+        console.warn('Failed to auto-attach file context:', candidate.path, error);
+      }
+    }
+  }
+
+  if (shouldExplore) {
+    try {
+      const overview = await getCodebaseOverviewCached();
+      if (overview && !attachments.some(file => file.path === 'workspace-overview.md')) {
+        attachments.unshift({
+          name: 'workspace-overview.md',
+          path: 'workspace-overview.md',
+          content: overview,
+        });
+      }
+
+      const overviewKeyFiles = parseKeyFilesFromOverview(overview);
+      const keywords = extractWorkspaceKeywords(content);
+      const candidatePaths = new Map<string, { path: string; score: number; name: string }>();
+
+      const scoreCandidate = (item: FileSystemItem, score: number) => {
+        const current = candidatePaths.get(item.path);
+        if (!current || score > current.score) {
+          candidatePaths.set(item.path, {
+            path: item.path,
+            score,
+            name: item.name || item.path.split(/[/\\]/).pop() || item.path,
+          });
+        }
+      };
+
+      for (const item of allFiles) {
+        const normalizedPath = item.path.replace(/\\/g, '/').toLowerCase();
+        const fileName = item.name.toLowerCase();
+
+        let score = 0;
+        for (const keyword of keywords) {
+          if (normalizedPath.includes(keyword)) score += 4;
+          if (fileName.includes(keyword)) score += 6;
+          if (overviewKeyFiles.some(keyFile => keyFile.toLowerCase() === normalizedPath || normalizedPath.endsWith(keyFile.toLowerCase()))) {
+            score += 8;
+          }
+        }
+
+        if (score > 0) {
+          scoreCandidate(item, score);
+        }
+      }
+
+      const rankedCandidates = Array.from(candidatePaths.values())
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 4);
+
+      for (const candidate of rankedCandidates) {
+        if (seenPaths.has(candidate.path)) continue;
+        try {
+          const contentText = await FileSystemService.readText(candidate.path);
+          if (!contentText) continue;
+          attachments.push({
+            name: candidate.name,
+            path: candidate.path,
+            content: contentText,
+            isAutoContext: true,
+          });
+          seenPaths.add(candidate.path);
+        } catch (error) {
+          console.warn('Failed to auto-attach ranked file context:', candidate.path, error);
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to build proactive workspace context:', error);
+    }
+  }
+
+  return attachments;
+};
+
 export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectChat }: LLMChatProps) {
   const mode: 'agent' = 'agent';
   
@@ -2522,6 +2800,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
   };
   const [input, setInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [workingSteps, setWorkingSteps] = useState<string[]>([]);
   const [width, setWidth] = useState(700);
   const [isResizing, setIsResizing] = useState(false);
   const [chats, setChats] = useState<ChatSession[]>([]);
@@ -2622,6 +2901,17 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
   
   // Add a state variable to track thinking content
   const [thinking, setThinking] = useState<string>('');
+
+  const pushWorkingStep = useCallback((step: string) => {
+    setWorkingSteps(prev => {
+      const next = [...prev, step];
+      return next.slice(-5);
+    });
+  }, []);
+
+  const resetWorkingSteps = useCallback(() => {
+    setWorkingSteps([]);
+  }, []);
   
   // Add timeout refs for proper cleanup during cancellation
   const toolCallTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -3645,16 +3935,24 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
       // Clear any pending inserts from previous streaming sessions
       // This ensures we don't process old code blocks when new streaming starts
       setPendingInserts([]);
+      resetWorkingSteps();
+      pushWorkingStep('Analyzing request');
       
       // Auto-accept any pending changes before sending new message
       await autoAcceptChanges();
+      pushWorkingStep('Checking pending changes');
+
+      const resolvedAttachments = await resolveAutoAttachedFiles(content, attachments);
+      if (resolvedAttachments.length > attachments.length) {
+        pushWorkingStep('Gathering relevant files');
+      }
       
       // Create the user message with ID
       const userMessage: ExtendedMessage = {
         messageId: getNextMessageId(),
         role: 'user',
         content,
-        attachments: attachments.length > 0 ? [...attachments] : undefined
+        attachments: resolvedAttachments.length > 0 ? [...resolvedAttachments] : undefined
       };
       
       console.log(`Created user message with ID: ${userMessage.messageId}`);
@@ -3709,6 +4007,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
         console.warn('Chat streaming timeout - resetting streaming state');
         setIsStreamingComplete(true);
         setIsProcessing(false);
+        resetWorkingSteps();
         if (abortControllerRef.current) {
           abortControllerRef.current.abort();
           abortControllerRef.current = null;
@@ -3722,10 +4021,12 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
       // Get model configuration based on mode
       const modelConfig = await AIFileService.getModelConfigForPurpose('agent');
       const modelId = modelConfig.modelId;
+      pushWorkingStep('Calling model');
 
       // Use the normalizeConversationHistory function to properly handle tool calls
       // Exclude the last message (the empty assistant) for the API
       const messagesForAPI = normalizeConversationHistory(updatedMessages.slice(0, -1));
+      const editorContextMessage = buildActiveEditorContextMessage();
       
       // Add additional data for agent mode if this is a new message (not an edit)
       if (editIndex === null) {
@@ -3745,6 +4046,10 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
           content: `<additional_data>${JSON.stringify(additionalData)}</additional_data>`
         });
       }
+
+      const messagesForAPIWithEditor = editorContextMessage
+        ? [...messagesForAPI.slice(0, 1), editorContextMessage, ...messagesForAPI.slice(1)]
+        : messagesForAPI;
       
       // Add tools configuration if in agent mode
       const apiConfig = {
@@ -3754,7 +4059,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
             role: 'system' as const,
             content: agentSystemMessage,
           },
-          ...messagesForAPI
+          ...messagesForAPIWithEditor
         ],
         temperature: modelConfig.temperature || 0.7,
         ...(modelConfig.maxTokens && modelConfig.maxTokens > 0 ? { max_tokens: modelConfig.maxTokens } : {}),
@@ -4251,6 +4556,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
     setIsStreamingComplete(false);
     setIsInToolExecutionChain(false);
     setThinking('');
+    resetWorkingSteps();
     
     // 4. Reset tool execution state in ToolService
     try {
@@ -4304,6 +4610,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
     // Initialize with enhanced system message that includes codebase context
     const enhancedSystemMessage = await initializeEnhancedSystemMessage();
     setMessages([enhancedSystemMessage]);
+    resetWorkingSteps();
     
     setInput('');
     setChatTitle(''); // Reset chat title for new chat
@@ -4640,6 +4947,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
     window.chatSaveVersion = processVersion;
     
     console.log(`Processing tool calls (version: ${processVersion}):\n${content.substring(0, 100)}...`);
+    pushWorkingStep('Inspecting tool calls');
     
     // Track current execution to prevent multiple concurrent tool chains
     setIsInToolExecutionChain(true);
@@ -5048,6 +5356,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
         // Process tools one by one
         for (const functionCall of functionCalls) {
           try {
+            pushWorkingStep(`Running ${functionCall.name}`);
             // Skip if already processed
             if (processedToolCallIds.has(functionCall.id)) {
               console.log(`Skipping duplicate tool call: ${functionCall.name} (ID: ${functionCall.id})`);
@@ -5194,10 +5503,12 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
   
   // Add a continuation method to the LLM conversation
   const continueLLMConversation = async () => {
-    console.log("Continuing conversation. Tool execution chain:", isInToolExecutionChain);
-    
-    try {
-      setIsProcessing(true);
+      console.log("Continuing conversation. Tool execution chain:", isInToolExecutionChain);
+      
+      try {
+        setIsProcessing(true);
+        resetWorkingSteps();
+        pushWorkingStep('Rebuilding conversation');
       
       // Create a continuation version to track this specific continuation
       const continuationVersion = (window.chatSaveVersion || 0) + 1;
@@ -5286,6 +5597,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
       
       // Prepare conversation context that includes everything the model needs
       const normalizedMessages = normalizeConversationHistory(relevantMessages);
+      const editorContextMessage = buildActiveEditorContextMessage();
       
       // Debug: Log what normalizeConversationHistory returned
       console.log('=== MESSAGES AFTER NORMALIZE ===');
@@ -5305,8 +5617,12 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
         // Add the continuation prompt at the end
         continuationPrompt
       ];
+
+      const conversationContextWithEditor: Message[] = editorContextMessage
+        ? [...normalizedMessages.slice(0, 1), editorContextMessage, ...normalizedMessages.slice(1), continuationPrompt]
+        : conversationContext;
       
-      console.log('Complete conversation context:', conversationContext.map(m => ({ 
+      console.log('Complete conversation context:', conversationContextWithEditor.map(m => ({ 
         role: m.role, 
         content: m.content?.substring(0, 50),
         tool_call_id: m.tool_call_id || undefined
@@ -5315,6 +5631,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
       // Get model configuration
       const modelConfig = await AIFileService.getModelConfigForPurpose('agent');
       const modelId = modelConfig.modelId;
+      pushWorkingStep('Calling model');
       
       if (!modelId) {
         throw new Error('No model ID configured for agent purpose');
@@ -5322,7 +5639,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
       
       // Log what we're sending to the model
       console.log('Continuing conversation with complete context. Model:', modelId);
-      console.log('Full messages being sent to API:', JSON.stringify(conversationContext.map(m => ({
+      console.log('Full messages being sent to API:', JSON.stringify(conversationContextWithEditor.map(m => ({
         role: m.role,
         content: typeof m.content === 'string' ? 
           (m.content.length > 100 ? m.content.substring(0, 100) + '...' : m.content) : 
@@ -5337,8 +5654,8 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
       
       // Only validate that tool messages have content
       let hasValidationError = false;
-      for (let i = 0; i < conversationContext.length; i++) {
-        const msg = conversationContext[i];
+      for (let i = 0; i < conversationContextWithEditor.length; i++) {
+        const msg = conversationContextWithEditor[i];
         if (msg.role === 'tool') {
           if (!msg.content || msg.content.trim() === '') {
             console.error(`VALIDATION ERROR: Tool message at index ${i} has no content`);
@@ -5359,7 +5676,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
       // Format the API config with the full conversation context
       const apiConfig = {
         model: modelId,
-        messages: conversationContext,
+        messages: conversationContextWithEditor,
         temperature: modelConfig.temperature || 0.7,
         ...(modelConfig.maxTokens && modelConfig.maxTokens > 0 ? { max_tokens: modelConfig.maxTokens } : {}),
         top_p: modelConfig.topP,
@@ -5717,6 +6034,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
             setIsInToolExecutionChain(false);
             setIsExecutingTool(false);
             setIsProcessing(false);
+            resetWorkingSteps();
           }
           // If tool calls were processed, don't set isProcessing to false here
           // as the tool execution will handle the processing state
@@ -5736,6 +6054,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
           setIsInToolExecutionChain(false);
           setIsExecutingTool(false);
           setIsProcessing(false);
+          resetWorkingSteps();
         }
           
         } catch (error) {
@@ -5774,6 +6093,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
           
           setIsInToolExecutionChain(false);
           setIsProcessing(false);
+          resetWorkingSteps();
         }
       
       // Don't set isProcessing to false here as it's now handled conditionally above
@@ -5784,6 +6104,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
       setIsExecutingTool(false);
       setIsInToolExecutionChain(false);
       setThinking('');
+      resetWorkingSteps();
       
       const errorMessage = error instanceof Error ? error.message : String(error);
       addMessage({
@@ -5798,15 +6119,31 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
     try {
       setIsProcessing(true);
       
-      // Find the error message and the last user message before it
-      const errorMessageIndex = messageIndex + 1; // +1 because we slice messages from index 1
-      const lastUserMessageIndex = errorMessageIndex - 1;
+      // Find the error message that was clicked
+      const errorMessage = messages[messageIndex];
+      const errorMessageContent = typeof errorMessage?.content === 'string' ? errorMessage.content : '';
+
+      if (errorMessageContent && isNoModelLoadedError(errorMessageContent)) {
+        setIsProcessing(false);
+        resetWorkingSteps();
+        openModelSettings();
+        return;
+      }
+
+      // Walk backwards to the last user message before the error
+      let lastUserMessageIndex = -1;
+      for (let i = messageIndex - 1; i >= 0; i--) {
+        if (messages[i]?.role === 'user') {
+          lastUserMessageIndex = i;
+          break;
+        }
+      }
       
       // Get the last user message content
       const lastUserMessage = messages[lastUserMessageIndex];
       if (lastUserMessage && lastUserMessage.role === 'user') {
         // Remove the error message
-        setMessages(prev => prev.filter((_, i) => i !== errorMessageIndex));
+        setMessages(prev => prev.filter((_, i) => i !== messageIndex));
         
         // Retry the conversation with the last user message
         await processUserMessage(lastUserMessage.content, lastUserMessage.attachments || []);
@@ -5848,6 +6185,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
     // Check if this is an error message
     const messageContent = typeof message.content === 'string' ? message.content : '';
     const isError = isErrorMessage(messageContent);
+    const isNoModelLoaded = isNoModelLoadedError(messageContent);
     
     // For assistant messages with function calls, process them but clean the content for display
     if (message.role === 'assistant') {
@@ -6393,7 +6731,13 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
                       transition: 'all 0.2s ease',
                       opacity: isAnyProcessing ? 0.6 : 1,
                     }}
-                    title={isAnyProcessing ? "Processing..." : "Retry this conversation"}
+                    title={
+                      isAnyProcessing
+                        ? "Processing..."
+                        : isNoModelLoaded
+                          ? "Open model settings"
+                          : "Retry this conversation"
+                    }
                     onMouseEnter={(e) => {
                       if (!isAnyProcessing) {
                         e.currentTarget.style.background = 'var(--accent-hover)';
@@ -6407,7 +6751,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
                       }
                     }}
                   >
-                    {isAnyProcessing ? 'Processing...' : 'Continue'}
+                    {isAnyProcessing ? 'Processing...' : isNoModelLoaded ? 'Model Settings' : 'Continue'}
                   </button>
                 </div>
               )}
@@ -6488,6 +6832,8 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
     
     console.log("Restarting conversation with fresh data");
     setIsProcessing(true);
+    resetWorkingSteps();
+    pushWorkingStep('Reloading conversation');
     
     try {
       // Force reload the chat from disk when switching chats
@@ -6506,6 +6852,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
       console.error("Error restarting conversation:", error);
     } finally {
       setIsProcessing(false);
+      resetWorkingSteps();
     }
   };
   
@@ -6919,6 +7266,59 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
           transform: 'translateZ(0)', // Create compositing layer
         }}
       >
+        {(isAnyProcessing || workingSteps.length > 0) && (
+          (() => {
+            const visibleWorkingSteps = workingSteps.slice(-4);
+            return (
+          <div style={{
+            marginBottom: '12px',
+            padding: '10px 12px',
+            borderRadius: '8px',
+            border: '1px solid rgba(14,99,156,0.25)',
+            background: 'linear-gradient(180deg, rgba(14,99,156,0.14), rgba(14,99,156,0.06))',
+            color: 'var(--text-primary)',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              marginBottom: workingSteps.length > 0 ? '8px' : 0,
+              fontSize: '12px',
+              fontWeight: 700,
+              textTransform: 'lowercase',
+              letterSpacing: '0.02em',
+            }}>
+              <span style={{
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                background: 'var(--accent-color)',
+                boxShadow: '0 0 0 4px rgba(14,99,156,0.16)',
+              }} />
+              working..
+            </div>
+            {workingSteps.length > 0 && (
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '4px',
+                fontSize: '11px',
+                color: 'var(--text-secondary)',
+              }}>
+                {visibleWorkingSteps.map((step, idx) => (
+                  <div key={`${step}-${idx}`} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent-color)', opacity: idx === visibleWorkingSteps.length - 1 ? 1 : 0.5, flexShrink: 0 }} />
+                    <span>{step}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+            );
+          })()
+        )}
+
         {messages.length <= 1 ? (
           <div className="empty-chat-message" style={{
             display: 'flex',
