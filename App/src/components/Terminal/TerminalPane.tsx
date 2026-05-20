@@ -49,6 +49,7 @@ interface Props {
 const TerminalPane: React.FC<Props> = ({ instance, isActive, onReady, onCwdChange }) => {
   const initialized = useRef(false);
   const retryCount = useRef(0);
+  const pendingInputRef = useRef<string[]>([]);
   // Error detection state — refs so they're accessible in both connect and useEffect
   const lastCommandRef = useRef('');
   const outputSinceCommandRef = useRef('');
@@ -67,6 +68,17 @@ const TerminalPane: React.FC<Props> = ({ instance, isActive, onReady, onCwdChang
         try { fitAddon.fit(); } catch (_) {}
       }
       socket.send(JSON.stringify({ type: 'resize', cols: xterm.cols, rows: xterm.rows }));
+      if (pendingInputRef.current.length > 0) {
+        for (const chunk of pendingInputRef.current) {
+          try {
+            socket.send(chunk);
+          } catch (_) {
+            break;
+          }
+        }
+        pendingInputRef.current = [];
+      }
+      try { xterm.focus(); } catch (_) {}
     };
 
     socket.onmessage = (e) => {
@@ -164,6 +176,8 @@ const TerminalPane: React.FC<Props> = ({ instance, isActive, onReady, onCwdChang
         } else if (!data.startsWith('\x1b')) {
           lastCommandRef.current += data;
         }
+      } else {
+        pendingInputRef.current.push(data);
       }
     });
 
@@ -280,6 +294,7 @@ const TerminalPane: React.FC<Props> = ({ instance, isActive, onReady, onCwdChang
         display: isActive ? 'block' : 'none',
         WebkitAppRegion: 'no-drag',
       } as React.CSSProperties}
+      onMouseDown={() => instance.xterm?.focus()}
       onClick={() => instance.xterm?.focus()}
     />
   );

@@ -468,6 +468,8 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const settingsSnapshotRef = useRef<string>('');
+  const hasCapturedInitialSnapshotRef = useRef(false);
 
   const [isThemeLibraryVisible, setIsThemeLibraryVisible] = useState(false);
   const [isThemeEditorVisible, setIsThemeEditorVisible] = useState(false);
@@ -747,6 +749,8 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
       } else {
         console.log('IPC Renderer not available, skipping Discord RPC settings save');
       }
+      settingsSnapshotRef.current = serializeCurrentSettings();
+      hasCapturedInitialSnapshotRef.current = true;
       setHasUnsavedChanges(false);
       onClose();
     } catch (error) {
@@ -1306,12 +1310,51 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
     setShowModelSuggestions(false);
   };
 
+  const serializeCurrentSettings = () => JSON.stringify({
+    modelConfigs,
+    modelAssignments,
+    editorSettings,
+    themeSettings,
+    discordRpcSettings,
+    promptsSettings,
+    advanced,
+  });
+
+  useEffect(() => {
+    if (!isVisible) {
+      hasCapturedInitialSnapshotRef.current = false;
+      return;
+    }
+
+    if (isLoading || hasCapturedInitialSnapshotRef.current) {
+      return;
+    }
+
+    settingsSnapshotRef.current = serializeCurrentSettings();
+    hasCapturedInitialSnapshotRef.current = true;
+    setHasUnsavedChanges(false);
+  }, [
+    isVisible,
+    isLoading,
+    modelConfigs,
+    modelAssignments,
+    editorSettings,
+    themeSettings,
+    discordRpcSettings,
+    promptsSettings,
+    advanced,
+  ]);
+
   const handleClose = () => {
-    if (hasUnsavedChanges) {
+    const currentSnapshot = serializeCurrentSettings();
+    const hasRealChanges = currentSnapshot !== settingsSnapshotRef.current;
+
+    if (hasUnsavedChanges && hasRealChanges) {
       if (confirm('You have unsaved changes. Are you sure you want to close without saving?')) {
         onClose();
       }
     } else {
+      setHasUnsavedChanges(false);
       onClose();
     }
   };

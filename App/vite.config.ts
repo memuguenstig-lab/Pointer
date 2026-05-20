@@ -15,8 +15,7 @@ export default defineConfig({
     strictPort: false,
     host: true,
     fs: {
-      strict: false,
-      allow: ['..']
+      strict: false
     },
     proxy: {
       '/execute-command': {
@@ -89,7 +88,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, 'src')
+      '@': path.resolve(process.cwd(), 'src')
     }
   }
 })

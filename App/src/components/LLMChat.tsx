@@ -31,7 +31,7 @@ import {
   generateEnhancedSystemMessage
 } from '../config/chatConfig';
 import { CodebaseContextService } from '../services/CodebaseContextService';
-import { stripThinkTags, extractCodeBlocks } from '../utils/textUtils';
+import { stripThinkTags, extractCodeBlocks, stripWorkspaceCodeBlocks } from '../utils/textUtils';
 import { ChatService } from '../services/ChatService';
 import { AIBackendService } from '../services/AIBackendService';
 
@@ -786,23 +786,100 @@ const LongMessageWrapper: React.FC<{
   const messageContent = typeof message.content === 'string' 
     ? message.content 
     : JSON.stringify(message.content, null, 2);
+  const workspaceCodeBlocks = message.role === 'assistant' ? extractCodeBlocks(messageContent) : [];
+  const displayContent = message.role === 'assistant' && workspaceCodeBlocks.length > 0
+    ? stripWorkspaceCodeBlocks(messageContent)
+    : messageContent;
+  const hasWorkspaceCodeBlocks = workspaceCodeBlocks.length > 0;
+  const workspaceChangeCount = workspaceCodeBlocks.length;
+  const workspaceChangeLineCount = workspaceCodeBlocks.reduce(
+    (sum, block) => sum + Math.max(1, block.content.split(/\r?\n/).length),
+    0
+  );
+  const workspaceChangeVerb = workspaceChangeCount > 1 ? 'Updated' : 'Edited';
+  const workspaceChangeSummary = hasWorkspaceCodeBlocks ? (
+    <div style={{
+      marginBottom: '10px',
+      padding: '10px 12px',
+      borderRadius: '12px',
+      border: '1px solid rgba(59, 130, 246, 0.22)',
+      background: 'linear-gradient(180deg, rgba(59, 130, 246, 0.12), rgba(59, 130, 246, 0.06))',
+      boxShadow: '0 1px 0 rgba(255, 255, 255, 0.04) inset',
+    }}>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: '12px',
+        marginBottom: workspaceCodeBlocks.length ? '8px' : 0,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-primary)', fontSize: '13px', fontWeight: 600 }}>
+          <span style={{
+            width: 22,
+            height: 22,
+            borderRadius: '999px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'rgba(59, 130, 246, 0.18)',
+            color: 'var(--accent-color)',
+            flexShrink: 0,
+          }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M5 12l4 4L19 6" />
+            </svg>
+          </span>
+          <span>{workspaceChangeVerb} {workspaceChangeCount} file{workspaceChangeCount === 1 ? '' : 's'}</span>
+        </div>
+        <span style={{ fontSize: '11px', color: 'var(--text-secondary)', opacity: 0.8 }}>
+          ~{workspaceChangeLineCount} lines
+        </span>
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+        {workspaceCodeBlocks.map((block, i) => (
+          <span
+            key={`${block.filename}-${i}`}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '5px 9px',
+              borderRadius: '999px',
+              background: 'rgba(17, 24, 39, 0.3)',
+              color: 'var(--text-primary)',
+              border: '1px solid rgba(148, 163, 184, 0.18)',
+              fontSize: '12px',
+              lineHeight: 1.2,
+              maxWidth: '100%',
+            }}
+            title={block.filename}
+          >
+            <span style={{ opacity: 0.8 }}>•</span>
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {block.filename}
+            </span>
+          </span>
+        ))}
+      </div>
+    </div>
+  ) : null;
   
   // Check if we have an incomplete think block
-  const hasIncompleteThink = messageContent.includes('<think>') && 
-    !messageContent.includes('</think>');
+  const hasIncompleteThink = displayContent.includes('<think>') && 
+    !displayContent.includes('</think>');
 
   // Start timing when a think block starts
   useEffect(() => {
     if (hasIncompleteThink) {
       const thinkStart = Date.now();
-      const thinkKey = messageContent; // Use the full message content as the key
+      const thinkKey = displayContent; // Use the full message content as the key
       thinkTimes[thinkKey] = thinkStart;
     }
-  }, [hasIncompleteThink, messageContent, thinkTimes]);
+  }, [hasIncompleteThink, displayContent, thinkTimes]);
 
   // If we have an incomplete think, extract the content after <think>
   if (hasIncompleteThink) {
-    const parts = messageContent.split('<think>');
+    const parts = displayContent.split('<think>');
     
     // If the thinking content is empty, just render the content before the <think> tag
     if (!parts[1] || !parts[1].trim()) {
@@ -840,6 +917,7 @@ const LongMessageWrapper: React.FC<{
               </div>
             </div>
           )}
+          {workspaceChangeSummary}
           <ReactMarkdown
             remarkPlugins={[remarkGfm]}
             components={{
@@ -1087,7 +1165,7 @@ const LongMessageWrapper: React.FC<{
               }
             }}
           >
-            {messageContent}
+            {displayContent}
           </ReactMarkdown>
         </div>
       );
@@ -1390,7 +1468,7 @@ const LongMessageWrapper: React.FC<{
   }
 
   // Split content into think blocks and other content
-  const parts = messageContent.split(/(<think>.*?<\/think>)/s);
+  const parts = displayContent.split(/(<think>.*?<\/think>)/s);
   
   // If no think blocks and no special parts, render as a regular message
   if (parts.length === 1) {
@@ -1428,7 +1506,7 @@ const LongMessageWrapper: React.FC<{
             </div>
           </div>
         )}
-        
+        {workspaceChangeSummary}
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           components={{
@@ -2825,6 +2903,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
     isLineEdit?: boolean;
   }[]>([]);
   const [autoInsertInProgress, setAutoInsertInProgress] = useState<boolean>(false);
+  const pendingInsertsRef = useRef<typeof pendingInserts>([]);
   // ── Prompt Queue (Codex-style: queue prompts, send one-by-one) ────────────
   const [promptQueue, setPromptQueue] = useState<string[]>([]);
   const promptQueueRef = useRef<string[]>([]);
@@ -2837,6 +2916,10 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
   const [autoInsertEnabled, setAutoInsertEnabled] = useState(true);
   // Add state to track processed code blocks to avoid duplicates during streaming
   const [processedCodeBlocks, setProcessedCodeBlocks] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    pendingInsertsRef.current = pendingInserts;
+  }, [pendingInserts]);
 
   // Add state for tracking attached files
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
@@ -3437,161 +3520,61 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
 
   // Process auto-insert for code blocks
   const processAutoInsert = async () => {
-    if (pendingInserts.length === 0 || autoInsertInProgress) return;
-    
-    // Make sure the insert model is preloaded before starting
+    if (pendingInsertsRef.current.length === 0 || autoInsertInProgress) return;
+
+    // Kick off preloading in the background, but do not block inserts on it.
     if (!insertModelPreloaded) {
-      await preloadInsertModel();
+      void preloadInsertModel();
     }
-    
-    setAutoInsertInProgress(true);
-    const currentInsert = pendingInserts[0];
-    // Declare originalContent at the function scope so it's accessible in the catch blocks
-    let originalContent = '';
-    
-    try {
-      // Get directory path for the file
-      const directoryPath = currentInsert.filename.substring(0, currentInsert.filename.lastIndexOf('/'));
-      
+
+    const processSingleInsert = async (currentInsert: typeof pendingInserts[number]) => {
+      let originalContent = '';
+
       try {
-        // Try to read the file
         const response = await fetch(`http://localhost:23816/read-file?path=${encodeURIComponent(currentInsert.filename)}`);
         if (response.ok) {
           originalContent = await response.text();
         } else {
-          // File doesn't exist - handle based on edit type
           if (currentInsert.isLineEdit) {
             console.error(`Cannot perform line edit on non-existent file: ${currentInsert.filename}`);
-            setPendingInserts(prev => prev.slice(1));
-            setAutoInsertInProgress(false);
             return;
           }
-          
+
           console.log(`File ${currentInsert.filename} doesn't exist, creating directly`);
-          
-          // If file doesn't exist, check if we need to create directories
-          if (directoryPath) {
-            // Try to create the directory structure
-            const createDirResponse = await fetch(`http://localhost:23816/create-directory`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                parentId: 'root_' + directoryPath.split('/')[0], // Use root as parent for first level
-                name: directoryPath.split('/').pop() || ''
-              })
-            });
-            
-            if (!createDirResponse.ok) {
-              console.log(`Created directory structure: ${directoryPath}`);
-            }
-          }
-          
-          // Create the file directly with the cleaned content
           const cleanedContent = stripThinkTags(currentInsert.content);
+          await FileSystemService.saveFile(currentInsert.filename, cleanedContent);
           FileChangeEventService.emitChange(currentInsert.filename, '', cleanedContent);
-          
-          // Remove the processed insert from the queue
-          setPendingInserts(prev => prev.slice(1));
-          setAutoInsertInProgress(false);
           return;
         }
       } catch (error) {
         console.error('Error reading file:', error);
-        // For errors, create the file directly (only if not a line edit)
         if (!currentInsert.isLineEdit) {
           const cleanedContent = stripThinkTags(currentInsert.content);
+          await FileSystemService.saveFile(currentInsert.filename, cleanedContent);
           FileChangeEventService.emitChange(currentInsert.filename, '', cleanedContent);
         }
-        setPendingInserts(prev => prev.slice(1));
-        setAutoInsertInProgress(false);
         return;
       }
 
-      // Handle line-specific edits differently
       if (currentInsert.isLineEdit && currentInsert.startLine && currentInsert.endLine) {
         console.log(`Performing line-specific edit on ${currentInsert.filename}, lines ${currentInsert.startLine}-${currentInsert.endLine}`);
-        
-        // Apply line-specific edit directly
         const cleanedContent = stripThinkTags(currentInsert.content);
         const editedContent = handleLineSpecificEdit(originalContent, cleanedContent, currentInsert.startLine, currentInsert.endLine);
-        
-        // Use the FileChangeEventService to trigger the diff viewer
         FileChangeEventService.emitChange(currentInsert.filename, originalContent, editedContent);
-        
-        // Remove the processed insert from the queue
-        setPendingInserts(prev => prev.slice(1));
-        setAutoInsertInProgress(false);
         return;
       }
 
-      // If we reach here, the file exists and we need AI merging (for full file insertions)
-      // Get model ID for insert purpose
-      const insertModelId = await AIFileService.getModelIdForPurpose('insert');
-      
-      // Get insert model settings from localStorage
-      const insertModelConfigStr = localStorage.getItem('insertModelConfig');
-      const insertModelConfig = insertModelConfigStr ? JSON.parse(insertModelConfigStr) : {
-        temperature: 0.2,
-        maxTokens: null,
-      };
-
-      // Create a prompt for the AI to merge the changes
-      const mergePrompt = generatePrompts.codeMerging(currentInsert.filename, originalContent, currentInsert.content);
-
-      // Use the chat completions endpoint for merging
-      const result = await lmStudio.createChatCompletion({
-        model: insertModelId,
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a code merging expert. Return only the merged code without any explanations.'
-          },
-          {
-            role: 'user',
-            content: mergePrompt
-          }
-        ],
-        temperature: insertModelConfig.temperature || 0.2,
-        ...(insertModelConfig.maxTokens && insertModelConfig.maxTokens > 0 ? { max_tokens: insertModelConfig.maxTokens } : {}),
-        stream: false
-      });
-
-      let mergedContent = result.choices[0].message.content.trim();
-      
-      // Strip <think> tags from the merged content before showing in diff viewer
-      mergedContent = stripThinkTags(mergedContent);
-
-      // Use the FileChangeEventService to trigger the diff viewer
-      FileChangeEventService.emitChange(currentInsert.filename, originalContent, mergedContent);
-      
-      // Remove the processed insert from the queue
-      setPendingInserts(prev => prev.slice(1));
-    } catch (error) {
-      console.error('Error during auto-insert:', error);
-      // Fallback to using the chat model if the Insert-Model fails
       try {
-        console.log('Falling back to chat model for auto-insertion...');
-        
-        // Get chat model ID for fallback
-        const chatModelId = await AIFileService.getModelIdForPurpose('chat');
-        
-        // Get chat model settings from localStorage
-        const modelConfigStr = localStorage.getItem('modelConfig');
-        const modelConfig = modelConfigStr ? JSON.parse(modelConfigStr) : {
-          temperature: 0.3,
+        const insertModelId = await AIFileService.getModelIdForPurpose('insert');
+        const insertModelConfigStr = localStorage.getItem('insertModelConfig');
+        const insertModelConfig = insertModelConfigStr ? JSON.parse(insertModelConfigStr) : {
+          temperature: 0.2,
           maxTokens: null,
-          frequencyPenalty: 0,
-          presencePenalty: 0,
         };
 
-        // Create a prompt for the AI to merge the changes
         const mergePrompt = generatePrompts.codeMerging(currentInsert.filename, originalContent, currentInsert.content);
-
-        // Use the lmStudio service for merging
         const result = await lmStudio.createChatCompletion({
-          model: chatModelId,
+          model: insertModelId,
           messages: [
             {
               role: 'system',
@@ -3602,25 +3585,61 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
               content: mergePrompt
             }
           ],
-          temperature: modelConfig.temperature || 0.3,
-          ...(modelConfig.maxTokens && modelConfig.maxTokens > 0 ? { max_tokens: modelConfig.maxTokens } : {}),
+          temperature: insertModelConfig.temperature || 0.2,
+          ...(insertModelConfig.maxTokens && insertModelConfig.maxTokens > 0 ? { max_tokens: insertModelConfig.maxTokens } : {}),
           stream: false
         });
 
-        let mergedContent = result.choices[0].message.content.trim();
-        
-        // Strip <think> tags from the merged content before showing in diff viewer
-        mergedContent = stripThinkTags(mergedContent);
-
-        // Use the FileChangeEventService to trigger the diff viewer
+        const mergedContent = stripThinkTags(result.choices[0].message.content.trim());
         FileChangeEventService.emitChange(currentInsert.filename, originalContent, mergedContent);
-        
-        // Remove the processed insert from the queue
-        setPendingInserts(prev => prev.slice(1));
-      } catch (fallbackError) {
-        console.error('Fallback auto-insertion also failed:', fallbackError);
-        // Remove the failed insert and continue with others
-        setPendingInserts(prev => prev.slice(1));
+      } catch (error) {
+        console.error('Error during auto-insert:', error);
+        try {
+          console.log('Falling back to chat model for auto-insertion...');
+          const chatModelId = await AIFileService.getModelIdForPurpose('chat');
+          const modelConfigStr = localStorage.getItem('modelConfig');
+          const modelConfig = modelConfigStr ? JSON.parse(modelConfigStr) : {
+            temperature: 0.3,
+            maxTokens: null,
+            frequencyPenalty: 0,
+            presencePenalty: 0,
+          };
+
+          const mergePrompt = generatePrompts.codeMerging(currentInsert.filename, originalContent, currentInsert.content);
+          const result = await lmStudio.createChatCompletion({
+            model: chatModelId,
+            messages: [
+              {
+                role: 'system',
+                content: 'You are a code merging expert. Return only the merged code without any explanations.'
+              },
+              {
+                role: 'user',
+                content: mergePrompt
+              }
+            ],
+            temperature: modelConfig.temperature || 0.3,
+            ...(modelConfig.maxTokens && modelConfig.maxTokens > 0 ? { max_tokens: modelConfig.maxTokens } : {}),
+            stream: false
+          });
+
+          const mergedContent = stripThinkTags(result.choices[0].message.content.trim());
+          FileChangeEventService.emitChange(currentInsert.filename, originalContent, mergedContent);
+        } catch (fallbackError) {
+          console.error('Fallback auto-insertion also failed:', fallbackError);
+        }
+      }
+    };
+
+    setAutoInsertInProgress(true);
+    try {
+      const batchSize = 3;
+      while (pendingInsertsRef.current.length > 0) {
+        const batch = pendingInsertsRef.current.slice(0, batchSize);
+        await Promise.all(batch.map(insert => processSingleInsert(insert)));
+
+        pendingInsertsRef.current = pendingInsertsRef.current.slice(batch.length);
+        setPendingInserts(prev => prev.slice(batch.length));
       }
     } finally {
       setAutoInsertInProgress(false);
@@ -3642,7 +3661,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
       const blockType = block.isLineEdit ? 'line-specific edit' : 'full file insertion';
       console.log(`Collecting ${blockType} during streaming: ${block.filename} (will process after streaming completes)`);
       
-      // Check if we already have this filename in pending inserts
+    // Check if we already have this filename in pending inserts
       const alreadyPending = pendingInserts.some(insert => insert.filename === block.filename);
       
       if (!alreadyPending) {
@@ -3679,7 +3698,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
       const blockType = block.isLineEdit ? 'line-specific edit' : 'full file insertion';
       console.log(`Processing final ${blockType}: ${block.filename}`);
       
-      // Check if we already have this filename in pending inserts
+    // Check if we already have this filename in pending inserts
       const alreadyPending = pendingInserts.some(insert => insert.filename === block.filename);
       
       if (!alreadyPending) {
@@ -3717,11 +3736,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
     // Only process auto-insert if streaming is fully complete
     if (pendingInserts.length > 0 && autoInsertEnabled && isStreamingComplete) {
       console.log('Streaming is complete, processing auto-insert for', pendingInserts.length, 'pending inserts');
-      const timer = setTimeout(() => {
-        processAutoInsert();
-      }, 500); // 500ms delay for more responsive insertion
-      
-      return () => clearTimeout(timer);
+      processAutoInsert();
     } else if (pendingInserts.length > 0 && autoInsertEnabled && !isStreamingComplete) {
       console.log('Pending inserts available but streaming not complete yet, waiting...');
     }
@@ -4088,6 +4103,27 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
             {
               type: "function",
               function: {
+                name: "write_file",
+                description: "Write content to a file",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    file_path: {
+                      type: "string",
+                      description: "The path to the file to write"
+                    },
+                    content: {
+                      type: "string",
+                      description: "The full content to write to the file"
+                    }
+                  },
+                  required: ["file_path", "content"]
+                }
+              }
+            },
+            {
+              type: "function",
+              function: {
                 name: "list_directory",
                 description: "List the contents of a directory",
                 parameters: {
@@ -4446,10 +4482,8 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
       // Process final code blocks for auto-insert after streaming is fully complete
       processFinalCodeBlocks(currentContent);
       
-      // Preload insert model after a short delay
-      setTimeout(() => {
-        preloadInsertModel();
-      }, 3000);
+      // Start insert-model preload immediately in the background
+      void preloadInsertModel();
       
     } catch (error) {
       console.error(`Error in ${editIndex !== null ? 'handleSubmitEdit' : 'handleSubmit'}:`, error);
@@ -5090,13 +5124,13 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
             }
             
             // Validate tool name (prevent phantom tools)
-            const validToolNames = ['list_directory', 'list_dir', 'read_file', 'delete_file', 'move_file', 'copy_file', 'get_file_overview', 'get_codebase_overview', 'grep_search', 'web_search', 'fetch_webpage', 'run_terminal_cmd', 'search_codebase', 'query_codebase_natural_language', 'get_relevant_codebase_context', 'get_ai_codebase_context'];
+            const validToolNames = ['list_directory', 'list_dir', 'read_file', 'write_file', 'delete_file', 'move_file', 'copy_file', 'get_file_overview', 'get_codebase_overview', 'grep_search', 'web_search', 'fetch_webpage', 'run_terminal_cmd', 'search_codebase', 'query_codebase_natural_language', 'get_relevant_codebase_context', 'get_ai_codebase_context'];
             
             if (!validToolNames.includes(functionCall.name)) {
               console.warn(`Invalid tool name: ${functionCall.name}. This might be due to multiple tool calls being concatenated.`);
               
               // Check if this looks like concatenated tool names (more comprehensive detection)
-              const allValidToolNames = ['list_directory', 'list_dir', 'read_file', 'delete_file', 'move_file', 'copy_file', 'get_file_overview', 'get_codebase_overview', 'grep_search', 'web_search', 'fetch_webpage', 'run_terminal_cmd', 'search_codebase', 'query_codebase_natural_language', 'get_relevant_codebase_context', 'get_ai_codebase_context'];
+              const allValidToolNames = ['list_directory', 'list_dir', 'read_file', 'write_file', 'delete_file', 'move_file', 'copy_file', 'get_file_overview', 'get_codebase_overview', 'grep_search', 'web_search', 'fetch_webpage', 'run_terminal_cmd', 'search_codebase', 'query_codebase_natural_language', 'get_relevant_codebase_context', 'get_ai_codebase_context'];
               
               // Check if the name contains multiple valid tool names (indicating concatenation)
               const detectedTools = allValidToolNames.filter(toolName => 
@@ -5171,6 +5205,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
             // Validate that required arguments are present
             const requiredArgs = {
               'read_file': ['file_path'], // Can also use target_file
+              'write_file': ['file_path', 'content'], // Can also use target_file
               'delete_file': ['file_path'], // Can also use target_file
               'move_file': ['source_path', 'destination_path'],
               'copy_file': ['source_path', 'destination_path'],
@@ -5182,13 +5217,17 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
               let missingArgs: string[] = [];
               
               // Special handling for file operations that can use either file_path or target_file
-              if (['read_file', 'delete_file'].includes(functionCall.name)) {
-                const hasFilePath = functionCall.arguments && 
-                  typeof functionCall.arguments === 'object' && 
-                  (functionCall.arguments.file_path || functionCall.arguments.target_file);
+              if (['read_file', 'delete_file', 'write_file'].includes(functionCall.name)) {
+                const argsObject = functionCall.arguments && typeof functionCall.arguments === 'object'
+                  ? functionCall.arguments as Record<string, any>
+                  : null;
+                const hasFilePath = !!argsObject && (argsObject.file_path || argsObject.target_file);
                 
                 if (!hasFilePath) {
                   missingArgs = ['file_path or target_file'];
+                }
+                if (functionCall.name === 'write_file' && !argsObject?.content) {
+                  missingArgs = [...missingArgs, 'content'];
                 }
               } else {
                 // Standard validation for other tools
@@ -5704,6 +5743,27 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
           {
             type: "function",
             function: {
+              name: "write_file",
+              description: "Write content to a file",
+              parameters: {
+                type: "object",
+                properties: {
+                  file_path: {
+                    type: "string",
+                    description: "The path to the file to write"
+                  },
+                  content: {
+                    type: "string",
+                    description: "The full content to write to the file"
+                  }
+                },
+                required: ["file_path", "content"]
+              }
+            }
+          },
+          {
+            type: "function",
+            function: {
               name: "list_directory",
               description: "List the contents of a directory",
               parameters: {
@@ -6045,10 +6105,8 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
           // Process final code blocks for auto-insert after streaming is fully complete
           processFinalCodeBlocks(currentContent);
           
-          // Preload insert model after a short delay
-          setTimeout(() => {
-            preloadInsertModel();
-          }, 3000);
+          // Start insert-model preload immediately in the background
+          void preloadInsertModel();
           
           // Always reset all processing states when there are no function calls
           setIsInToolExecutionChain(false);
@@ -6231,8 +6289,34 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
           }
         }
         
-        // If no meaningful content remains after cleaning, hide the message
-        return null;
+        // If no meaningful content remains after cleaning, show a compact workspace update note
+        return (
+          <div
+            key={message.messageId}
+            style={{
+              width: '100%',
+              opacity: shouldBeFaded ? 0.33 : 1,
+              transition: 'opacity 0.2s ease',
+            }}
+          >
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '6px 10px',
+              borderRadius: '999px',
+              background: 'rgba(59, 130, 246, 0.12)',
+              color: 'var(--text-secondary)',
+              fontSize: '12px',
+              border: '1px solid rgba(59, 130, 246, 0.25)'
+            }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M5 12l4 4L19 6" />
+              </svg>
+              Workspace files updated
+            </div>
+          </div>
+        );
       }
     }
     
@@ -6526,7 +6610,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
                     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                   </svg>}
                   
-                    {toolName && !['read_file', 'list_directory', 'web_search'].includes(toolName) && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    {toolName && !['read_file', 'list_directory', 'write_file', 'web_search'].includes(toolName) && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
                     <line x1="12" y1="9" x2="12" y2="13"></line>
                     <line x1="12" y1="17" x2="12.01" y2="17"></line>
@@ -6558,6 +6642,15 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
                               pathInfo = fileName;
                             }
                           }
+                          // For write_file, extract file_path
+                          else if (toolName === 'write_file') {
+                            const args = typeof toolArgs === 'string' ? JSON.parse(toolArgs) : toolArgs;
+                            if (args.file_path || args.target_file) {
+                              const targetPath = args.file_path || args.target_file;
+                              const pathParts = targetPath.split(/[/\\]/);
+                              pathInfo = pathParts[pathParts.length - 1];
+                            }
+                          }
                           // For web_search, extract query
                           else if (toolName === 'web_search') {
                             const args = typeof toolArgs === 'string' ? JSON.parse(toolArgs) : toolArgs;
@@ -6575,6 +6668,8 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
                         return `Read file${pathInfo ? `: ${pathInfo}` : ''}`;
                       } else if (toolName === 'list_directory') {
                         return `Listed directory${pathInfo ? `: ${pathInfo}` : ''}`;
+                      } else if (toolName === 'write_file') {
+                        return `Wrote file${pathInfo ? `: ${pathInfo}` : ''}`;
                       } else if (toolName === 'web_search') {
                         return `Searched web${pathInfo ? ` for "${pathInfo}"` : ''}`;
                       } else if (toolName) {
@@ -7164,7 +7259,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
         </div>
 
         {/* Embedded model quick-switcher — shown when multiple downloaded models exist */}
-        {embeddedModels.length > 1 && (
+          {embeddedModels.length > 1 && (
           <div style={{ position: 'relative', flexShrink: 0 }}>
             <button
               onClick={() => { setShowEmbeddedSwitcher(v => !v); fetchEmbeddedModels(); }}
@@ -7234,6 +7329,33 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
                     {m.loaded && <span style={{ fontSize: 10, color: '#3fb950', flexShrink: 0 }}>active</span>}
                   </button>
                 ))}
+                <div style={{ borderTop: '1px solid var(--border-primary)' }} />
+                <button
+                  onClick={() => {
+                    setShowEmbeddedSwitcher(false);
+                    window.dispatchEvent(new CustomEvent('pointer-open-settings', {
+                      detail: { category: 'models' }
+                    }));
+                  }}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    textAlign: 'left',
+                    background: 'var(--bg-secondary)',
+                    border: 'none',
+                    color: 'var(--text-secondary)',
+                    cursor: 'pointer',
+                    fontSize: 12,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-hover)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-secondary)'; }}
+                >
+                  <span style={{ fontSize: 11, width: 14, textAlign: 'center', flexShrink: 0 }}>⚙</span>
+                  Manage models...
+                </button>
               </div>
             )}
           </div>

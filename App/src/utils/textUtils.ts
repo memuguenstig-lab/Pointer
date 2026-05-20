@@ -154,6 +154,286 @@ export function getLanguageFromFilename(filename: string): string {
   return extensionToLanguage[extension] || extension || 'plaintext';
 }
 
+const LANGUAGE_EXTENSIONS: Record<string, string> = {
+  python: 'py',
+  javascript: 'js',
+  typescript: 'ts',
+  tsx: 'tsx',
+  jsx: 'jsx',
+  html: 'html',
+  css: 'css',
+  bash: 'sh',
+  shell: 'sh',
+  json: 'json',
+  markdown: 'md',
+  md: 'md',
+  ruby: 'rb',
+  java: 'java',
+  cpp: 'cpp',
+  c: 'c',
+  go: 'go',
+  rust: 'rs',
+  php: 'php',
+  xml: 'xml',
+  yaml: 'yaml',
+  yml: 'yml',
+  swift: 'swift',
+  kotlin: 'kt',
+  sql: 'sql',
+};
+
+const DEFAULT_FILENAMES: Record<string, string> = {
+  python: 'main.py',
+  javascript: 'main.js',
+  typescript: 'main.ts',
+  tsx: 'App.tsx',
+  jsx: 'App.jsx',
+  html: 'index.html',
+  css: 'styles.css',
+  bash: 'script.sh',
+  shell: 'script.sh',
+  json: 'data.json',
+  markdown: 'README.md',
+  md: 'README.md',
+  ruby: 'main.rb',
+  java: 'Main.java',
+  cpp: 'main.cpp',
+  c: 'main.c',
+  go: 'main.go',
+  rust: 'main.rs',
+  php: 'index.php',
+  xml: 'index.xml',
+  yaml: 'config.yaml',
+  yml: 'config.yml',
+  swift: 'main.swift',
+  kotlin: 'Main.kt',
+  sql: 'query.sql',
+};
+
+const slugifyFileBase = (value: string): string => {
+  return value
+    .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2')
+    .toLowerCase()
+    .replace(/['"`]/g, '')
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .replace(/_{2,}/g, '_');
+};
+
+const getExtensionForLanguage = (language: string): string => {
+  return LANGUAGE_EXTENSIONS[language.toLowerCase()] || '';
+};
+
+const GENERIC_FILENAME_BASES = new Set([
+  'main',
+  'index',
+  'app',
+  'script',
+  'test',
+  'demo',
+  'example',
+  'component',
+  'components',
+  'page',
+  'screen',
+  'view',
+  'module',
+  'helper',
+  'helpers',
+  'util',
+  'utils',
+  'manager',
+  'service',
+  'controller',
+  'handler',
+  'engine',
+  'core',
+  'game',
+  'game_loop',
+  'gameloop',
+  'loop',
+  'main_loop',
+  'mainloop',
+]);
+
+const looksGenericFilenameBase = (base: string): boolean => {
+  const normalized = slugifyFileBase(base);
+  if (!normalized) return true;
+  return GENERIC_FILENAME_BASES.has(normalized) || normalized.length < 3;
+};
+
+const extractTopicFromContext = (context: string): string | null => {
+  if (!context) return null;
+
+  const patterns = [
+    /(?:build|make|create|code|write|implement|generate|fix|refactor)\s+(?:a|an|the)?\s*([A-Za-z][A-Za-z0-9_-]{2,})\s+(?:game|app|project|feature|script|tool|page|screen)\b/i,
+    /\b([A-Za-z][A-Za-z0-9_-]{2,})\s+(?:game|app|project|feature|script|tool|page|screen)\b/i,
+    /\b(?:for|with|about)\s+([A-Za-z][A-Za-z0-9_-]{2,})\b/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = context.match(pattern);
+    if (match?.[1]) {
+      const topic = slugifyFileBase(match[1]);
+      if (topic && !looksGenericFilenameBase(topic)) {
+        return topic;
+      }
+    }
+  }
+
+  return null;
+};
+
+const buildTopicFilename = (topic: string, ext: string, context: string): string => {
+  const base = slugifyFileBase(topic);
+  if (!base) return `new_file.${ext}`;
+
+  const hasGameContext = /\bgame\b/i.test(context);
+  const hasAppContext = /\bapp\b/i.test(context);
+
+  if (hasGameContext) return `${base}_game.${ext}`;
+  if (hasAppContext) return `${base}_app.${ext}`;
+  return `${base}.${ext}`;
+};
+
+const guessLanguageFromCode = (code: string): string => {
+  const trimmed = code.trim();
+
+  if (/^\s*<!doctype html>/i.test(trimmed) || /<html[\s>]/i.test(trimmed) || /<\/[a-z][^>]*>/i.test(trimmed)) {
+    return 'html';
+  }
+
+  if (/\bimport\s+React\b|\bexport\s+default\b|<\w+[\s/>]|useState\(|useEffect\(/.test(code)) {
+    return 'tsx';
+  }
+
+  if (/\bfunction\s+\w+\s*\(|\bconst\s+\w+\s*=\s*(?:\(|async\s*\(|\{)/.test(code) || /\bconsole\.log\(/.test(code)) {
+    return 'javascript';
+  }
+
+  if (/\bdef\s+\w+\s*\(|\bclass\s+\w+\s*[:(]|\bfrom\s+\w+\s+import\b|\bimport\s+\w+\b|pygame/i.test(code)) {
+    return 'python';
+  }
+
+  if (/\bpackage\s+main\b|\bfunc\s+\w+\s*\(|fmt\.\w+\(/.test(code)) {
+    return 'go';
+  }
+
+  if (/\bpublic\s+class\s+\w+|\bSystem\.out\.println\(/.test(code)) {
+    return 'java';
+  }
+
+  if (/\bfn\s+\w+\s*\(|\blet\s+mut\b|\bprintln!\(/.test(code)) {
+    return 'rust';
+  }
+
+  return '';
+};
+
+const inferFilenameFromCode = (code: string, language: string): string | null => {
+  const languageKey = (language || guessLanguageFromCode(code)).toLowerCase();
+  const ext = getExtensionForLanguage(languageKey);
+  if (!ext) return null;
+
+  const candidateMatches = [
+    code.match(/\bclass\s+([A-Z][A-Za-z0-9_]+)/),
+    code.match(/\bdef\s+([A-Za-z_][A-Za-z0-9_]*)/),
+    code.match(/\bfunction\s+([A-Za-z_][A-Za-z0-9_]*)/),
+    code.match(/\b(?:const|let|var)\s+([A-Za-z_][A-Za-z0-9_]*)\s*=/),
+  ];
+
+  for (const match of candidateMatches) {
+    const rawCandidate = match?.[1] || '';
+    const base = slugifyFileBase(rawCandidate);
+    if (!base || looksGenericFilenameBase(base)) {
+      continue;
+    }
+    return `${base}.${ext}`;
+  }
+
+  return null;
+};
+
+const inferFilenameFromContext = (content: string, blockStartIndex: number, language: string, code: string): string | null => {
+  const contextStart = Math.max(0, blockStartIndex - 350);
+  const context = content.slice(contextStart, blockStartIndex);
+  const languageKey = (language || guessLanguageFromCode(code)).toLowerCase();
+  const topic = extractTopicFromContext(context);
+
+  const filenamePatterns = [
+    /(?:file|filename|name|path)\s*(?:is|:)\s*([^\s`"'<>]+?\.[A-Za-z0-9]+)(?:\b|$)/i,
+    /(?:create|make|save|write)\s+(?:a\s+)?([A-Za-z0-9_-]+?\.[A-Za-z0-9]+)(?:\b|$)/i,
+  ];
+
+  for (const pattern of filenamePatterns) {
+    const match = context.match(pattern);
+    if (match?.[1]) {
+      return match[1].trim();
+    }
+  }
+
+  const headingMatch = [...context.matchAll(/^(#{1,6})\s+(.+)$/gm)].pop();
+  if (headingMatch?.[2]) {
+    const headingBase = slugifyFileBase(headingMatch[2]);
+    const ext = getExtensionForLanguage(language);
+    if (headingBase && !looksGenericFilenameBase(headingBase)) {
+      return ext ? `${headingBase}.${ext}` : headingBase;
+    }
+  }
+
+  const codeDerived = inferFilenameFromCode(code, language);
+  if (codeDerived) return codeDerived;
+
+  const ext = getExtensionForLanguage(language);
+  if (!ext) return null;
+
+  if (topic) {
+    return buildTopicFilename(topic, ext, context);
+  }
+
+  const defaultFilename = DEFAULT_FILENAMES[languageKey];
+  return defaultFilename || `new_file.${ext}`;
+};
+
+export const normalizeFilenameSuggestion = (
+  filename: string,
+  context: string,
+  code: string,
+  language: string = ''
+): string => {
+  const trimmed = filename?.trim();
+  const extFromLanguage = getExtensionForLanguage(language || guessLanguageFromCode(code));
+
+  if (!trimmed) {
+    return inferFilenameFromContext(context, Math.max(0, context.length - code.length), language, code) || `new_file.${extFromLanguage || 'txt'}`;
+  }
+
+  const pathParts = trimmed.split(/[\\/]/);
+  const leaf = pathParts[pathParts.length - 1] || trimmed;
+  const dir = pathParts.length > 1 ? pathParts.slice(0, -1).join('/') : '';
+  const leafBase = leaf.replace(/\.[^.\\/]+$/, '');
+  const leafExt = leaf.includes('.') ? leaf.split('.').pop() || '' : '';
+  const normalizedBase = slugifyFileBase(leafBase);
+
+  if (!normalizedBase) {
+    const inferred = inferFilenameFromContext(context, Math.max(0, context.length - code.length), language, code);
+    if (inferred) return dir ? `${dir}/${inferred}` : inferred;
+    return trimmed;
+  }
+
+  if (looksGenericFilenameBase(normalizedBase) || /^new_file(?:\.[^/\\]+)?$/i.test(leaf)) {
+    const inferred = inferFilenameFromContext(context, Math.max(0, context.length - code.length), language, code);
+    if (inferred) {
+      return dir ? `${dir}/${inferred}` : inferred;
+    }
+  }
+
+  const finalExt = leafExt || extFromLanguage;
+  const normalizedLeaf = finalExt ? `${normalizedBase}.${finalExt}` : normalizedBase;
+  return dir ? `${dir}/${normalizedLeaf}` : normalizedLeaf;
+};
+
 /**
  * Utility functions for text processing
  */
@@ -165,6 +445,31 @@ export function getLanguageFromFilename(filename: string): string {
  */
 export const stripThinkTags = (text: string): string => {
   return text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+};
+
+/**
+ * Removes full markdown code blocks and Pointer workspace code fences from text.
+ * This is intended for assistant messages where the actual file content should
+ * be applied to the workspace instead of being shown in the chat.
+ *
+ * @param text - The text to clean
+ * @returns The text without code blocks, trimmed and normalized
+ */
+export const stripWorkspaceCodeBlocks = (text: string): string => {
+  if (!text) return text;
+
+  let result = text;
+
+  // Remove Pointer-specific file blocks first so we do not leave behind markers.
+  result = result.replace(/Pointer:Code\+[\s\S]*?:start\s*[\s\S]*?Pointer:Code\+[\s\S]*?:end/g, '');
+
+  // Remove fenced code blocks entirely.
+  result = result.replace(/```[\s\S]*?```/g, '');
+
+  // Collapse leftover whitespace created by removal.
+  result = result.replace(/\n{3,}/g, '\n\n');
+
+  return result.trim();
 };
 
 /**
@@ -346,37 +651,10 @@ export const extractCodeBlocks = (content: string) => {
     }
 
     if (!finalFilename) {
-      const languageToExtension: Record<string, string> = {
-        python: 'py',
-        javascript: 'js',
-        typescript: 'ts',
-        tsx: 'tsx',
-        jsx: 'jsx',
-        html: 'html',
-        css: 'css',
-        bash: 'sh',
-        shell: 'sh',
-        json: 'json',
-        markdown: 'md',
-        md: 'md',
-        ruby: 'rb',
-        java: 'java',
-        cpp: 'cpp',
-        c: 'c',
-        go: 'go',
-        rust: 'rs',
-        php: 'php',
-        xml: 'xml',
-        yaml: 'yaml',
-        yml: 'yml',
-        swift: 'swift',
-        kotlin: 'kt',
-        sql: 'sql',
-      };
-
-      const extension = languageToExtension[finalLanguage.toLowerCase()] || '';
-      finalFilename = extension ? `new_file.${extension}` : 'new_file.txt';
+      finalFilename = inferFilenameFromContext(content, matchStart, finalLanguage, cleanedCode) || 'new_file.txt';
     }
+
+    finalFilename = normalizeFilenameSuggestion(finalFilename, content, cleanedCode, finalLanguage);
 
     if (finalFilename && cleanedCode) {
       const finalCode = stripThinkTags(cleanedCode).trim();

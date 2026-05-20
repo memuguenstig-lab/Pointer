@@ -282,7 +282,7 @@ export class FileService {
       }
     });
 
-    this.refreshFileExplorer();
+    this.refreshFileExplorer(filePath, oldContent, newContent);
   }
 
   /**
@@ -302,9 +302,11 @@ export class FileService {
   /**
    * Refresh file explorer UI
    */
-  private static refreshFileExplorer(): void {
+  private static refreshFileExplorer(filePath?: string, oldContent?: string, newContent?: string): void {
     try {
-      const refreshEvent = new CustomEvent('file-explorer-refresh');
+      const refreshEvent = new CustomEvent('file-explorer-refresh', {
+        detail: { filePath, oldContent, newContent }
+      });
       window.dispatchEvent(refreshEvent);
     } catch (error) {
       logger.error('Error refreshing file explorer', error);

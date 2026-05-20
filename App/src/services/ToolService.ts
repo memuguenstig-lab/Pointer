@@ -15,6 +15,7 @@ export class ToolService {
     // Frontend to backend mappings
     'list_dir': 'list_directory',
     'read_file': 'read_file',
+    'write_file': 'write_file',
     'delete_file': 'delete_file',
     'move_file': 'move_file',
     'copy_file': 'copy_file',
@@ -106,6 +107,10 @@ export class ToolService {
           return `Read file [${path}]: ${lineCount} lines`;
         }
         return `Read file [${path}]: ${result.success ? 'Success' : 'Failed'}`;
+      }
+      else if (toolName === 'write_file') {
+        const path = params.file_path || params.target_file || '';
+        return `Wrote file [${path}]: ${result.success ? 'Success' : 'Failed'}`;
       }
       else if (toolName === 'grep_search') {
         const query = params.query || '';

@@ -726,6 +726,25 @@ class LMStudioService {
       }
       
       console.log('Using read_file tool');
+    } else if (toolName === 'write_file') {
+      // Validate required parameters for write_file
+      if (!fixedParams.file_path && !fixedParams.target_file) {
+        throw new Error('Missing required parameter "file_path" for write_file tool');
+      }
+
+      if (fixedParams.target_file && !fixedParams.file_path) {
+        fixedParams = {
+          ...fixedParams,
+          file_path: fixedParams.target_file
+        };
+        delete (fixedParams as any).target_file;
+      }
+
+      if (fixedParams.content === undefined) {
+        throw new Error('Missing required parameter "content" for write_file tool');
+      }
+
+      console.log('Using write_file tool');
     }
     
     console.log(`Tool parameters after fixing: ${JSON.stringify(fixedParams)}`);
@@ -1192,6 +1211,7 @@ class LMStudioService {
     const frontendToBackendMap: { [key: string]: string } = {
       'list_dir': 'list_directory',
       'read_file': 'read_file',
+      'write_file': 'write_file',
       'web_search': 'web_search',
       'grep_search': 'grep_search',
       'fetch_webpage': 'fetch_webpage',
@@ -1210,7 +1230,7 @@ class LMStudioService {
     let toolNames = new Set(tools.map(tool => tool.function?.name).filter(Boolean));
     
     // Add missing required tools
-        const requiredTools = ['read_file', 'delete_file', 'move_file', 'copy_file', 'list_directory', 'web_search', 'grep_search', 'fetch_webpage', 'run_terminal_cmd'];
+        const requiredTools = ['read_file', 'write_file', 'delete_file', 'move_file', 'copy_file', 'list_directory', 'web_search', 'grep_search', 'fetch_webpage', 'run_terminal_cmd'];
     const missingTools = requiredTools.filter(name => !toolNames.has(name) && !toolNames.has(frontendToBackendMap[name]));
     
     if (missingTools.length > 0) {
@@ -1280,6 +1300,28 @@ class LMStudioService {
                   }
                 },
                 required: ["target_file"]
+              }
+            }
+          };
+        } else if (name === 'write_file') {
+          return {
+            type: "function",
+            function: {
+              name: "write_file",
+              description: "Write content to a file",
+              parameters: {
+                type: "object",
+                properties: {
+                  file_path: {
+                    type: "string",
+                    description: "Path to the file to write"
+                  },
+                  content: {
+                    type: "string",
+                    description: "The full content to write to the file"
+                  }
+                },
+                required: ["file_path", "content"]
               }
             }
           };
@@ -2034,6 +2076,10 @@ class LMStudioService {
             toolCall.function.name = 'read_file';
             console.log('Detected read_file from target_file parameter');
           }
+          else if ((args.file_path || args.target_file) && args.content !== undefined) {
+            toolCall.function.name = 'write_file';
+            console.log('Detected write_file from file_path/content parameters');
+          }
         } catch (e) {
           console.warn('Failed to parse arguments for tool detection:', e);
           // Fallback to string-based detection
@@ -2046,6 +2092,8 @@ class LMStudioService {
             } else {
               toolCall.function.name = 'read_file';
             }
+        } else if (argStr.includes('content') && (argStr.includes('file_path') || argStr.includes('target_file'))) {
+          toolCall.function.name = 'write_file';
         } else if (argStr.includes('target_file')) {
           toolCall.function.name = 'read_file';
           }

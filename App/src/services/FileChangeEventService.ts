@@ -35,6 +35,8 @@ export class FileChangeEventService {
         console.error('Error in file change listener:', error);
       }
     });
+
+    this.refreshFileExplorer(filePath, oldContent, newContent);
   }
 
   // Get all pending diffs
@@ -48,10 +50,12 @@ export class FileChangeEventService {
   }
 
   // Helper method to refresh the file explorer
-  private static refreshFileExplorer() {
+  private static refreshFileExplorer(filePath?: string, oldContent?: string, newContent?: string) {
     try {
       // Dispatch a custom event that can be listened to by the file explorer
-      const refreshEvent = new CustomEvent('file-explorer-refresh');
+      const refreshEvent = new CustomEvent('file-explorer-refresh', {
+        detail: { filePath, oldContent, newContent }
+      });
       window.dispatchEvent(refreshEvent);
     } catch (error) {
       console.error('Error refreshing file explorer:', error);
@@ -98,7 +102,7 @@ export class FileChangeEventService {
       this.diffs = this.diffs.filter(d => d.filePath !== filePath);
       
       // Refresh the file explorer to show any new files
-      this.refreshFileExplorer();
+      this.refreshFileExplorer(filePath, diff.oldContent, diff.newContent);
       
       return true;
     } catch (error) {

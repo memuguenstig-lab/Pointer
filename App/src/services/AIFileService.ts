@@ -1,6 +1,6 @@
 import { FileService } from './FileService';
 import lmStudio from './LMStudioService';
-import { cleanAIResponse, extractCodeBlocks } from '../utils/textUtils';
+import { cleanAIResponse, extractCodeBlocks, normalizeFilenameSuggestion } from '../utils/textUtils';
 import { PathConfig } from '../config/paths';
 import { API_CONFIG } from '../config/apiConfig';
 import { logger } from './LoggerService';
@@ -174,15 +174,42 @@ Return ONLY the file extension.`;
     const seenPaths = new Set<string>(operations.map(op => op.path));
 
     for (const block of codeBlocks) {
-      let path = block.filename?.trim();
+      let path = normalizeFilenameSuggestion(block.filename?.trim() || '', aiResponse, block.content, block.language);
       let content = block.content.trim();
 
       if (!content) continue;
 
-      if (!path || path === 'new_file') {
+      if (!path || /^new_file(?:\.[^/\\]+)?$/i.test(path)) {
         const existingFile = await this.findExistingFile(content);
         if (existingFile) {
           path = existingFile;
+        } else if (!path || path === 'new_file' || /^new_file\.txt$/i.test(path)) {
+          const detectedType = await this.detectFileType(content);
+          const defaultNames: Record<string, string> = {
+            py: 'main.py',
+            js: 'main.js',
+            ts: 'main.ts',
+            tsx: 'App.tsx',
+            jsx: 'App.jsx',
+            html: 'index.html',
+            css: 'styles.css',
+            sh: 'script.sh',
+            json: 'data.json',
+            md: 'README.md',
+            rb: 'main.rb',
+            java: 'Main.java',
+            cpp: 'main.cpp',
+            c: 'main.c',
+            go: 'main.go',
+            rs: 'main.rs',
+            php: 'index.php',
+            yaml: 'config.yaml',
+            yml: 'config.yml',
+            swift: 'main.swift',
+            kt: 'Main.kt',
+            sql: 'query.sql',
+          };
+          path = defaultNames[detectedType] || `new_file.${detectedType}`;
         }
       }
 

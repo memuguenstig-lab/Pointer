@@ -1205,6 +1205,105 @@ const App: React.FC = () => {
     });
   };
 
+  const normalizeWorkspacePath = (filePath: string) => filePath.replace(/\\/g, '/').replace(/^\/+/, '');
+
+  const upsertWorkspacePath = useCallback((filePath: string, newContent: string) => {
+    const normalizedPath = normalizeWorkspacePath(filePath);
+    if (!normalizedPath) return;
+
+    const segments = normalizedPath.split('/').filter(Boolean);
+    if (segments.length === 0) return;
+
+    setFileSystem(prev => {
+      const items = { ...prev.items };
+      const currentDirectory = FileSystemService.getCurrentDirectory();
+      const rootPath = prev.items[prev.rootId]?.path || currentDirectory || '';
+      const rootName = prev.items[prev.rootId]?.name || rootPath.split(/[\\/]/).filter(Boolean).pop() || 'workspace';
+
+      let parentId = prev.rootId;
+      let builtPath = '';
+
+      for (let i = 0; i < segments.length - 1; i++) {
+        const segment = segments[i];
+        builtPath = builtPath ? `${builtPath}/${segment}` : segment;
+        const dirId = `dir_${builtPath}`;
+
+        if (!items[dirId]) {
+          items[dirId] = {
+            id: dirId,
+            name: segment,
+            type: 'directory',
+            parentId,
+            path: builtPath,
+          };
+        }
+
+        parentId = dirId;
+      }
+
+      const fileName = segments[segments.length - 1];
+      const fileId = `file_${normalizedPath}`;
+      const existing = items[fileId];
+
+      items[fileId] = {
+        id: fileId,
+        name: fileName,
+        type: 'file',
+        parentId,
+        path: normalizedPath,
+        content: newContent,
+        ...(existing && 'language' in existing ? { language: (existing as any).language } : {}),
+      } as FileSystemItem;
+
+      return {
+        ...prev,
+        rootId: prev.rootId,
+        items: {
+          ...items,
+          [prev.rootId]: prev.items[prev.rootId] || {
+            id: prev.rootId,
+            name: rootName,
+            type: 'directory',
+            parentId: null,
+            path: rootPath,
+          },
+        },
+      };
+    });
+  }, []);
+
+  useEffect(() => {
+    const handleFileExplorerRefresh = async (event: Event) => {
+      const detail = (event as CustomEvent<{ filePath?: string; newContent?: string }>).detail;
+      if (detail?.filePath) {
+        upsertWorkspacePath(detail.filePath, detail.newContent ?? '');
+        return;
+      }
+
+      const currentDir = FileSystemService.getCurrentDirectory();
+      if (!currentDir) return;
+
+      try {
+        const result = await FileSystemService.openSpecificDirectory(currentDir);
+        if (result) {
+          setFileSystem(prev => ({
+            ...prev,
+            items: {
+              ...prev.items,
+              ...result.items,
+            },
+            rootId: result.rootId || prev.rootId,
+          }));
+        }
+      } catch (error) {
+        console.error('Failed to refresh file explorer:', error);
+      }
+    };
+
+    window.addEventListener('file-explorer-refresh', handleFileExplorerRefresh as EventListener);
+    return () => window.removeEventListener('file-explorer-refresh', handleFileExplorerRefresh as EventListener);
+  }, [upsertWorkspacePath]);
+
   const handleDeleteItem = useCallback(async (item: FileSystemItem) => {
     const success = await FileSystemService.deleteItem(item.path);
     if (success) {
@@ -1779,13 +1878,6 @@ const App: React.FC = () => {
                         >✕</button>
                       </div>
                     ))}
-                    {chatSlots.length < maxParallelChats && (
-                      <button
-                        onClick={addChatSlot}
-                        title="New parallel chat"
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 14, padding: '0 6px', lineHeight: 1 }}
-                      >+</button>
-                    )}
                   </div>
                 )}
                 {/* Render all slots, show only active */}
@@ -1802,25 +1894,6 @@ const App: React.FC = () => {
                     />
                   </div>
                 ))}
-                {/* Add chat button when only 1 slot */}
-                {chatSlots.length === 1 && isLLMChatVisible && (
-                  <button
-                    onClick={addChatSlot}
-                    title="Open parallel chat (run multiple AI requests simultaneously)"
-                    style={{
-                      position: 'absolute', bottom: 48, right: 8,
-                      background: 'var(--bg-secondary)', border: '1px solid var(--border-primary)',
-                      borderRadius: 6, padding: '4px 8px', fontSize: 11,
-                      color: 'var(--text-secondary)', cursor: 'pointer', zIndex: 10,
-                      display: 'flex', alignItems: 'center', gap: 4,
-                    }}
-                  >
-                    <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                      <path d="M8 3v10M3 8h10"/>
-                    </svg>
-                    Parallel chat
-                  </button>
-                )}
               </div>
             }
           />

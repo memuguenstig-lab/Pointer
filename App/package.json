@@ -5,10 +5,10 @@
   "main": "electron/main.js",
   "scripts": {
     "env": "npx dotenv-wizard",
-    "start": "vite",
+    "start": "vite --config ./vite.config.ts",
     "build": "tsc && vite build",
     "serve": "vite preview",
-    "dev:server": "vite",
+    "dev:server": "vite --config ./vite.config.ts",
     "dev:electron": "electron .",
     "dev": "node start-pointer.js",
     "electron:dev": "concurrently \"yarn start\" \"wait-on http://localhost:3000 && electron .\"",
