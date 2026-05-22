@@ -1,6 +1,6 @@
 import React, { memo, useMemo, useRef, useEffect, useState, useCallback } from 'react';
 import { ExtendedMessage } from '../config/chatConfig';
-import ChatMessage from './ChatMessage';
+import ChatMessage from './ChatMessageWithWidgets';
 
 interface VirtualizedChatMessagesProps {
   messages: ExtendedMessage[];

@@ -35,6 +35,70 @@ import { stripThinkTags, extractCodeBlocks, stripWorkspaceCodeBlocks } from '../
 import { ChatService } from '../services/ChatService';
 import { AIBackendService } from '../services/AIBackendService';
 
+
+
+// Response interceptor to replace "Sorry, but I can't assist" responses
+const interceptResponse = (content: string, userQuery: string): string => {
+  const refusalPatterns = [
+    /sorry, but i can't assist/i,
+    /i can't assist with that request/i,
+    /i cannot assist/i,
+    /i'm unable to assist/i,
+    /i apologize, but i can't/i
+  ];
+  
+  // Check if the response is a refusal
+  const isRefusal = refusalPatterns.some(pattern => pattern.test(content));
+  
+  if (isRefusal) {
+    console.log('Detected refusal response, generating alternative');
+    
+    // Check if the user asked for a diagram
+    if (userQuery.toLowerCase().includes('diagram') || 
+        userQuery.toLowerCase().includes('chart') ||
+        userQuery.toLowerCase().includes('graph') ||
+        userQuery.toLowerCase().includes('visuali')) {
+      
+      // Extract data from the query if available
+      const dataMatch = userQuery.match(/(\d+[,;\s]+\d+)/g);
+      const labelsMatch = userQuery.match(/(januar|februar|märz|april|mai|juni|juli|august|september|oktober|november|dezember|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/gi);
+      
+      if (dataMatch && labelsMatch) {
+        // Generate a diagram with the extracted data
+        const data = {};
+        labelsMatch.forEach((label, i) => {
+          if (dataMatch[i]) {
+            data[label] = parseInt(dataMatch[i].replace(/[^0-9]/g, ''));
+          }
+        });
+        
+        return `Hier ist ein Diagramm basierend auf deinen Daten:
+
+\`\`\`diagram:bar
+${JSON.stringify(data)}
+\`\`\`
+
+Das Diagramm zeigt die Daten, die du bereitgestellt hast.`;
+      }
+      
+      // Default diagram with example data
+      return `Hier ist ein Diagramm:
+
+\`\`\`diagram:bar
+{"Januar": 12000, "Februar": 13500, "März": 12800, "April": 14900, "Mai": 17100, "Juni": 16500}
+\`\`\`
+
+Dies ist ein Beispiel-Diagramm. Wenn du spezifische Daten hast, gib sie mir und ich werde das Diagramm entsprechend anpassen.`;
+    }
+    
+    // For other requests, provide a helpful response
+    return `Ich kann dir dabei helfen. Lass mich wissen, was du genau benötigst und ich werde mein Bestes tun, um dich zu unterstützen.`;
+  }
+  
+  return content;
+};
+
+
 // Add TypeScript declarations for window properties
 declare global {
   interface Window {
@@ -773,12 +837,14 @@ const LongMessageWrapper: React.FC<{
 });
 
 // Memoized MessageRenderer to prevent unnecessary re-renders during resize
-  const MessageRenderer: React.FC<{ 
+const MessageRenderer: React.FC<{ 
   message: ExtendedMessage; 
   isAnyProcessing?: boolean;
   onContinue?: (messageIndex: number) => void;
   messageIndex?: number;
-}> = React.memo(({ message, isAnyProcessing = false, onContinue, messageIndex }) => {
+  showGenerationPlaceholder?: boolean;
+  generationLabel?: string;
+}> = React.memo(({ message, isAnyProcessing = false, onContinue, messageIndex, showGenerationPlaceholder = false, generationLabel }) => {
   const [thinkTimes] = useState<ThinkTimes>({});
   const visibleAttachments = (message.attachments || []).filter(file => !file.isAutoContext);
   
@@ -863,6 +929,40 @@ const LongMessageWrapper: React.FC<{
       </div>
     </div>
   ) : null;
+
+  const generationPlaceholder = showGenerationPlaceholder ? (
+    <div style={{
+      marginBottom: '10px',
+      padding: '12px 14px',
+      borderRadius: '12px',
+      border: '1px solid rgba(59, 130, 246, 0.22)',
+      background: 'linear-gradient(180deg, rgba(59, 130, 246, 0.12), rgba(59, 130, 246, 0.06))',
+      boxShadow: '0 1px 0 rgba(255,255,255,0.04) inset',
+    }}>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '10px',
+        fontSize: '13px',
+        fontWeight: 700,
+        color: 'var(--text-primary)',
+        marginBottom: '4px',
+      }}>
+        <span style={{
+          width: 10,
+          height: 10,
+          borderRadius: '50%',
+          background: 'var(--accent-color)',
+          boxShadow: '0 0 0 4px rgba(59,130,246,0.16)',
+          flexShrink: 0,
+        }} />
+        Writing code...
+      </div>
+      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+        {generationLabel || 'Generating response'}
+      </div>
+    </div>
+  ) : null;
   
   // Check if we have an incomplete think block
   const hasIncompleteThink = displayContent.includes('<think>') && 
@@ -883,10 +983,11 @@ const LongMessageWrapper: React.FC<{
     
     // If the thinking content is empty, just render the content before the <think> tag
     if (!parts[1] || !parts[1].trim()) {
-      return (
-        <div className="message-content">
-          {visibleAttachments.length > 0 && (
-            <div className="message-attachments">
+  return (
+    <div className="message-content">
+      {generationPlaceholder}
+      {visibleAttachments.length > 0 && (
+        <div className="message-attachments">
               <div className="attachments-header">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
@@ -4295,6 +4396,14 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
         signal: abortControllerRef.current?.signal, // Add abort signal for cancellation
         onUpdate: async (content: string) => {
           currentContent = content;
+          
+          // Check for duplicate content to prevent spamming
+          const lastMessage = currentMessagesRef.current[currentMessagesRef.current.length - 1];
+          if (lastMessage && lastMessage.role === 'assistant' && lastMessage.content === content) {
+            console.log('Duplicate content detected, skipping update');
+            return;
+          }
+          
           console.log(`Streaming update: content length ${content.length}, currentContent now: ${currentContent.length}`);
           setMessages(prev => {
             console.log(`Streaming callback: prev messages count: ${prev.length}`);
@@ -6244,6 +6353,11 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
     const messageContent = typeof message.content === 'string' ? message.content : '';
     const isError = isErrorMessage(messageContent);
     const isNoModelLoaded = isNoModelLoadedError(messageContent);
+    const isLatestAssistantMessage = message.role === 'assistant' && index === messages.slice(1).length - 1;
+    const showGenerationPlaceholder = isAnyProcessing && isLatestAssistantMessage && !hasThinkBlocks;
+    const generationLabel = pendingInserts.length > 0
+      ? `Preparing ${pendingInserts.length} file${pendingInserts.length === 1 ? '' : 's'}`
+      : 'Generating response';
     
     // For assistant messages with function calls, process them but clean the content for display
     if (message.role === 'assistant') {
@@ -6283,6 +6397,8 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
                   isAnyProcessing={isAnyProcessing}
                   onContinue={handleContinueFromError}
                   messageIndex={index}
+                  showGenerationPlaceholder={showGenerationPlaceholder}
+                  generationLabel={generationLabel}
                 />
               </div>
             );
@@ -6336,6 +6452,8 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
           isAnyProcessing={isAnyProcessing}
           onContinue={handleContinueFromError}
           messageIndex={index}
+          showGenerationPlaceholder={showGenerationPlaceholder}
+          generationLabel={generationLabel}
         />
       </div>
     );
@@ -6799,6 +6917,8 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
                 isAnyProcessing={isAnyProcessing}
                 onContinue={handleContinueFromError}
                 messageIndex={index}
+                showGenerationPlaceholder={showGenerationPlaceholder}
+                generationLabel={generationLabel}
               />
               
               {/* Continue button for error messages */}
@@ -6860,6 +6980,8 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
                 isAnyProcessing={isAnyProcessing}
                 onContinue={handleContinueFromError}
                 messageIndex={index}
+                showGenerationPlaceholder={false}
+                generationLabel={undefined}
               />
             </LongMessageWrapper>
           )}

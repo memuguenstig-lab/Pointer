@@ -64,6 +64,7 @@ export interface ElectronAPI {
   };
   openInExplorer: (filePath: string) => Promise<{ success: boolean; error?: string }>;
   openExternal: (url: string) => Promise<{ success: boolean; error?: string }>;
+  launchNativeApp: (appId: string, args?: string[]) => Promise<{ success: boolean; error?: string }>;
 }
 
 export interface FileSystemItem {

@@ -942,6 +942,53 @@ ipcMain.handle('open-external', async (event, url) => {
   }
 });
 
+// Launch a small allowlisted set of native helper apps
+ipcMain.handle('launch-native-app', async (event, payload) => {
+  try {
+    const appId = payload?.appId;
+    const args = Array.isArray(payload?.args) ? payload.args : [];
+
+    const launchers = {
+      notepad: {
+        win32: 'notepad.exe',
+        darwin: 'open',
+        linux: 'xdg-open',
+        fallbackArgs: process.platform === 'darwin' ? ['-a', 'TextEdit'] : [],
+      },
+      calculator: {
+        win32: 'calc.exe',
+      },
+      paint: {
+        win32: 'mspaint.exe',
+      },
+    };
+
+    const launcher = launchers[appId];
+    if (!launcher) {
+      return { success: false, error: `Unsupported native app: ${appId}` };
+    }
+
+    const platform = process.platform;
+    const command = launcher[platform];
+    if (!command) {
+      return { success: false, error: `Native app "${appId}" is not available on ${platform}` };
+    }
+
+    const childArgs = [...(launcher.fallbackArgs || []), ...args];
+    const child = spawn(command, childArgs, {
+      detached: true,
+      stdio: 'ignore',
+      shell: false,
+    });
+    child.unref();
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error launching native app:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 // Native file/folder dialog
 ipcMain.handle('show-open-dialog', async (event, options) => {
   const win = BrowserWindow.fromWebContents(event.sender);

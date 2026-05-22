@@ -44,6 +44,9 @@ contextBridge.exposeInMainWorld(
     openExternal: (url) => {
       return ipcRenderer.invoke('open-external', url);
     },
+    launchNativeApp: (appId, args = []) => {
+      return ipcRenderer.invoke('launch-native-app', { appId, args });
+    },
     // Native file/folder dialogs
     showOpenDialog: (options) => {
       return ipcRenderer.invoke('show-open-dialog', options);

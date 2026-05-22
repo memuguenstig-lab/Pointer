@@ -19,6 +19,7 @@ import { Settings } from './components/Settings';
 import ToastContainer from './components/ToastContainer';
 import Titlebar from './components/Titlebar';
 import GitView from './components/Git/GitView';
+import LinksView from './components/LinksView';
 import { GitService } from './services/gitService';
 import CloneRepositoryModal from './components/CloneRepositoryModal';
 import { PathConfig } from './config/paths';
@@ -1493,6 +1494,7 @@ const App: React.FC = () => {
   // Add this state for Explorer and Git view toggle (derived from activeView)
   const isGitViewActive = activeView === 'git';
   const isExplorerViewActive = activeView === 'explorer';
+  const isLinksViewActive = activeView === 'links';
 
   useEffect(() => {
     let mounted = true;
@@ -1792,7 +1794,7 @@ const App: React.FC = () => {
               >
                 {/* VSCode-style panel header */}
                 <div className="sidebar-panel-header">
-                  {isGitViewActive ? 'Source Control' : 'Explorer'}
+                  {isGitViewActive ? 'Source Control' : isLinksViewActive ? 'Connections' : 'Explorer'}
                 </div>
                 {isLoading ? (
                   <div style={{ padding: '16px', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -1801,6 +1803,8 @@ const App: React.FC = () => {
                   </div>
                 ) : isGitViewActive ? (
                   <GitView onBack={handleToggleExplorerView} />
+                ) : isLinksViewActive ? (
+                  <LinksView />
                 ) : isExplorerViewActive ? (
                   <FileExplorer
                     items={memoizedItems}

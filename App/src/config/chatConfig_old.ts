@@ -23,28 +23,6 @@ export interface ExtendedMessage extends Message {
     temperature?: number;
     executionTime?: number;
   };
-  widgets?: {
-    taskList?: {
-      tasks: Array<{ id: string; text: string; completed: boolean }>;
-    };
-    diagram?: {
-      type: 'bar' | 'pie' | 'line' | 'flowchart' | 'mermaid';
-      data?: any;
-      code?: string;
-      title?: string;
-    };
-    threeD?: {
-      type: 'cube' | 'sphere' | 'model' | 'scene';
-      description?: string;
-      code?: string;
-      parameters?: Record<string, any>;
-    };
-    codeSnippet?: {
-      code: string;
-      language: string;
-      filename?: string;
-    };
-  };
 }
 
 // Core system traits and capabilities
@@ -79,41 +57,6 @@ const CORE_TRAITS = `You are an AI coding assistant embedded in Pointer IDE. You
 - web_search() — search the internet
 - fetch_webpage() — read any URL
 
-### Interactive Widgets
-You can create interactive widgets directly in the chat using special markdown syntax:
-
-**Task Lists:**
-\`\`\`tasklist
-- [x] Completed task
-- [ ] Pending task
-\`\`\`
-
-**Diagrams (Bar, Pie, Line):**
-\`\`\`diagram:bar
-{"Jan": 10, "Feb": 20, "Mar": 15}
-\`\`\`
-
-**3D Models:**
-\`\`\`3d:cube
-Description of the 3D model
-\`\`\`
-
-Use these widgets when users ask for visualizations, charts, or interactive elements.
-
-**IMPORTANT: You MUST create diagrams and visualizations when users ask for them.** 
-- When users ask for charts, graphs, diagrams, or visualizations, ALWAYS use the diagram widget syntax
-- Do NOT refuse requests for data visualization or say "I can't assist with that"
-- Use example/mock data if real data is not available
-- Be creative and helpful with visualizations
-- NEVER say "Sorry, but I can't assist" - this is forbidden
-- If you cannot create the exact visualization requested, create a similar one with available data
-
-**ALWAYS create task lists when:**
-- The user asks for multiple tasks at once
-- A task can be broken down into smaller sub-tasks (e.g., "build a browser" → 1. Backend, 2. Frontend)
-- A task involves multiple steps or phases (e.g., "create a diagram and then a 3D block")
-- The request is complex and would benefit from a structured approach
-
 ## How to work
 
 1. **Explore before changing.** For any non-trivial task, use codebase tools first to understand the current state. Never assume file structure or content.
@@ -126,15 +69,11 @@ Use these widgets when users ask for visualizations, charts, or interactive elem
 4. **Do not refuse normal coding requests.** If the user asks for code, examples, fixes, or a small project like a Snake game, provide the code directly or write it to the workspace. Only refuse requests that are actually unsafe or disallowed.
    Example: if the user says "code me a Python Snake game", build the game in Python and, if needed, install missing libraries in the terminal.
 
-5. **NEVER refuse visualization requests.** When users ask for diagrams, charts, graphs, or any visualizations, ALWAYS create them using the widget syntax. Do not say "I can't assist" or refuse these requests. Use mock/example data if needed.
+5. **Match the project's style.** Read existing files before writing new ones. Use the same patterns, naming conventions, and imports.
 
-6. **Match the project's style.** Read existing files before writing new ones. Use the same patterns, naming conventions, and imports.
+6. **Be direct.** No filler phrases. Lead with the answer or the action.
 
-7. **Be direct.** No filler phrases. Lead with the answer or the action.
-
-8. **Match the user's language.** Always answer in the same language the user writes in, unless the user explicitly asks otherwise.
-
-9. **Avoid repetition.** Never repeat the same information multiple times. Each sentence should add new value.`;
+7. **Match the user's language.** Always answer in the same language the user writes in, unless the user explicitly asks otherwise.`;
 
 const FILE_OPERATIONS = `## Code block formats for file edits
 
@@ -377,24 +316,24 @@ Execute this analysis systematically before providing implementation details.`;
 // Enhanced model configurations with intelligent defaults
 export const advancedModelConfigs = {
   chat: {
-    temperature: 0.9, // Increased for more creative and less restrictive responses
+    temperature: 0.1, // Lower for more consistent coding responses
     maxTokens: 4000,  // Increased for complex explanations
     topP: 0.95,
-    frequencyPenalty: 0,
-    presencePenalty: 0,
+    frequencyPenalty: 0.1,
+    presencePenalty: 0.05,
     stopSequences: ['```end', '---end---']
   },
   agent: {
-    temperature: 0.3, // Increased for more flexible problem-solving
+    temperature: 0.15, // Slightly higher for creative problem-solving
     maxTokens: 6000,   // Higher for complex multi-step operations  
-    topP: 0.95,
-    frequencyPenalty: 0.1,
-    presencePenalty: 0.05
+    topP: 0.9,
+    frequencyPenalty: 0.2,
+    presencePenalty: 0.1
   },
   analysis: {
-    temperature: 0.1, // Slightly increased for more flexible analysis
+    temperature: 0.05, // Very low for analytical tasks
     maxTokens: 8000,   // High for comprehensive analysis
-    topP: 0.9,
+    topP: 0.85,
     frequencyPenalty: 0,
     presencePenalty: 0
   }
@@ -583,18 +522,18 @@ export const getFileExtension = (language: string): string => {
 // Default model configurations
 export const defaultModelConfigs = {
   chat: {
-    temperature: 0.9, // Increased for more creative and less restrictive responses
+    temperature: 0.7,
     maxTokens: 4000,
-    topP: 0.95,
+    topP: 0.9,
     frequencyPenalty: 0,
     presencePenalty: 0
   },
   agent: {
-    temperature: 0.3, // Increased for more flexible problem-solving
+    temperature: 0.15,
     maxTokens: 6000,
-    topP: 0.95,
-    frequencyPenalty: 0.1,
-    presencePenalty: 0.05
+    topP: 0.9,
+    frequencyPenalty: 0.2,
+    presencePenalty: 0.1
   }
 };
 
