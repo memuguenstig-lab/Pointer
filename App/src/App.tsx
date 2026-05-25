@@ -18,11 +18,13 @@ import LoadingScreen from './components/LoadingScreen';
 import { Settings } from './components/Settings';
 import ToastContainer from './components/ToastContainer';
 import Titlebar from './components/Titlebar';
+import MobileHeader from './components/MobileHeader';
 import GitView from './components/Git/GitView';
 import LinksView from './components/LinksView';
 import { GitService } from './services/gitService';
 import CloneRepositoryModal from './components/CloneRepositoryModal';
 import { PathConfig } from './config/paths';
+import { IS_MOBILE } from './platform/usePlatform';
 import { isPreviewableFile, getPreviewType } from './utils/previewUtils';
 import PreviewPane from './components/PreviewPane';
 import PanelLayout from './components/PanelLayout';
@@ -1755,21 +1757,33 @@ const App: React.FC = () => {
         overflow: 'hidden',
         background: 'var(--bg-primary)',
       }}>
-        <Titlebar
-          onOpenFolder={handleOpenFolder} 
-          onOpenFile={handleOpenFile} 
-          onCloneRepository={handleCloneRepository}
-          onOpenSettings={() => setIsSettingsModalOpen(true)}
-          onToggleSidebar={() => handleActivityViewChange(activeView ?? 'explorer')}
-          onToggleAgent={() => setIsLLMChatVisible(v => !v)}
-          onTogglePanel={toggleTerminal}
-          isSidebarVisible={!isSidebarCollapsed}
-          isAgentVisible={isLLMChatVisible}
-          isPanelVisible={fileSystem.terminalOpen}
-          currentFileName={getCurrentFileName()}
-          workspaceName={fileSystem.items[fileSystem.rootId]?.name || ''}
-          titleFormat={dynamicTitleFormat || settingsData.advanced?.titleFormat || '{filename} - {workspace} - Pointer'}
-        />
+        {IS_MOBILE ? (
+          <MobileHeader
+            currentFileName={getCurrentFileName()}
+            workspaceName={fileSystem.items[fileSystem.rootId]?.name || ''}
+            onOpenFolder={handleOpenFolder}
+            onToggleSidebar={() => handleActivityViewChange(activeView ?? 'explorer')}
+            onToggleAgent={() => setIsLLMChatVisible(v => !v)}
+            isAgentVisible={isLLMChatVisible}
+            isSidebarVisible={!isSidebarCollapsed}
+          />
+        ) : (
+          <Titlebar
+            onOpenFolder={handleOpenFolder}
+            onOpenFile={handleOpenFile}
+            onCloneRepository={handleCloneRepository}
+            onOpenSettings={() => setIsSettingsModalOpen(true)}
+            onToggleSidebar={() => handleActivityViewChange(activeView ?? 'explorer')}
+            onToggleAgent={() => setIsLLMChatVisible(v => !v)}
+            onTogglePanel={toggleTerminal}
+            isSidebarVisible={!isSidebarCollapsed}
+            isAgentVisible={isLLMChatVisible}
+            isPanelVisible={fileSystem.terminalOpen}
+            currentFileName={getCurrentFileName()}
+            workspaceName={fileSystem.items[fileSystem.rootId]?.name || ''}
+            titleFormat={dynamicTitleFormat || settingsData.advanced?.titleFormat || '{filename} - {workspace} - Pointer'}
+          />
+        )}
         {/* VSCode-style layout: ActivityBar + Sidebar + Editor + Chat */}
         <div style={{ flex: 1, display: 'flex', overflow: 'hidden', minHeight: 0 }}>
           <ActivityBar
@@ -1845,7 +1859,7 @@ const App: React.FC = () => {
                   onToggleGrid={handleToggleGrid}
                 />
                 {/* Terminal sits inside the editor column — between sidebar and chat */}
-                {fileSystem.terminalOpen && (
+                {fileSystem.terminalOpen && !IS_MOBILE && (
                   <Terminal
                     isVisible={fileSystem.terminalOpen}
                     errorCount={diagnostics.errors}

@@ -17,3 +17,6 @@ installer/windows-offline/
 installer/macos-offline/
 *.msi
 *.pkg
+
+# Mobile app copy (local only)
+mobile/

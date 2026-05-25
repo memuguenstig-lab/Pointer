@@ -65,7 +65,7 @@ const interceptResponse = (content: string, userQuery: string): string => {
       
       if (dataMatch && labelsMatch) {
         // Generate a diagram with the extracted data
-        const data = {};
+        const data: Record<string, number> = {};
         labelsMatch.forEach((label, i) => {
           if (dataMatch[i]) {
             data[label] = parseInt(dataMatch[i].replace(/[^0-9]/g, ''));

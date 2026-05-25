@@ -13,7 +13,16 @@
     "dev": "node start-pointer.js",
     "electron:dev": "concurrently \"yarn start\" \"wait-on http://localhost:3000 && electron .\"",
     "electron:start": "electron .",
-    "postinstall": "electron-builder install-app-deps"
+    "postinstall": "electron-builder install-app-deps",
+
+    "build:desktop": "tsc && vite build --mode desktop",
+    "build:mobile": "tsc && vite build --mode mobile",
+    "build:web": "tsc && vite build --mode web",
+
+    "mobile:sync": "npm run build:mobile && npx cap sync",
+    "mobile:ios": "npm run build:mobile && npx cap sync ios && npx cap open ios",
+    "mobile:android": "npm run build:mobile && npx cap sync android && npx cap open android",
+    "mobile:dev": "CAPACITOR_DEV=true npx cap run android --livereload --external"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -46,6 +55,15 @@
     "uuid": "^11.1.0",
     "windows-debugger": "^1.1.6",
     "zustand": "^5.0.3"
+  },
+  "optionalDependencies": {
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/cli": "^6.0.0",
+    "@capacitor/filesystem": "^6.0.0",
+    "@capacitor/preferences": "^6.0.0",
+    "@capacitor/browser": "^6.0.0",
+    "@capacitor/splash-screen": "^6.0.0",
+    "@capacitor/status-bar": "^6.0.0"
   },
   "devDependencies": {
     "@types/katex": "^0.16.7",
