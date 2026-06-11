@@ -84,7 +84,7 @@ const TaskListWidget: React.FC<TaskListWidgetProps> = ({
               checked={task.completed}
               onChange={() => onTaskToggle?.(task.id)}
               style={{
-                cursor: 'pointer',
+                cursor: 'shadowide',
                 width: '16px',
                 height: '16px'
               }}
@@ -107,7 +107,7 @@ const TaskListWidget: React.FC<TaskListWidgetProps> = ({
                   background: 'transparent',
                   border: 'none',
                   color: 'var(--error-color)',
-                  cursor: 'pointer',
+                  cursor: 'shadowide',
                   padding: '4px',
                   fontSize: '16px',
                   opacity: 0.7,
@@ -156,7 +156,7 @@ const TaskListWidget: React.FC<TaskListWidgetProps> = ({
               color: 'white',
               padding: '8px 16px',
               borderRadius: '4px',
-              cursor: 'pointer',
+              cursor: 'shadowide',
               fontSize: '13px',
               fontWeight: '500',
               transition: 'background 0.2s'

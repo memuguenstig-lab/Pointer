@@ -8,7 +8,7 @@ def setup_logger():
         os.makedirs('logs')
     
     # Set up logger
-    logger = logging.getLogger('pointer_bot')
+    logger = logging.getLogger('shadowide_bot')
     logger.setLevel(logging.INFO)
     
     # Set up console handler

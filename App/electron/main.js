@@ -104,7 +104,7 @@ const LANGUAGE_ICONS = {
 
 let editorInfo = {
   file: 'Untitled',
-  workspace: 'Pointer',
+  workspace: 'ShadowIDE',
   line: 1,
   column: 1,
   languageId: 'plaintext',
@@ -152,7 +152,7 @@ function updateRichPresence() {
     // Check if user is not editing a real file
     const isIdling = !editorInfo.file || editorInfo.file === 'Untitled' || editorInfo.file === 'Welcome';
     const activeFile = isIdling ? 'Idle' : path.basename(editorInfo.file);
-    const workspaceName = editorInfo.workspace || 'Pointer';
+    const workspaceName = editorInfo.workspace || 'ShadowIDE';
 
     // Replace placeholders in messages
     const details = isIdling ? `Editing in ${workspaceName}` : `Editing ${activeFile}`;
@@ -190,10 +190,10 @@ function updateRichPresence() {
     // Build the activity object
     const activity = {
       details: isIdling ? 'Idling' : (details || 'Editing'),
-      state: state || 'In Pointer Editor',
+      state: state || 'In ShadowIDE Editor',
       startTimestamp: startTimestamp,
-      largeImageKey: discordRpcSettings.largeImageKey || 'pointer_logo',
-      largeImageText: largeImageText || 'Pointer Code Editor',
+      largeImageKey: discordRpcSettings.largeImageKey || 'shadowide_logo',
+      largeImageText: largeImageText || 'ShadowIDE Code Editor',
       smallImageKey: smallImageKey,
       smallImageText: smallImageText,
       instance: false
@@ -408,7 +408,7 @@ async function startBackend() {
     return false;
   }
 
-  // Check if backend is already running (started by start-pointer.js)
+  // Check if backend is already running (started by start-shadowide.js)
   try {
     const res = await fetch('http://127.0.0.1:23816/test-backend');
     if (res.ok) {
@@ -455,7 +455,7 @@ function createTray() {
   }
 
   tray = new Tray(trayIcon);
-  tray.setToolTip('Pointer — running in background');
+  tray.setToolTip('ShadowIDE — running in background');
 
   tray.setContextMenu(Menu.buildFromTemplate([
     {
@@ -475,7 +475,7 @@ function createTray() {
     },
     { type: 'separator' },
     {
-      label: 'Quit Pointer',
+      label: 'Quit ShadowIDE',
       click: () => {
         forceQuit = true;
         app.quit();
@@ -508,7 +508,7 @@ async function createWindow() {
     if (!isDev) {
       const appRoot = getAppRoot();
       if (isSetupNeeded(appRoot)) {
-        updateSplashMessage('Setting up Pointer (first run)...');
+        updateSplashMessage('Setting up ShadowIDE (first run)...');
         try {
           await runSetup({
             appRoot,
@@ -518,7 +518,7 @@ async function createWindow() {
             }
           });
         } catch(e) {
-          dialog.showErrorBox('Setup Failed', `Pointer could not complete setup:\n\n${e.message}\n\nPlease install Node.js from https://nodejs.org and restart.`);
+          dialog.showErrorBox('Setup Failed', `ShadowIDE could not complete setup:\n\n${e.message}\n\nPlease install Node.js from https://nodejs.org and restart.`);
           app.quit();
           return;
         }
@@ -564,7 +564,7 @@ async function createWindow() {
       height: 800,
       show: false,
       icon: getIconPath(),
-      title: 'Pointer',
+      title: 'ShadowIDE',
       frame: false,
       titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
       backgroundColor: '#1e1e1e',
@@ -603,7 +603,7 @@ async function createWindow() {
 
     // Set the app user model ID for Windows
     if (process.platform === 'win32') {
-      app.setAppUserModelId('com.pointer');
+      app.setAppUserModelId('com.shadowide');
     }
 
     // ── Window show logic ──────────────────────────────────────────────────
@@ -754,7 +754,7 @@ app.whenReady().then(async () => {
       }
     ]);
 
-    app.setAppUserModelId('com.pointer');
+    app.setAppUserModelId('com.shadowide');
   };
 
   autoUpdater.checkForUpdatesAndNotify();
@@ -895,12 +895,12 @@ ipcMain.on('ai-work-complete', () => {
   const wins = BrowserWindow.getAllWindows();
   const allHidden = wins.length === 0 || wins.every(w => !w.isVisible());
   if (allHidden && tray) {
-    tray.setToolTip('Pointer — AI finished working');
+    tray.setToolTip('ShadowIDE — AI finished working');
     // Flash taskbar on Windows
     if (wins[0]) wins[0].flashFrame(true);
     // Reset tooltip after 10s
     setTimeout(() => {
-      if (tray) tray.setToolTip('Pointer — running in background');
+      if (tray) tray.setToolTip('ShadowIDE — running in background');
     }, 10000);
   }
 });

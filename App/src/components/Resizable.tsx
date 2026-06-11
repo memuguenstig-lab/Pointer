@@ -147,7 +147,7 @@ const Resizable: React.FC<ResizableProps> = ({
           height: 48,
           background: 'var(--bg-secondary)',
           borderRight: '1px solid var(--border-color)',
-          cursor: 'pointer',
+          cursor: 'shadowide',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',

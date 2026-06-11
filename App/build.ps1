@@ -1,4 +1,4 @@
-# Pointer Build and Setup Script
+# ShadowIDE Build and Setup Script
 # Umfassendes Setup-Script mit Error-Handling und Debugging
 
 param(
@@ -351,7 +351,7 @@ function Start-Application {
     }
     else {
         Write-Log "=== Starte Anwendung ===" 'Info'
-        & node start-pointer.js $(if ($Background) { '--background' }) $(if ($SkipChecks) { '--skip-checks' })
+        & node start-shadowide.js $(if ($Background) { '--background' }) $(if ($SkipChecks) { '--skip-checks' })
     }
 }
 
@@ -397,7 +397,7 @@ Falls Probleme auftreten:
 function Main {
     Write-Host @"
 ╔════════════════════════════════════════════════════════════════════════════╗
-║                    Pointer Build & Setup Script v$ScriptVersion                 ║
+║                    ShadowIDE Build & Setup Script v$ScriptVersion                 ║
 ║               Umfassendes Setup mit Error-Handling & Debugging              ║
 ╚════════════════════════════════════════════════════════════════════════════╝
 "@ -ForegroundColor Cyan
@@ -430,7 +430,7 @@ function Main {
         Write-Log "  1. Entwicklungsmodus (Frontend + Backend):" 'Info'
         Write-Log "     yarn dev" 'Debug'
         Write-Log "  2. Produktionsstart:" 'Info'
-        Write-Log "     node start-pointer.js" 'Debug'
+        Write-Log "     node start-shadowide.js" 'Debug'
         Write-Log "  3. Komponenten separat:" 'Info'
         Write-Log "     Terminal 1: cd backend && python run.py" 'Debug'
         Write-Log "     Terminal 2: yarn start" 'Debug'

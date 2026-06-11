@@ -31,7 +31,7 @@ const LivePreview: React.FC<{ theme: ThemeSettings }> = ({ theme }) => {
         <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#ff5f57' }} />
         <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#febc2e' }} />
         <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#28c840' }} />
-        <span style={{ flex: 1, textAlign: 'center', fontSize: 11, color: fg, opacity: 0.7 }}>pointer — preview</span>
+        <span style={{ flex: 1, textAlign: 'center', fontSize: 11, color: fg, opacity: 0.7 }}>shadowide — preview</span>
       </div>
 
       {/* Body */}
@@ -117,7 +117,7 @@ const Section: React.FC<{ title: string; children: React.ReactNode; defaultOpen?
     <div style={{ borderBottom: '1px solid var(--border-primary)' }}>
       <button onClick={() => setOpen(o => !o)} style={{
         width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '8px 12px', background: 'none', border: 'none', cursor: 'pointer',
+        padding: '8px 12px', background: 'none', border: 'none', cursor: 'shadowide',
         color: 'var(--text-primary)', fontSize: 12, fontWeight: 600,
       }}>
         <span>{title}</span>
@@ -212,7 +212,7 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({ isVisible, theme, onClose, on
             <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600 }}>Edit Theme</h3>
             <p style={{ margin: '1px 0 0', fontSize: 11, color: 'var(--text-secondary)' }}>Changes apply live — save via the main settings Save button</p>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: 4, borderRadius: 4, display: 'flex', alignItems: 'center' }}>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'shadowide', color: 'var(--text-secondary)', padding: 4, borderRadius: 4, display: 'flex', alignItems: 'center' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
@@ -306,7 +306,7 @@ const ThemeEditor: React.FC<ThemeEditorProps> = ({ isVisible, theme, onClose, on
               {(local.tokenColors || []).map((tc, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
                   <span style={{ fontSize: 11, color: 'var(--text-secondary)', width: 70, flexShrink: 0 }}>{tc.token}</span>
-                  <input type="color" value={tc.foreground || '#ffffff'} onChange={e => setTokenColor(i, 'foreground', e.target.value)} style={{ width: 28, height: 28, padding: 0, border: 'none', background: 'transparent', cursor: 'pointer', flexShrink: 0 }} />
+                  <input type="color" value={tc.foreground || '#ffffff'} onChange={e => setTokenColor(i, 'foreground', e.target.value)} style={{ width: 28, height: 28, padding: 0, border: 'none', background: 'transparent', cursor: 'shadowide', flexShrink: 0 }} />
                   <span style={{ fontSize: 11, color: tc.foreground || '#fff', fontFamily: 'monospace', flex: 1 }}>{tc.foreground}</span>
                   <select value={tc.fontStyle || ''} onChange={e => setTokenColor(i, 'fontStyle', e.target.value)} style={{ fontSize: 10, padding: '2px 4px', background: 'var(--bg-secondary)', border: '1px solid var(--border-primary)', borderRadius: 3, color: 'var(--text-primary)' }}>
                     <option value="">normal</option>

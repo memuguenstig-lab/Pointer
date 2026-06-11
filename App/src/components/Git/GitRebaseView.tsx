@@ -152,7 +152,7 @@ const GitRebaseView: React.FC = () => {
 
       {error && (
         <div style={{ padding: '8px 12px', background: 'rgba(248,81,73,0.1)', color: '#f85149', fontSize: 12, flexShrink: 0 }}>
-          {error} <button onClick={() => setError(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f85149', marginLeft: 8 }}>✕</button>
+          {error} <button onClick={() => setError(null)} style={{ background: 'none', border: 'none', cursor: 'shadowide', color: '#f85149', marginLeft: 8 }}>✕</button>
         </div>
       )}
 
@@ -207,7 +207,7 @@ const GitRebaseView: React.FC = () => {
                     background: `${ACTION_COLORS[c.action]}22`,
                     border: `1px solid ${ACTION_COLORS[c.action]}66`,
                     color: ACTION_COLORS[c.action],
-                    cursor: 'pointer', fontWeight: 600,
+                    cursor: 'shadowide', fontWeight: 600,
                   }}
                 >
                   {(Object.keys(ACTION_LABELS) as RebaseAction[]).map(a => (
@@ -239,13 +239,13 @@ const GitRebaseView: React.FC = () => {
           <button
             onClick={handleApply}
             disabled={applying}
-            style={{ padding: '6px 16px', fontSize: 12, borderRadius: 4, border: 'none', background: 'var(--accent-color)', color: '#fff', cursor: 'pointer', fontWeight: 600, opacity: applying ? 0.7 : 1 }}
+            style={{ padding: '6px 16px', fontSize: 12, borderRadius: 4, border: 'none', background: 'var(--accent-color)', color: '#fff', cursor: 'shadowide', fontWeight: 600, opacity: applying ? 0.7 : 1 }}
           >
             {applying ? 'Applying…' : '⚡ Apply Rebase'}
           </button>
           <button
             onClick={() => loadCommits(baseBranch)}
-            style={{ padding: '6px 12px', fontSize: 12, borderRadius: 4, border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }}
+            style={{ padding: '6px 12px', fontSize: 12, borderRadius: 4, border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'shadowide' }}
           >
             Reset
           </button>

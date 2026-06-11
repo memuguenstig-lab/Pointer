@@ -42,7 +42,7 @@ export const ColorInput: React.FC<ColorInputProps> = ({ label, value, onChange, 
             borderRadius: '4px',
             border: `1px solid var(--border-primary)`,
             background: currentColor,
-            cursor: 'pointer',
+            cursor: 'shadowide',
             marginRight: '6px',
           }}
         />
@@ -64,14 +64,14 @@ export const ColorInput: React.FC<ColorInputProps> = ({ label, value, onChange, 
         <button
           type="button"
           onClick={() => updateColor(tinycolor(currentColor).lighten(10).toHexString())}
-          style={{ fontSize: '12px', padding: '4px 8px', marginRight: '4px', borderRadius: '4px', border: '1px solid var(--border-primary)', cursor: 'pointer' }}
+          style={{ fontSize: '12px', padding: '4px 8px', marginRight: '4px', borderRadius: '4px', border: '1px solid var(--border-primary)', cursor: 'shadowide' }}
         >
           +
         </button>
         <button
           type="button"
           onClick={() => updateColor(tinycolor(currentColor).darken(10).toHexString())}
-          style={{ fontSize: '12px', padding: '4px 8px', borderRadius: '4px', border: '1px solid var(--border-primary)', cursor: 'pointer' }}
+          style={{ fontSize: '12px', padding: '4px 8px', borderRadius: '4px', border: '1px solid var(--border-primary)', cursor: 'shadowide' }}
         >
           -
         </button>

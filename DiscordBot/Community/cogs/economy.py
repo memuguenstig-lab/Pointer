@@ -13,7 +13,7 @@ from utils.helpers import get_coin_emoji, get_xp_emoji, create_embed, chance, ra
 
 
 class Economy(commands.Cog):
-    """Economy commands for managing Pointer Coins"""
+    """Economy commands for managing ShadowIDE Coins"""
 
     def __init__(self, bot):
         self.bot = bot
@@ -141,7 +141,7 @@ class Economy(commands.Cog):
         
         return embed
     
-    @app_commands.command(name="balance", description="Check your Pointer Coin balance or another user's balance")
+    @app_commands.command(name="balance", description="Check your ShadowIDE Coin balance or another user's balance")
     async def balance(self, interaction: discord.Interaction, user: Optional[discord.User] = None):
         """Check your balance or another user's balance"""
         target_user = user or interaction.user
@@ -152,7 +152,7 @@ class Economy(commands.Cog):
         else:
             await interaction.response.send_message(f"{target_user.name}'s balance: {balance} {self.coin_emoji}")
     
-    @app_commands.command(name="pay", description="Pay Pointer Coins to another user")
+    @app_commands.command(name="pay", description="Pay ShadowIDE Coins to another user")
     async def pay(self, interaction: discord.Interaction, user: discord.User, amount: int):
         """Pay another user"""
         # Check if amount is valid
@@ -168,7 +168,7 @@ class Economy(commands.Cog):
         # Check if user has enough balance
         sender_balance = Database.get_user_balance(interaction.user.id)
         if sender_balance < amount:
-            await interaction.response.send_message(f"You don't have enough Pointer Coins. Your balance: {sender_balance} {self.coin_emoji}", ephemeral=True)
+            await interaction.response.send_message(f"You don't have enough ShadowIDE Coins. Your balance: {sender_balance} {self.coin_emoji}", ephemeral=True)
             return
         
         # Perform the transaction
@@ -186,7 +186,7 @@ class Economy(commands.Cog):
         )
         await send_dm(user, embed=embed)
     
-    @app_commands.command(name="daily", description="Claim your daily Pointer Coins")
+    @app_commands.command(name="daily", description="Claim your daily ShadowIDE Coins")
     async def daily(self, interaction: discord.Interaction):
         """Claim daily coins"""
         user_id = interaction.user.id
@@ -243,7 +243,7 @@ class Economy(commands.Cog):
             
         return True
 
-    @app_commands.command(name="work", description="Work to earn Pointer Coins")
+    @app_commands.command(name="work", description="Work to earn ShadowIDE Coins")
     async def work(self, interaction: discord.Interaction):
         """Work for coins"""
         user_id = interaction.user.id
@@ -293,7 +293,7 @@ class Economy(commands.Cog):
         # Send success message
         await interaction.response.send_message(message)
     
-    @app_commands.command(name="beg", description="Beg for Pointer Coins")
+    @app_commands.command(name="beg", description="Beg for ShadowIDE Coins")
     async def beg(self, interaction: discord.Interaction):
         """Beg for coins"""
         user_id = interaction.user.id
@@ -353,7 +353,7 @@ class Economy(commands.Cog):
         # Send message
         await interaction.response.send_message(message)
     
-    @app_commands.command(name="rob", description="Attempt to rob Pointer Coins from another user")
+    @app_commands.command(name="rob", description="Attempt to rob ShadowIDE Coins from another user")
     async def rob(self, interaction: discord.Interaction, user: discord.User):
         """Rob another user"""
         robber_id = interaction.user.id

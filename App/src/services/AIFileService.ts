@@ -155,10 +155,10 @@ Return ONLY the file extension.`;
 
   private static async extractFileOperations(aiResponse: string): Promise<FileOperation[]> {
     const operations: FileOperation[] = [];
-    const pointerRegex = /Shadow:Code\+(.+?):start\s*([\s\S]*?)\s*Shadow:Code\+\1:end/g;
+    const shadowideRegex = /Shadow:Code\+(.+?):start\s*([\s\S]*?)\s*Shadow:Code\+\1:end/g;
     let match;
 
-    while ((match = pointerRegex.exec(aiResponse)) !== null) {
+    while ((match = shadowideRegex.exec(aiResponse)) !== null) {
       const [, filename, content] = match;
       const trimmedFilename = filename.trim();
       const trimmedContent = content.trim();

@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.pointer.mobile',
-  appName: 'Pointer',
+  appId: 'com.shadowide.mobile',
+  appName: 'ShadowIDE',
   webDir: 'dist',
   server: {
     // In dev, point to the Vite dev server
@@ -14,7 +14,7 @@ const config: CapacitorConfig = {
     Filesystem: {},
     // Preferences: use default namespace
     Preferences: {
-      group: 'com.pointer.prefs',
+      group: 'com.shadowide.prefs',
     },
     // SplashScreen: hide after app is ready
     SplashScreen: {

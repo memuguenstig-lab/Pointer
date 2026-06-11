@@ -13,19 +13,19 @@ def get_app_data_path() -> Path:
     if system == "windows":
         # Windows: Use AppData/Roaming for user-specific settings
         base_path = os.environ.get('APPDATA', os.path.expanduser('~/AppData/Roaming'))
-        return Path(base_path) / 'Pointer' / 'data'
+        return Path(base_path) / 'ShadowIDE' / 'data'
     elif system == "darwin":  # macOS
         # macOS: Use Application Support directory - properly expand home directory
         home_dir = Path.home()
-        return home_dir / 'Library' / 'Application Support' / 'Pointer' / 'data'
+        return home_dir / 'Library' / 'Application Support' / 'ShadowIDE' / 'data'
     else:  # Linux and other Unix-like systems
         # Linux: Use XDG data directory or fallback to home - properly expand paths
         xdg_data_home = os.environ.get('XDG_DATA_HOME')
         if xdg_data_home:
-            return Path(xdg_data_home) / 'pointer' / 'data'
+            return Path(xdg_data_home) / 'shadowide' / 'data'
         else:
             home_dir = Path.home()
-            return home_dir / '.local' / 'share' / 'pointer' / 'data'
+            return home_dir / '.local' / 'share' / 'shadowide' / 'data'
 
 class GitHubOAuth:
     def __init__(self):
@@ -34,7 +34,7 @@ class GitHubOAuth:
         if not self.client_id:
             # Fallback: try remote service
             try:
-                resp = requests.get('https://pointerapi.f1shy312.com/github/client_id', timeout=5)
+                resp = requests.get('https://shadowideapi.f1shy312.com/github/client_id', timeout=5)
                 resp.raise_for_status()
                 data = resp.json()
                 self.client_id = data.get('client_id')
@@ -46,7 +46,7 @@ class GitHubOAuth:
             raise ValueError("GitHub OAuth client_id is not configured")
 
         self.redirect_uri = 'http://localhost:23816/github/callback'
-        self.server_url = os.getenv('OAUTH_SERVER_URL', 'https://pointerapi.f1shy312.com')
+        self.server_url = os.getenv('OAUTH_SERVER_URL', 'https://shadowideapi.f1shy312.com')
 
         try:
             response = requests.get(f"{self.server_url}/health", timeout=5)
@@ -59,7 +59,7 @@ class GitHubOAuth:
 
     def get_authorization_url(self) -> str:
         """Generate GitHub OAuth authorization URL."""
-        return f"https://github.com/login/oauth/authorize?client_id={self.client_id}&redirect_uri=http://localhost:23816/github/callback&scope=repo&state=pointer_oauth"
+        return f"https://github.com/login/oauth/authorize?client_id={self.client_id}&redirect_uri=http://localhost:23816/github/callback&scope=repo&state=shadowide_oauth"
 
     async def get_access_token(self, code: str) -> Dict[str, str]:
         try:

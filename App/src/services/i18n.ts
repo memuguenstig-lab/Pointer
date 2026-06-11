@@ -389,12 +389,12 @@ const translations: Record<Language, Record<string, string>> = {
 
 // ── Runtime state ──────────────────────────────────────────────────────────
 
-let currentLanguage: Language = (localStorage.getItem('pointer-language') as Language) || 'en';
+let currentLanguage: Language = (localStorage.getItem('shadowide-language') as Language) || 'en';
 const listeners = new Set<() => void>();
 
 export function setLanguage(lang: Language) {
   currentLanguage = lang;
-  localStorage.setItem('pointer-language', lang);
+  localStorage.setItem('shadowide-language', lang);
   listeners.forEach(fn => fn());
 }
 

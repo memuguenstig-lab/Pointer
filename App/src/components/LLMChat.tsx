@@ -294,7 +294,7 @@ const CodeActionsButton: React.FC<{ content: string; filename: string; isProcess
           borderRadius: '4px',
           padding: '6px 10px',
           color: 'var(--text-secondary)',
-          cursor: 'pointer',
+          cursor: 'shadowide',
           transition: 'all 0.2s ease',
           display: 'flex',
           alignItems: 'center',
@@ -338,7 +338,7 @@ const CodeActionsButton: React.FC<{ content: string; filename: string; isProcess
               background: 'none',
               border: 'none',
               color: copied ? 'var(--accent-color)' : 'var(--text-primary)',
-              cursor: 'pointer',
+              cursor: 'shadowide',
               display: 'flex',
               alignItems: 'center',
               gap: '8px',
@@ -368,7 +368,7 @@ const CodeActionsButton: React.FC<{ content: string; filename: string; isProcess
                 background: 'none',
                 border: 'none',
                 color: isAnyProcessing ? 'var(--accent-color)' : 'var(--text-primary)',
-                cursor: isAnyProcessing ? 'default' : 'pointer',
+                cursor: isAnyProcessing ? 'default' : 'shadowide',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
@@ -682,7 +682,7 @@ const CollapsibleCodeBlock: React.FC<{
             right: 0,
             height: '40px',
             background: 'linear-gradient(transparent, var(--bg-code))',
-            pointerEvents: 'none'
+            shadowideEvents: 'none'
           }}
         />
       )}
@@ -699,7 +699,7 @@ const CollapsibleCodeBlock: React.FC<{
             borderRadius: '4px',
             padding: '6px 12px',
             color: 'var(--text-secondary)',
-          cursor: 'pointer',
+          cursor: 'shadowide',
             transition: 'all 0.2s ease',
           display: 'flex',
           alignItems: 'center',
@@ -797,7 +797,7 @@ const LongMessageWrapper: React.FC<{
               right: 0,
               height: '40px',
               background: 'linear-gradient(transparent, var(--bg-primary))',
-              pointerEvents: 'none',
+              shadowideEvents: 'none',
             }}
           />
         </div>
@@ -815,7 +815,7 @@ const LongMessageWrapper: React.FC<{
             padding: '4px 12px',
             fontSize: '11px',
             color: 'var(--text-secondary)',
-            cursor: 'pointer',
+            cursor: 'shadowide',
             boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
             transition: 'all 0.2s ease',
             zIndex: 1,
@@ -2156,7 +2156,7 @@ const ThinkBlock: React.FC<{ content: string; thinkTime: number }> = ({ content,
           borderRadius: '4px',
           padding: '6px 12px',
           color: 'var(--text-secondary)',
-          cursor: 'pointer',
+          cursor: 'shadowide',
           transition: 'all 0.2s ease',
           display: 'flex',
           alignItems: 'center',
@@ -2311,7 +2311,7 @@ const ThinkingBlock: React.FC<{ content: string }> = ({ content }) => {
               background: 'transparent',
               border: 'none',
               color: 'var(--text-secondary)',
-              cursor: 'pointer',
+              cursor: 'shadowide',
               fontSize: '12px',
               padding: '2px 4px',
               display: 'inline-flex',
@@ -2681,7 +2681,7 @@ const openModelSettings = (modelId?: string) => {
     });
   }
 
-  window.dispatchEvent(new CustomEvent('pointer-open-settings', {
+  window.dispatchEvent(new CustomEvent('shadowide-open-settings', {
     detail: {
       category: 'models',
       modelId,
@@ -6517,7 +6517,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
                 border: '1px solid var(--border-primary)',
                 background: 'var(--bg-primary)',
                 color: 'var(--text-primary)',
-                cursor: 'pointer',
+                cursor: 'shadowide',
               }}
             >
               Cancel
@@ -6530,7 +6530,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
                 border: '1px solid var(--accent-color)',
                 background: 'var(--accent-color)',
                 color: 'var(--text-on-accent)',
-                cursor: 'pointer',
+                cursor: 'shadowide',
               }}
             >
               Save
@@ -6693,7 +6693,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
                    display: 'flex',
                    justifyContent: 'space-between',
                    alignItems: 'center',
-                   cursor: 'pointer',
+                   cursor: 'shadowide',
                    padding: '0', // Removed padding for more compact look
                  }}
                  onClick={() => toggleToolResultCollapsed(message.messageId || `tool_${index}`)}>
@@ -6804,7 +6804,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
-                cursor: 'pointer',
+                cursor: 'shadowide',
                 borderRadius: '4px',
               }}>
                 {collapsedToolResults.has(message.messageId || `tool_${index}`) ? (
@@ -6938,7 +6938,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
                       background: 'var(--accent-color)',
                       border: '1px solid var(--accent-color)',
                       color: 'white',
-                      cursor: isAnyProcessing ? 'not-allowed' : 'pointer',
+                      cursor: isAnyProcessing ? 'not-allowed' : 'shadowide',
                       padding: '4px 12px',
                       borderRadius: '4px',
                       fontSize: '12px',
@@ -7006,13 +7006,13 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
                 background: 'none',
                 border: 'none',
                 color: 'var(--text-tertiary)',
-                cursor: shouldBeFaded ? 'not-allowed' : 'pointer',
+                cursor: shouldBeFaded ? 'not-allowed' : 'shadowide',
                 padding: '2px 4px',
                 borderRadius: '3px',
                 fontSize: '11px',
                 transition: 'all 0.2s ease',
                 opacity: shouldBeFaded ? 0.3 : 0.7,
-                pointerEvents: shouldBeFaded ? 'none' : 'auto',
+                shadowideEvents: shouldBeFaded ? 'none' : 'auto',
               }}
               onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
                 if (!shouldBeFaded) {
@@ -7360,7 +7360,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
                       border: 'none',
                       borderBottom: '1px solid var(--border-primary)',
                       color: 'var(--text-primary)',
-                      cursor: 'pointer',
+                      cursor: 'shadowide',
                       textAlign: 'left',
                       fontSize: 12,
                     }}
@@ -7437,7 +7437,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
                       background: m.loaded ? 'rgba(63,185,80,0.08)' : 'transparent',
                       border: 'none', borderBottom: '1px solid var(--border-primary)',
                       color: m.loaded ? '#3fb950' : 'var(--text-primary)',
-                      cursor: m.loaded ? 'default' : 'pointer', fontSize: 12,
+                      cursor: m.loaded ? 'default' : 'shadowide', fontSize: 12,
                       display: 'flex', alignItems: 'center', gap: 8,
                       opacity: switchingModel && !m.loaded ? 0.5 : 1,
                     }}
@@ -7455,7 +7455,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
                 <button
                   onClick={() => {
                     setShowEmbeddedSwitcher(false);
-                    window.dispatchEvent(new CustomEvent('pointer-open-settings', {
+                    window.dispatchEvent(new CustomEvent('shadowide-open-settings', {
                       detail: { category: 'models' }
                     }));
                   }}
@@ -7466,7 +7466,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
                     background: 'var(--bg-secondary)',
                     border: 'none',
                     color: 'var(--text-secondary)',
-                    cursor: 'pointer',
+                    cursor: 'shadowide',
                     fontSize: 12,
                     display: 'flex',
                     alignItems: 'center',
@@ -7639,7 +7639,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
             style={{
               padding: '4px 12px', fontSize: '11px', borderRadius: '4px',
               background: 'var(--accent-color)', color: '#fff',
-              border: 'none', cursor: 'pointer', flexShrink: 0, fontWeight: 500,
+              border: 'none', cursor: 'shadowide', flexShrink: 0, fontWeight: 500,
             }}
           >
             Resume
@@ -7652,7 +7652,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
             style={{
               padding: '4px 8px', fontSize: '11px', borderRadius: '4px',
               background: 'transparent', color: 'var(--text-secondary)',
-              border: '1px solid var(--border-primary)', cursor: 'pointer', flexShrink: 0,
+              border: '1px solid var(--border-primary)', cursor: 'shadowide', flexShrink: 0,
             }}
           >
             Dismiss
@@ -7698,7 +7698,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
                     position: 'absolute', top: 2, right: 2,
                     width: 16, height: 16,
                     background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '50%',
-                    color: '#fff', cursor: 'pointer', fontSize: 10,
+                    color: '#fff', cursor: 'shadowide', fontSize: 10,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     lineHeight: 1,
                   }}
@@ -7735,7 +7735,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
               <button
                 type="button"
                 onClick={() => setPromptQueue(prev => prev.filter((_, idx) => idx !== i))}
-                style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '0 2px', fontSize: 11, lineHeight: 1, flexShrink: 0 }}
+                style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'shadowide', padding: '0 2px', fontSize: 11, lineHeight: 1, flexShrink: 0 }}
                 title="Remove from queue"
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#f85149'; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'var(--text-secondary)'; }}
@@ -7834,7 +7834,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
                 <div
                   key={i}
                   onClick={() => selectFileSuggestion(s)}
-                  style={{ padding: '7px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}
+                  style={{ padding: '7px 12px', cursor: 'shadowide', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}
                   onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                 >
@@ -7882,7 +7882,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
                     border: 'none',
                     borderRadius: '6px',
                     color: 'var(--text-secondary)',
-                    cursor: 'pointer',
+                    cursor: 'shadowide',
                     transition: 'background 0.15s, color 0.15s',
                   }}
                   onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-hover)'; (e.currentTarget as HTMLElement).style.color = 'var(--text-primary)'; }}
@@ -7904,7 +7904,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
                     border: '1px solid var(--border-primary)',
                     background: 'transparent',
                     color: 'var(--text-secondary)',
-                    cursor: 'pointer',
+                    cursor: 'shadowide',
                     fontSize: '12px',
                   }}
                 >
@@ -7930,7 +7930,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
                     border: '1px solid rgba(248, 81, 73, 0.3)',
                     borderRadius: '6px',
                     color: '#f85149',
-                    cursor: 'pointer',
+                    cursor: 'shadowide',
                     transition: 'background 0.15s',
                   }}
                   onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(248, 81, 73, 0.22)'; }}
@@ -7960,7 +7960,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
                     color: (input.trim() || attachedFiles.length > 0)
                       ? (isAnyProcessing ? '#58a6ff' : '#fff')
                       : 'var(--text-secondary)',
-                    cursor: (input.trim() || attachedFiles.length > 0) ? 'pointer' : 'not-allowed',
+                    cursor: (input.trim() || attachedFiles.length > 0) ? 'shadowide' : 'not-allowed',
                     transition: 'background 0.15s, color 0.15s',
                     fontSize: 11, fontWeight: 600, whiteSpace: 'nowrap',
                   }}

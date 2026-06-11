@@ -1,3 +1,3 @@
 """
-Test suite for Pointer CLI.
+Test suite for ShadowIDE CLI.
 """

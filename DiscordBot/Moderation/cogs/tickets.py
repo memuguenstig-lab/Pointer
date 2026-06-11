@@ -9,7 +9,7 @@ import os
 from typing import Optional, Dict
 import io
 
-logger = logging.getLogger('pointer_bot')
+logger = logging.getLogger('shadowide_bot')
 
 # Persistent view for ticket creation
 class TicketView(discord.ui.View):
@@ -134,7 +134,7 @@ class TicketView(discord.ui.View):
             
             # Add visual elements
             embed.set_thumbnail(url=member.display_avatar.url)
-            embed.set_footer(text="Pointer Support System", icon_url="https://pointer.f1shy312.com/static/logo.png")
+            embed.set_footer(text="ShadowIDE Support System", icon_url="https://shadowide.f1shy312.com/static/logo.png")
             
             # Create ticket management view
             ticket_management = TicketManagementView(self.bot)
@@ -206,7 +206,7 @@ class TicketManagementView(discord.ui.View):
             ),
             color=discord.Color.orange()
         )
-        confirm_embed.set_footer(text="Pointer Support System", icon_url="https://pointer.f1shy312.com/static/logo.png")
+        confirm_embed.set_footer(text="ShadowIDE Support System", icon_url="https://shadowide.f1shy312.com/static/logo.png")
         
         # Create confirmation buttons
         confirm_view = ConfirmView(self.bot, original_interaction=interaction)
@@ -361,8 +361,8 @@ class TicketManagementView(discord.ui.View):
             )
             
             # Add visual elements
-            transcript_embed.set_thumbnail(url="https://pointer.f1shy312.com/static/logo.png")
-            transcript_embed.set_footer(text="Pointer Support System", icon_url="https://pointer.f1shy312.com/static/logo.png")
+            transcript_embed.set_thumbnail(url="https://shadowide.f1shy312.com/static/logo.png")
+            transcript_embed.set_footer(text="ShadowIDE Support System", icon_url="https://shadowide.f1shy312.com/static/logo.png")
             
             # Send the transcript file to the user
             await interaction.followup.send(
@@ -457,8 +457,8 @@ class ConfirmView(discord.ui.View):
             )
         
         # Add visual elements
-        closing_embed.set_thumbnail(url="https://pointer.f1shy312.com/static/logo.png")
-        closing_embed.set_footer(text="Pointer Support System", icon_url="https://pointer.f1shy312.com/static/logo.png")
+        closing_embed.set_thumbnail(url="https://shadowide.f1shy312.com/static/logo.png")
+        closing_embed.set_footer(text="ShadowIDE Support System", icon_url="https://shadowide.f1shy312.com/static/logo.png")
         
         # Disable all buttons in the original view
         for child in self.children:
@@ -515,8 +515,8 @@ class ConfirmView(discord.ui.View):
                 )
                 
                 # Add visual elements
-                dm_embed.set_thumbnail(url=interaction.guild.icon.url if interaction.guild.icon else "https://pointer.f1shy312.com/static/logo.png")
-                dm_embed.set_footer(text="Pointer Support System", icon_url="https://pointer.f1shy312.com/static/logo.png")
+                dm_embed.set_thumbnail(url=interaction.guild.icon.url if interaction.guild.icon else "https://shadowide.f1shy312.com/static/logo.png")
+                dm_embed.set_footer(text="ShadowIDE Support System", icon_url="https://shadowide.f1shy312.com/static/logo.png")
                 
                 await ticket_owner.send(embed=dm_embed)
                 
@@ -792,8 +792,8 @@ async def log_ticket_event(bot, guild, action, description, color, member=None, 
             )
             
         embed.set_footer(
-            text=f"Pointer Ticket System | {guild.name}",
-            icon_url="https://pointer.f1shy312.com/static/logo.png"
+            text=f"ShadowIDE Ticket System | {guild.name}",
+            icon_url="https://shadowide.f1shy312.com/static/logo.png"
         )
         
         # Send message with or without transcript
@@ -872,7 +872,7 @@ class Tickets(commands.Cog):
         embed = discord.Embed(
             title="🎫 Support Tickets",
             description=(
-                "Need help or have questions about Pointer? Click the button below to create a support ticket.\n\n"
+                "Need help or have questions about ShadowIDE? Click the button below to create a support ticket.\n\n"
                 "A private channel will be created where you can discuss your issue with our staff members."
             ),
             color=discord.Color.blue(),
@@ -905,8 +905,8 @@ class Tickets(commands.Cog):
         )
         
         # Add a thumbnail
-        embed.set_thumbnail(url="https://pointer.f1shy312.com/static/logo.png")
-        embed.set_footer(text="Pointer Support System", icon_url="https://pointer.f1shy312.com/static/logo.png")
+        embed.set_thumbnail(url="https://shadowide.f1shy312.com/static/logo.png")
+        embed.set_footer(text="ShadowIDE Support System", icon_url="https://shadowide.f1shy312.com/static/logo.png")
         
         # Create the ticket view with the create ticket button
         view = TicketView(self.bot)

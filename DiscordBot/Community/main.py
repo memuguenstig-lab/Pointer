@@ -11,7 +11,7 @@ import traceback
 
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger('pointer_bot')
+logger = logging.getLogger('shadowide_bot')
 
 # Load environment variables
 load_dotenv()
@@ -24,12 +24,12 @@ intents.members = True
 intents.message_content = True
 
 # Create bot instance
-class PointerBot(commands.Bot):
+class ShadowIDEBot(commands.Bot):
     def __init__(self):
         super().__init__(
             command_prefix='!',  # Fallback prefix (not used for slash commands)
             intents=intents,
-            activity=discord.Activity(type=discord.ActivityType.watching, name="Pointer Community"),
+            activity=discord.Activity(type=discord.ActivityType.watching, name="ShadowIDE Community"),
             status=discord.Status.online
         )
         self.initial_extensions = [
@@ -122,7 +122,7 @@ class PointerBot(commands.Bot):
 
 # Run the bot
 async def main():
-    bot = PointerBot()
+    bot = ShadowIDEBot()
     try:
         await bot.start(TOKEN)
     except KeyboardInterrupt:

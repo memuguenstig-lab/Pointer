@@ -1,7 +1,7 @@
 @echo off
 setlocal enabledelayedexpansion
 echo ============================
-echo  Pointer Offline Installation
+echo  ShadowIDE Offline Installation
 echo ============================
 echo.
 
@@ -65,6 +65,6 @@ if exist "%~dp0..\backend-node\package.json" (
 echo.
 echo ============================
 echo  Installation complete!
-echo  You can now launch Pointer.
+echo  You can now launch ShadowIDE.
 echo ============================
 pause

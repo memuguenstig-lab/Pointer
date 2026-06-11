@@ -28,7 +28,7 @@ const styles = {
     padding: '8px 12px',
     backgroundColor: 'var(--bg-secondary)',
     borderRadius: '4px',
-    cursor: 'pointer',
+    cursor: 'shadowide',
     transition: 'background-color 0.2s',
   },
   currentBranch: {
@@ -47,7 +47,7 @@ const styles = {
     border: 'none',
     borderRadius: '4px',
     padding: '6px 12px',
-    cursor: 'pointer',
+    cursor: 'shadowide',
     fontSize: '13px',
   },
   input: {
@@ -229,7 +229,7 @@ const GitBranchView: React.FC<GitBranchViewProps> = ({ refreshStatus }) => {
           {error}
           <button 
             onClick={() => setError(null)}
-            style={{ float: 'right', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-primary)' }}
+            style={{ float: 'right', background: 'transparent', border: 'none', cursor: 'shadowide', color: 'var(--text-primary)' }}
           >
             ✕
           </button>

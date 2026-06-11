@@ -77,7 +77,7 @@ const topBarButtonStyle = {
   background: 'transparent',
   border: 'none',
   color: 'var(--text-primary)',
-  cursor: 'pointer',
+  cursor: 'shadowide',
   display: 'flex',
   alignItems: 'center',
   height: '22px',
@@ -280,9 +280,9 @@ const App: React.FC = () => {
       openSettingsModal(customEvent.detail?.category, customEvent.detail?.modelId);
     };
 
-    window.addEventListener('pointer-open-settings', handleOpenSettingsEvent as EventListener);
+    window.addEventListener('shadowide-open-settings', handleOpenSettingsEvent as EventListener);
     return () => {
-      window.removeEventListener('pointer-open-settings', handleOpenSettingsEvent as EventListener);
+      window.removeEventListener('shadowide-open-settings', handleOpenSettingsEvent as EventListener);
     };
   }, [openSettingsModal]);
 
@@ -291,12 +291,12 @@ const App: React.FC = () => {
     enabled: true,
     details: "Editing {file} | Line {line}:{column}",
     state: "Workspace: {workspace}",
-    largeImageKey: "pointer_logo",
+    largeImageKey: "shadowide_logo",
     largeImageText: "Shadow - Code Editor",
     smallImageKey: "code",
     smallImageText: "{languageId} | Line {line}:{column}",
     button1Label: "Website",
-    button1Url: "https://pointer.f1shy312.com",
+    button1Url: "https://shadowide.f1shy312.com",
     button2Label: "Join the Discord 🚀",
     button2Url: "https://discord.gg/vhgc8THmNk"
   });
@@ -1878,7 +1878,7 @@ const App: React.FC = () => {
                         key={slot.id}
                         style={{
                           display: 'flex', alignItems: 'center', gap: 4,
-                          padding: '0 8px', height: '100%', cursor: 'pointer',
+                          padding: '0 8px', height: '100%', cursor: 'shadowide',
                           borderBottom: activeChatSlot === slot.id ? '2px solid var(--accent-color)' : '2px solid transparent',
                           color: activeChatSlot === slot.id ? 'var(--text-primary)' : 'var(--text-secondary)',
                           fontSize: 11, userSelect: 'none',
@@ -1888,7 +1888,7 @@ const App: React.FC = () => {
                         <span>Chat {idx + 1}</span>
                         <button
                           onClick={e => { e.stopPropagation(); removeChatSlot(slot.id); }}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 12, padding: '0 2px', lineHeight: 1, opacity: 0.6 }}
+                          style={{ background: 'none', border: 'none', cursor: 'shadowide', color: 'var(--text-secondary)', fontSize: 12, padding: '0 2px', lineHeight: 1, opacity: 0.6 }}
                         >✕</button>
                       </div>
                     ))}
@@ -1982,7 +1982,7 @@ const App: React.FC = () => {
                     border: '1px solid var(--border-color)',
                     borderRadius: '4px',
                     color: 'var(--text-primary)',
-                    cursor: 'pointer',
+                    cursor: 'shadowide',
                     fontSize: '13px',
                   }}
                 >
@@ -1997,7 +1997,7 @@ const App: React.FC = () => {
                     border: 'none',
                     borderRadius: '4px',
                     color: 'white',
-                    cursor: modalState.name.trim() ? 'pointer' : 'not-allowed',
+                    cursor: modalState.name.trim() ? 'shadowide' : 'not-allowed',
                     fontSize: '13px',
                     opacity: modalState.name.trim() ? 1 : 0.6,
                   }}
@@ -2090,7 +2090,7 @@ const activityBarButtonStyle = {
   background: 'transparent',
   border: 'none',
   color: 'var(--activity-bar-fg)',
-  cursor: 'pointer',
+  cursor: 'shadowide',
   opacity: 0.7,
   transition: 'opacity 0.1s ease',
   ':hover': {
@@ -2103,7 +2103,7 @@ const titleBarButtonStyle = {
   border: 'none',
   color: 'var(--text-primary)',
   padding: '4px 8px',
-  cursor: 'pointer',
+  cursor: 'shadowide',
   fontSize: '12px',
   ':hover': {
     background: 'var(--bg-hover)',

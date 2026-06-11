@@ -132,7 +132,7 @@ const Titlebar: React.FC<TitlebarProps> = ({
   };
 
   const handleTitleClick = () => {
-    window.open('https://pointer.f1shy312.com', '_blank');
+    window.open('https://shadowide.f1shy312.com', '_blank');
   };
 
   const handleCloneRepository = () => {

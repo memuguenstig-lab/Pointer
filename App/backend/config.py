@@ -1,5 +1,5 @@
 """
-Centralized configuration for the Pointer backend.
+Centralized configuration for the ShadowIDE backend.
 Loads from environment variables for flexibility across dev/prod.
 """
 

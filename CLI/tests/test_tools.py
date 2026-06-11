@@ -6,8 +6,8 @@ import tempfile
 from pathlib import Path
 import pytest
 
-from pointer_cli.tools import ToolManager
-from pointer_cli.config import Config
+from shadowide_cli.tools import ToolManager
+from shadowide_cli.config import Config
 from rich.console import Console
 
 class TestToolManager:

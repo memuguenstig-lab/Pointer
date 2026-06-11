@@ -86,7 +86,7 @@ const TerminalPane: React.FC<Props> = ({ instance, isActive, onReady, onCwdChang
 
       // ── Exit code sentinel detection ──────────────────────────────────
       const clean = text.replace(/\x1b\[[0-9;]*[mGKHFJK]/g, '');
-      const sentinelMatch = clean.match(/__POINTER_EXIT__:(\d+)/);
+      const sentinelMatch = clean.match(/__SHADOWIDE_EXIT__:(\d+)/);
       if (sentinelMatch && waitingForExitCodeRef.current) {
         waitingForExitCodeRef.current = false;
         const exitCode = parseInt(sentinelMatch[1]);
@@ -97,7 +97,7 @@ const TerminalPane: React.FC<Props> = ({ instance, isActive, onReady, onCwdChang
             exitCode,
           });
         }
-        const filtered = text.replace(/.*__POINTER_EXIT__:\d+.*\r?\n?/g, '');
+        const filtered = text.replace(/.*__SHADOWIDE_EXIT__:\d+.*\r?\n?/g, '');
         if (filtered) requestAnimationFrame(() => xterm.write(filtered));
         return;
       }
@@ -154,7 +154,7 @@ const TerminalPane: React.FC<Props> = ({ instance, isActive, onReady, onCwdChang
     instance.fitAddon = fitAddon;
 
     // ── Error detection: watch for failed commands ─────────────────────────
-    const EXIT_SENTINEL = '__POINTER_EXIT__';
+    const EXIT_SENTINEL = '__SHADOWIDE_EXIT__';
 
     xterm.onData(data => {
       if (instance.socket?.readyState === WebSocket.OPEN) {

@@ -689,7 +689,7 @@ class PersistentMemoryIndexer {
     };
     
     // Serialize to Disk
-    fs.writeFileSync('.pointer-memory.json', JSON.stringify(memory));
+    fs.writeFileSync('.shadowide-memory.json', JSON.stringify(memory));
     
     // Next Session:
     // Load immediately → 0 startup time!

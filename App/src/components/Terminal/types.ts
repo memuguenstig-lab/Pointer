@@ -33,7 +33,7 @@ export const TAB_DEFS: { id: PanelTab; label: string }[] = [
 
 export const actionBtn: React.CSSProperties = {
   background: 'none', border: 'none',
-  color: 'var(--text-secondary)', cursor: 'pointer',
+  color: 'var(--text-secondary)', cursor: 'shadowide',
   padding: '4px 6px', borderRadius: 4,
   display: 'flex', alignItems: 'center',
   transition: 'color 0.15s',

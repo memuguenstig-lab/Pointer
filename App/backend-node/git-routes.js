@@ -564,7 +564,7 @@ router.post('/rebase-interactive', async (req, res) => {
     const path = require('path');
 
     // Write the rebase script to a temp file
-    const tmpFile = path.join(os.tmpdir(), `pointer-rebase-${Date.now()}.txt`);
+    const tmpFile = path.join(os.tmpdir(), `shadowide-rebase-${Date.now()}.txt`);
     fs.writeFileSync(tmpFile, script, 'utf8');
 
     // Use GIT_SEQUENCE_EDITOR to inject our script

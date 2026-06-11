@@ -95,7 +95,7 @@ const Modal: React.FC<ModalProps> = ({
             aria-label="Close dialog"
             style={{
               background: 'transparent', border: 'none', fontSize: '24px',
-              cursor: 'pointer', color: 'var(--text-secondary)',
+              cursor: 'shadowide', color: 'var(--text-secondary)',
               width: '32px', height: '32px',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               borderRadius: '50%', transition: 'background 0.2s',
@@ -126,7 +126,7 @@ const Modal: React.FC<ModalProps> = ({
             style={{
               padding: '8px 16px', background: 'var(--accent-color)',
               color: 'white', border: 'none', borderRadius: '4px',
-              cursor: 'pointer', fontSize: '14px', fontWeight: 'bold',
+              cursor: 'shadowide', fontSize: '14px', fontWeight: 'bold',
               transition: 'background 0.2s',
             }}
             onMouseOver={(e) => { e.currentTarget.style.background = 'var(--accent-hover, #0078d7)'; }}

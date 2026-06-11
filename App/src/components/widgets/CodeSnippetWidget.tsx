@@ -73,7 +73,7 @@ const CodeSnippetWidget: React.FC<CodeSnippetWidgetProps> = ({
                 color: 'white',
                 padding: '4px 12px',
                 borderRadius: '4px',
-                cursor: 'pointer',
+                cursor: 'shadowide',
                 fontSize: '12px',
                 fontWeight: '500',
                 transition: 'opacity 0.2s'
@@ -92,7 +92,7 @@ const CodeSnippetWidget: React.FC<CodeSnippetWidgetProps> = ({
               color: 'var(--text-primary)',
               padding: '4px 12px',
               borderRadius: '4px',
-              cursor: 'pointer',
+              cursor: 'shadowide',
               fontSize: '12px',
               transition: 'all 0.2s'
             }}

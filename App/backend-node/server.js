@@ -26,9 +26,9 @@ const fileCache = {};
 // ── Helpers ────────────────────────────────────────────────────────────────
 function getAppDataPath() {
   const p = process.platform;
-  if (p === 'win32') return path.join(process.env.APPDATA || os.homedir(), 'Pointer', 'data');
-  if (p === 'darwin') return path.join(os.homedir(), 'Library', 'Application Support', 'Pointer', 'data');
-  return path.join(process.env.XDG_DATA_HOME || path.join(os.homedir(), '.local', 'share'), 'pointer', 'data');
+  if (p === 'win32') return path.join(process.env.APPDATA || os.homedir(), 'ShadowIDE', 'data');
+  if (p === 'darwin') return path.join(os.homedir(), 'Library', 'Application Support', 'ShadowIDE', 'data');
+  return path.join(process.env.XDG_DATA_HOME || path.join(os.homedir(), '.local', 'share'), 'shadowide', 'data');
 }
 
 function getChatsDirectory() {

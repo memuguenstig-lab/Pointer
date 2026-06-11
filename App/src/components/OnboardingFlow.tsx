@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-const STORAGE_KEY = 'pointer-onboarding-done';
+const STORAGE_KEY = 'shadowide-onboarding-done';
 
 interface Step {
   id: string;
@@ -149,12 +149,12 @@ const ReadyStep = () => (
     </p>
     <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
       {[
-        { icon: '📖', label: 'Docs', href: 'https://pointer.f1shy312.com' },
+        { icon: '📖', label: 'Docs', href: 'https://shadowide.f1shy312.com' },
         { icon: '💬', label: 'Discord', href: 'https://discord.gg/vhgc8THmNk' },
-        { icon: '⭐', label: 'GitHub', href: 'https://github.com/PointerIDE' },
+        { icon: '⭐', label: 'GitHub', href: 'https://github.com/ShadowIDEIDE' },
       ].map(l => (
         <a key={l.label} href={l.href} target="_blank" rel="noreferrer"
-          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 16px', borderRadius: 6, background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', fontSize: 13, color: 'var(--text-primary)', textDecoration: 'none', cursor: 'pointer' }}
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 16px', borderRadius: 6, background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', fontSize: 13, color: 'var(--text-primary)', textDecoration: 'none', cursor: 'shadowide' }}
           onClick={e => { e.preventDefault(); (window as any).electron?.openExternal?.(l.href); }}
         >
           <span>{l.icon}</span> {l.label}
@@ -270,7 +270,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onDone }) => {
               style={{
                 width: i === step ? 20 : 6, height: 6, borderRadius: 3,
                 background: i === step ? current.accent : 'var(--border-color)',
-                border: 'none', cursor: 'pointer', padding: 0,
+                border: 'none', cursor: 'shadowide', padding: 0,
                 transition: 'all 0.2s',
               }}
             />
@@ -288,7 +288,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onDone }) => {
             style={{
               padding: '8px 18px', fontSize: 13, borderRadius: 6,
               border: '1px solid var(--border-color)', background: 'transparent',
-              color: 'var(--text-secondary)', cursor: step === 0 ? 'default' : 'pointer',
+              color: 'var(--text-secondary)', cursor: step === 0 ? 'default' : 'shadowide',
               opacity: step === 0 ? 0.3 : 1, transition: 'opacity 0.15s',
             }}
           >
@@ -300,7 +300,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onDone }) => {
             style={{
               fontSize: 11, padding: '4px 10px', borderRadius: 4,
               border: 'none', background: 'transparent',
-              color: 'var(--text-secondary)', cursor: 'pointer', opacity: 0.5,
+              color: 'var(--text-secondary)', cursor: 'shadowide', opacity: 0.5,
             }}
             onClickCapture={() => finish()}
           >
@@ -312,7 +312,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onDone }) => {
             style={{
               padding: '8px 22px', fontSize: 13, borderRadius: 6, fontWeight: 600,
               border: 'none', background: current.accent, color: '#fff',
-              cursor: 'pointer', transition: 'opacity 0.15s',
+              cursor: 'shadowide', transition: 'opacity 0.15s',
             }}
             onMouseEnter={e => { e.currentTarget.style.opacity = '0.85'; }}
             onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}

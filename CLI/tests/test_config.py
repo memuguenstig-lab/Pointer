@@ -7,7 +7,7 @@ import tempfile
 from pathlib import Path
 import pytest
 
-from pointer_cli.config import Config, APIConfig, UIConfig, ModeConfig
+from shadowide_cli.config import Config, APIConfig, UIConfig, ModeConfig
 
 class TestConfig:
     """Test configuration functionality."""

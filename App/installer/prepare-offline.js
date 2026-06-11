@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Pointer Offline Installer Preparation Script
+ * ShadowIDE Offline Installer Preparation Script
  * Downloads Node.js installers for offline installation
  */
 
@@ -76,16 +76,16 @@ async function prepareWindowsOffline() {
   
   // Create a batch file for offline installation
   const batchContent = `@echo off
-echo Pointer Offline Installation
+echo ShadowIDE Offline Installation
 echo ============================
 echo.
-echo This will install Node.js and Pointer for offline use.
+echo This will install Node.js and ShadowIDE for offline use.
 echo.
 echo Installing Node.js...
 msiexec /i "%~dp0node-installer.msi" /quiet /norestart ADDLOCAL=ALL
 echo Node.js installation complete.
 echo.
-echo Please run Pointer Setup.exe to complete the installation.
+echo Please run ShadowIDE Setup.exe to complete the installation.
 pause`;
   
   fs.writeFileSync(path.join(destDir, 'install.bat'), batchContent);
@@ -113,10 +113,10 @@ async function prepareMacOffline() {
   
   // Create installation script
   const scriptContent = `#!/bin/bash
-echo "Pointer Offline Installation"
+echo "ShadowIDE Offline Installation"
 echo "============================="
 echo ""
-echo "This will install Node.js for Pointer."
+echo "This will install Node.js for ShadowIDE."
 echo ""
 echo "Detecting architecture..."
 ARCH=$(uname -m)
@@ -131,7 +131,7 @@ else
 fi
 echo ""
 echo "Node.js installation complete."
-echo "You can now launch Pointer from your Applications folder."`;
+echo "You can now launch ShadowIDE from your Applications folder."`;
   
   fs.writeFileSync(path.join(destDir, 'install.sh'), scriptContent);
   fs.chmodSync(path.join(destDir, 'install.sh'), '755');
@@ -140,7 +140,7 @@ echo "You can now launch Pointer from your Applications folder."`;
 }
 
 async function main() {
-  console.log('Pointer Offline Installer Preparation');
+  console.log('ShadowIDE Offline Installer Preparation');
   console.log('=====================================\n');
   
   const platform = process.platform;
@@ -159,7 +159,7 @@ async function main() {
     console.log('\nTo use offline installation:');
     console.log('1. Copy the offline folder to the target machine');
     console.log('2. Run the install script (install.bat on Windows, install.sh on macOS)');
-    console.log('3. Then install Pointer normally');
+    console.log('3. Then install ShadowIDE normally');
     
   } catch (error) {
     console.error('Error preparing offline installer:', error.message);

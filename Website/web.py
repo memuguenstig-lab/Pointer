@@ -7,7 +7,7 @@ from pathlib import Path
 def serve_static_files():
     """Serve the static files using Python's built-in HTTP server"""
     PORT = 5000
-    STATIC_DIR = Path("pointer-website/out")
+    STATIC_DIR = Path("shadowide-website/out")
 
     if not STATIC_DIR.exists():
         print(f"Error: Static directory {STATIC_DIR} not found!")

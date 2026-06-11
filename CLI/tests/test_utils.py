@@ -6,7 +6,7 @@ import tempfile
 from pathlib import Path
 import pytest
 
-from pointer_cli.utils import (
+from shadowide_cli.utils import (
     safe_read_file, safe_write_file, create_diff, format_file_size,
     is_text_file, get_file_info, find_files, truncate_output
 )

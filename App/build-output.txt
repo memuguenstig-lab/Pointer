@@ -1,5 +1,5 @@
 
-> pointer@1.0.0 build
+> shadowide@1.0.0 build
 > tsc && vite build
 
 src/App.tsx(295,28): error TS2339: Property 'success' does not exist on type '{ settings?: any; error?: string | undefined; }'.

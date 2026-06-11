@@ -55,7 +55,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, onClose, options }) => 
           }}
           style={{
             padding: '8px 12px',
-            cursor: option.disabled ? 'not-allowed' : 'pointer',
+            cursor: option.disabled ? 'not-allowed' : 'shadowide',
             opacity: option.disabled ? 0.5 : 1,
             borderBottom: index < options.length - 1 ? '1px solid var(--border-color)' : 'none',
             color: 'var(--text-primary)',

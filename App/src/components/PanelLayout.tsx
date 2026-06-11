@@ -88,7 +88,7 @@ export const PanelLayout: React.FC<Props> = ({
       background: var(--accent-color, #0e639c); color: #fff;
       font-size: 12px; font-family: sans-serif;
       box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-      pointer-events: none; z-index: 9999;
+      shadowide-events: none; z-index: 9999;
     `;
     document.body.appendChild(ghost);
     e.dataTransfer.setDragImage(ghost, 50, 20);
@@ -167,7 +167,7 @@ export const PanelLayout: React.FC<Props> = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          pointerEvents: 'all',
+          shadowideEvents: 'all',
         }}
       >
         {isActive && (

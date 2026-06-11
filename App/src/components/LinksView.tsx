@@ -155,7 +155,7 @@ const LinksView: React.FC = () => {
               top: '50%',
               transform: 'translateY(-50%)',
               color: 'var(--text-secondary)',
-              pointerEvents: 'none',
+              shadowideEvents: 'none',
             }}
           >
             <SearchIcon />
@@ -181,7 +181,7 @@ const LinksView: React.FC = () => {
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
-            cursor: 'pointer',
+            cursor: 'shadowide',
             minWidth: 220,
             textAlign: 'left',
           }}
@@ -238,7 +238,7 @@ const LinksView: React.FC = () => {
                 style={{
                   ...cardStyleBase,
                   textAlign: 'left',
-                  cursor: launching === link.id ? 'wait' : 'pointer',
+                  cursor: launching === link.id ? 'wait' : 'shadowide',
                   opacity: launching === link.id ? 0.75 : 1,
                 }}
               >
@@ -290,7 +290,7 @@ const LinksView: React.FC = () => {
                   top: '50%',
                   transform: 'translateY(-50%)',
                   color: 'var(--text-secondary)',
-                  pointerEvents: 'none',
+                  shadowideEvents: 'none',
                 }}
               >
                 <SearchIcon />
@@ -313,7 +313,7 @@ const LinksView: React.FC = () => {
                   disabled={launching === provider.id}
                   style={{
                     ...cardStyleBase,
-                    cursor: launching === provider.id ? 'wait' : 'pointer',
+                    cursor: launching === provider.id ? 'wait' : 'shadowide',
                     textAlign: 'left',
                     opacity: launching === provider.id ? 0.75 : 1,
                   }}

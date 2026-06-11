@@ -12,15 +12,15 @@ A modern, AI-powered code editor built with Electron, React, TypeScript, and Pyt
 ### Installation & Run
 ```bash
 cd Shadow
-node start-pointer.js
+node start-shadowide.js
 ```
 
 **Alternative modes:**
 ```bash
-node start-pointer.js --build        # Build only
-node start-pointer.js --background   # Run in background  
-node start-pointer.js -s             # Skip connection checks (faster)
-node start-pointer.js --help         # View all options
+node start-shadowide.js --build        # Build only
+node start-shadowide.js --background   # Run in background  
+node start-shadowide.js -s             # Skip connection checks (faster)
+node start-shadowide.js --help         # View all options
 ```
 
 ## ✨ Core Features
@@ -152,7 +152,7 @@ SKIP_CONNECTION_CHECKS # Skip startup checks
 
 ### Development Build
 ```bash
-node start-pointer.js --build
+node start-shadowide.js --build
 ```
 
 Output: `dist/` directory with compiled frontend
@@ -181,7 +181,7 @@ MIT License - See [LICENSE](../LICENSE)
 
 1. **Clone Repository**
    ```bash
-   git clone https://github.com/PointerIDE/Shadow.git
+   git clone https://github.com/ShadowIDEIDE/Shadow.git
    cd Shadow/App
    ```
 
@@ -240,7 +240,7 @@ MIT License - See [LICENSE](../LICENSE)
    ./build.sh
    
    # Alternative: Manual start
-   node start-pointer.js
+   node start-shadowide.js
    ```
 
 ### 🎯 Using New Build Scripts (Recommended)
@@ -418,7 +418,7 @@ App/
 │   ├── server.js                 # Local server integration
 │   └── git.js                    # Git operations for Electron
 ├── tools/                        # Development and build tools
-├── start-pointer.js              # Unified startup script
+├── start-shadowide.js              # Unified startup script
 ├── vite.config.ts                # Vite build configuration
 └── package.json                  # Dependencies and npm scripts
 ```
@@ -429,16 +429,16 @@ App/
 
 ```bash
 # Standard startup
-node start-pointer.js
+node start-shadowide.js
 
 # Background mode (detached terminal)
-node start-pointer.js --background
+node start-shadowide.js --background
 
 # Skip connection checks (faster startup)
-node start-pointer.js --skip-checks
+node start-shadowide.js --skip-checks
 
 # Both background and skip checks
-node start-pointer.js --background --skip-checks
+node start-shadowide.js --background --skip-checks
 ```
 
 ### Development Scripts
@@ -467,9 +467,9 @@ Configure Discord integration by editing settings in the application or manually
   "enabled": true,
   "details": "Editing {file} | Line {line}:{column}",
   "state": "Workspace: {workspace}",
-  "largeImageKey": "pointer_logo",
+  "largeImageKey": "shadowide_logo",
   "button1Label": "Website",
-  "button1Url": "https://pointer.f1shy312.com"
+  "button1Url": "https://shadowide.f1shy312.com"
 }
 ```
 

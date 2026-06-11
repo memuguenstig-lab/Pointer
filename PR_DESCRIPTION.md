@@ -1,7 +1,7 @@
 # PR Description for feature/refactor-core-systems
 
 ## 🎯 Overview
-This PR refactors core systems to improve **security**, **maintainability**, and **type safety** across the Pointer codebase.
+This PR refactors core systems to improve **security**, **maintainability**, and **type safety** across the ShadowIDE codebase.
 
 ## 🔧 Changes Made
 

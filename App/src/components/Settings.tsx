@@ -53,7 +53,7 @@ const PasswordInput: React.FC<{
           transform: 'translateY(-50%)',
           background: 'none',
           border: 'none',
-          cursor: 'pointer',
+          cursor: 'shadowide',
           color: 'var(--text-secondary)',
           padding: '0',
         }}
@@ -104,12 +104,12 @@ const defaultDiscordRpcSettings: DiscordRpcSettings = {
   enabled: true,
   details: 'Editing {file}',
   state: 'Workspace: {workspace}',
-  largeImageKey: 'pointer_logo',
+  largeImageKey: 'shadowide_logo',
   largeImageText: 'Shadow - Code Editor',
   smallImageKey: 'code',
   smallImageText: '{languageId} | Line {line}:{column}',
   button1Label: 'Download Shadow',
-  button1Url: 'https://pointer.f1shy312.com',
+  button1Url: 'https://shadowide.f1shy312.com',
   button2Label: '',
   button2Url: '',
 };
@@ -158,7 +158,7 @@ const GPGSettings: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer' }}>
+      <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'shadowide' }}>
         <input type="checkbox" checked={config.gpgSign} onChange={e => setConfig(c => ({ ...c, gpgSign: e.target.checked }))} />
         Sign commits with GPG
       </label>
@@ -176,7 +176,7 @@ const GPGSettings: React.FC = () => {
           )}
         </div>
       )}
-      <button onClick={save} disabled={saving} style={{ alignSelf: 'flex-start', padding: '6px 14px', fontSize: 12, borderRadius: 4, border: 'none', background: 'var(--accent-color)', color: '#fff', cursor: 'pointer' }}>
+      <button onClick={save} disabled={saving} style={{ alignSelf: 'flex-start', padding: '6px 14px', fontSize: 12, borderRadius: 4, border: 'none', background: 'var(--accent-color)', color: '#fff', cursor: 'shadowide' }}>
         {saving ? 'Saving…' : 'Save'}
       </button>
     </div>
@@ -218,8 +218,10 @@ const SubmoduleManager: React.FC = () => {
     await load();
   };
 
+  const [confirmDeletePath, setConfirmDeletePath] = useState<string | null>(null);
+
   const handleRemove = async (path: string) => {
-    if (!dir || !confirm(`Remove submodule "${path}"?`)) return;
+    if (!dir) return;
     await fetch('http://localhost:23816/git/submodule-remove', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ directory: dir, path }) }).catch(() => {});
     await load();
   };
@@ -234,7 +236,7 @@ const SubmoduleManager: React.FC = () => {
       <div style={{ display: 'flex', gap: 6 }}>
         <input value={addUrl} onChange={e => setAddUrl(e.target.value)} placeholder="Repository URL" style={{ flex: 2, padding: '6px 8px', fontSize: 12, background: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 4, color: 'var(--text-primary)' }} />
         <input value={addPath} onChange={e => setAddPath(e.target.value)} placeholder="Path (optional)" style={{ flex: 1, padding: '6px 8px', fontSize: 12, background: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 4, color: 'var(--text-primary)' }} />
-        <button onClick={handleAdd} disabled={adding || !addUrl.trim()} style={{ padding: '6px 12px', fontSize: 12, borderRadius: 4, border: 'none', background: 'var(--accent-color)', color: '#fff', cursor: 'pointer' }}>
+        <button onClick={handleAdd} disabled={adding || !addUrl.trim()} style={{ padding: '6px 12px', fontSize: 12, borderRadius: 4, border: 'none', background: 'var(--accent-color)', color: '#fff', cursor: 'shadowide' }}>
           {adding ? '…' : 'Add'}
         </button>
       </div>
@@ -249,13 +251,84 @@ const SubmoduleManager: React.FC = () => {
               <span style={{ fontSize: 10, color: s.status === '+' ? '#f0883e' : s.status === '-' ? '#f85149' : '#3fb950', fontWeight: 700 }}>{s.status || '✓'}</span>
               <span style={{ flex: 1, fontSize: 12, fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.path}</span>
               <span style={{ fontSize: 10, color: 'var(--text-secondary)', fontFamily: 'monospace' }}>{s.hash?.slice(0, 7)}</span>
-              <button onClick={() => handleUpdate(s.path)} style={{ fontSize: 10, padding: '2px 7px', borderRadius: 3, border: '1px solid var(--border-primary)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }}>Update</button>
-              <button onClick={() => handleRemove(s.path)} style={{ fontSize: 10, padding: '2px 7px', borderRadius: 3, border: '1px solid rgba(248,81,73,0.4)', background: 'rgba(248,81,73,0.08)', color: '#f85149', cursor: 'pointer' }}>Remove</button>
+              <button onClick={() => handleUpdate(s.path)} style={{ fontSize: 10, padding: '2px 7px', borderRadius: 3, border: '1px solid var(--border-primary)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'shadowide' }}>Update</button>
+              <button onClick={() => setConfirmDeletePath(s.path)} style={{ fontSize: 10, padding: '2px 7px', borderRadius: 3, border: '1px solid rgba(248,81,73,0.4)', background: 'rgba(248,81,73,0.08)', color: '#f85149', cursor: 'shadowide' }}>Remove</button>
             </div>
           ))}
-          <button onClick={() => handleUpdate()} style={{ alignSelf: 'flex-start', fontSize: 11, padding: '4px 10px', borderRadius: 4, border: '1px solid var(--border-primary)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+          <button onClick={() => handleUpdate()} style={{ alignSelf: 'flex-start', fontSize: 11, padding: '4px 10px', borderRadius: 4, border: '1px solid var(--border-primary)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'shadowide' }}>
             ↻ Update All
           </button>
+        </div>
+      )}
+
+      {/* Custom confirm modal */}
+      {confirmDeletePath && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0, 0, 0, 0.75)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 99999,
+          backdropFilter: 'blur(6px)',
+        }}>
+          <div style={{
+            width: '400px',
+            background: 'var(--bg-primary)',
+            borderRadius: '12px',
+            border: '1px solid var(--border-primary)',
+            padding: '24px',
+            boxShadow: '0 24px 48px rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <span style={{ fontSize: '24px' }}>⚠️</span>
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                Remove Submodule
+              </h3>
+            </div>
+            <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.5', textAlign: 'left' }}>
+              Are you sure you want to remove the submodule "{confirmDeletePath}"?
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '8px' }}>
+              <button
+                onClick={() => setConfirmDeletePath(null)}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--border-primary)',
+                  background: 'var(--bg-secondary)',
+                  color: 'var(--text-secondary)',
+                  fontSize: '13px',
+                  cursor: 'shadowide',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  const p = confirmDeletePath;
+                  setConfirmDeletePath(null);
+                  await handleRemove(p);
+                }}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: '#f85149',
+                  color: 'white',
+                  fontWeight: 600,
+                  fontSize: '13px',
+                  cursor: 'shadowide',
+                }}
+              >
+                Remove
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -321,7 +394,7 @@ const ThemePreview: React.FC<{ theme: ThemeSettings; name: string; onSelect: () 
   return (
     <div onClick={onSelect} style={{
       width: '100%', height: '160px', borderRadius: '8px', overflow: 'hidden',
-      cursor: 'pointer', position: 'relative',
+      cursor: 'shadowide', position: 'relative',
       border: `1px solid ${isAnimated ? neon+'55' : (c.borderPrimary||'#333')}`,
       boxShadow: isAnimated ? `0 2px 12px ${neon}30` : '0 2px 8px rgba(0,0,0,.2)',
       transition: 'transform .18s ease, box-shadow .18s ease',
@@ -331,7 +404,7 @@ const ThemePreview: React.FC<{ theme: ThemeSettings; name: string; onSelect: () 
       onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px) scale(1.01)'; e.currentTarget.style.boxShadow = isAnimated ? `0 8px 24px ${neon}50` : '0 8px 20px rgba(0,0,0,.35)'; }}
       onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0) scale(1)'; e.currentTarget.style.boxShadow = isAnimated ? `0 2px 12px ${neon}30` : '0 2px 8px rgba(0,0,0,.2)'; }}
     >
-      {isAnimated && preset !== 'neon-pulse' && <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 2, ...overlayStyle }} />}
+      {isAnimated && preset !== 'neon-pulse' && <div style={{ position: 'absolute', inset: 0, shadowideEvents: 'none', zIndex: 2, ...overlayStyle }} />}
       {/* Titlebar */}
       <div style={{ height: 22, background: c.titlebarGradient && c.titlebarGradient !== 'none' ? c.titlebarGradient : (c.titlebarBg||c.bgPrimary||'#1e1e1e'), borderBottom: `1px solid ${preset==='neon-pulse'?neon:(c.borderPrimary||'#333')}`, display: 'flex', alignItems: 'center', padding: '0 8px', gap: 5, boxShadow: preset==='neon-pulse'?`0 1px 10px ${neon}70`:'none', position: 'relative', zIndex: 3 }}>
         <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ff5f57' }} />
@@ -378,10 +451,10 @@ const ThemeLibraryModal: React.FC<{ isVisible: boolean; onClose: () => void; onS
           </div>
           <div style={{ display: 'flex', gap: 6 }}>
             {(['all','dark','light','animated'] as const).map(f => (
-              <button key={f} onClick={() => setFilter(f)} style={{ padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600, border: '1px solid var(--border-primary)', cursor: 'pointer', background: filter===f?'var(--accent-color)':'var(--bg-secondary)', color: filter===f?'#fff':'var(--text-secondary)', textTransform: 'capitalize' }}>{f}</button>
+              <button key={f} onClick={() => setFilter(f)} style={{ padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600, border: '1px solid var(--border-primary)', cursor: 'shadowide', background: filter===f?'var(--accent-color)':'var(--bg-secondary)', color: filter===f?'#fff':'var(--text-secondary)', textTransform: 'capitalize' }}>{f}</button>
             ))}
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: 4, borderRadius: 4, display: 'flex', alignItems: 'center' }}>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'shadowide', color: 'var(--text-secondary)', padding: 4, borderRadius: 4, display: 'flex', alignItems: 'center' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
@@ -392,7 +465,7 @@ const ThemeLibraryModal: React.FC<{ isVisible: boolean; onClose: () => void; onS
         </div>
         <div style={{ padding: '12px 20px', borderTop: '1px solid var(--border-primary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>✦ animated = has live animation effects</span>
-          <button onClick={onClose} style={{ padding: '6px 16px', borderRadius: 6, border: '1px solid var(--border-primary)', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer' }}>Close</button>
+          <button onClick={onClose} style={{ padding: '6px 16px', borderRadius: 6, border: '1px solid var(--border-primary)', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', fontSize: 13, cursor: 'shadowide' }}>Close</button>
         </div>
       </div>
     </div>
@@ -472,6 +545,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
   const [isLoading, setIsLoading] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showUnsavedChangesPrompt, setShowUnsavedChangesPrompt] = useState(false);
+  const [confirmResetType, setConfirmResetType] = useState<'theme' | 'all' | null>(null);
   const settingsSnapshotRef = useRef<string>('');
   const hasCapturedInitialSnapshotRef = useRef(false);
 
@@ -1337,20 +1411,32 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
     }
 
     if (!hasCapturedInitialSnapshotRef.current) {
-      const timer = setTimeout(() => {
-        settingsSnapshotRef.current = serializeCurrentSettings();
-        hasCapturedInitialSnapshotRef.current = true;
-        setHasUnsavedChanges(false);
-      }, 200);
-      return () => clearTimeout(timer);
+      settingsSnapshotRef.current = serializeCurrentSettings();
+      hasCapturedInitialSnapshotRef.current = true;
+      setHasUnsavedChanges(false);
     }
   }, [isVisible, isLoading]);
 
+  useEffect(() => {
+    if (hasCapturedInitialSnapshotRef.current && settingsSnapshotRef.current) {
+      const currentSnapshot = serializeCurrentSettings();
+      setHasUnsavedChanges(currentSnapshot !== settingsSnapshotRef.current);
+    }
+  }, [
+    modelConfigs,
+    modelAssignments,
+    editorSettings,
+    themeSettings,
+    discordRpcSettings,
+    promptsSettings,
+    advanced
+  ]);
+
   const handleClose = () => {
     const currentSnapshot = serializeCurrentSettings();
-    const hasRealChanges = currentSnapshot !== settingsSnapshotRef.current;
+    const hasRealChanges = hasCapturedInitialSnapshotRef.current && settingsSnapshotRef.current && currentSnapshot !== settingsSnapshotRef.current;
 
-    if (hasUnsavedChanges && hasRealChanges) {
+    if (hasRealChanges) {
       setShowUnsavedChangesPrompt(true);
     } else {
       setHasUnsavedChanges(false);
@@ -1599,7 +1685,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
               color: 'var(--text-secondary)',
               fontSize: '18px',
               padding: '4px',
-              cursor: 'pointer',
+              cursor: 'shadowide',
             }}
           >
             ✕
@@ -1650,7 +1736,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                         ? '2px solid var(--accent-color)'
                         : '2px solid transparent',
                       color: activeCategory === category.id ? 'var(--text-primary)' : 'var(--text-secondary)',
-                      cursor: 'pointer',
+                      cursor: 'shadowide',
                       fontSize: '13px',
                       width: '100%',
                       transition: 'background 0.1s, color 0.1s',
@@ -1707,7 +1793,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                             border: 'none',
                             borderBottom: activeTab === modelId ? '2px solid var(--accent-color)' : 'none',
                             color: 'var(--text-primary)',
-                            cursor: 'pointer',
+                            cursor: 'shadowide',
                             fontSize: '13px',
                             whiteSpace: 'nowrap',
                           }}
@@ -1722,7 +1808,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                           background: 'transparent',
                           border: 'none',
                           color: 'var(--text-secondary)',
-                          cursor: 'pointer',
+                          cursor: 'shadowide',
                           fontSize: '13px',
                         }}
                       >
@@ -1890,7 +1976,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                                 border: 'none',
                                 borderRadius: '4px',
                                 color: 'white',
-                                cursor: 'pointer',
+                                cursor: 'shadowide',
                                 fontSize: '12px',
                               }}
                             >
@@ -1955,7 +2041,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                                       border: '1px solid var(--border-primary)',
                                       borderRadius: '4px',
                                       color: 'var(--text-secondary)',
-                                      cursor: 'pointer',
+                                      cursor: 'shadowide',
                                       fontSize: '13px',
                                     }}
                                   >
@@ -2022,7 +2108,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                                           key={model.id}
                                           onClick={() => selectModelSuggestion(activeTab, model)}
                                           style={{
-                                            padding: '8px 12px', cursor: 'pointer',
+                                            padding: '8px 12px', cursor: 'shadowide',
                                             borderBottom: index < filteredModels.length - 1 ? '1px solid var(--border-primary)' : 'none',
                                           }}
                                           onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-hover)'; }}
@@ -2040,7 +2126,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                                 {isLoadingModels && <span>Discovering models…</span>}
                                 {!isLoadingModels && availableModels.length === 0 && modelConfigs[activeTab].apiEndpoint && modelConfigs[activeTab].modelProvider !== 'openai' && (
                                   <span
-                                    style={{ cursor: 'pointer', textDecoration: 'underline', opacity: 0.7 }}
+                                    style={{ cursor: 'shadowide', textDecoration: 'underline', opacity: 0.7 }}
                                     onClick={() => fetchAvailableModels(modelConfigs[activeTab].apiEndpoint, modelConfigs[activeTab].apiKey)}
                                   >
                                     Click to discover models from endpoint
@@ -2289,7 +2375,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                                 background: 'none', 
                                 border: 'none', 
                                 color: 'var(--text-secondary)', 
-                                cursor: 'pointer',
+                                cursor: 'shadowide',
                                 padding: '4px',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -2322,7 +2408,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                                 background: 'none', 
                                 border: 'none', 
                                 color: 'var(--text-secondary)', 
-                                cursor: 'pointer',
+                                cursor: 'shadowide',
                                 padding: '4px',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -2355,7 +2441,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                                 background: 'none', 
                                 border: 'none', 
                                 color: 'var(--text-secondary)', 
-                                cursor: 'pointer',
+                                cursor: 'shadowide',
                                 padding: '4px',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -2388,7 +2474,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                                 background: 'none', 
                                 border: 'none', 
                                 color: 'var(--text-secondary)', 
-                                cursor: 'pointer',
+                                cursor: 'shadowide',
                                 padding: '4px',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -2421,7 +2507,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                                 background: 'none', 
                                 border: 'none', 
                                 color: 'var(--text-secondary)', 
-                                cursor: 'pointer',
+                                cursor: 'shadowide',
                                 padding: '4px',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -2454,7 +2540,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                                 background: 'none', 
                                 border: 'none', 
                                 color: 'var(--text-secondary)', 
-                                cursor: 'pointer',
+                                cursor: 'shadowide',
                                 padding: '4px',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -2487,7 +2573,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                                 background: 'none', 
                                 border: 'none', 
                                 color: 'var(--text-secondary)', 
-                                cursor: 'pointer',
+                                cursor: 'shadowide',
                                 padding: '4px',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -2520,7 +2606,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                                 background: 'none', 
                                 border: 'none', 
                                 color: 'var(--text-secondary)', 
-                                cursor: 'pointer',
+                                cursor: 'shadowide',
                                 padding: '4px',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -2553,7 +2639,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                                 background: 'none', 
                                 border: 'none', 
                                 color: 'var(--text-secondary)', 
-                                cursor: 'pointer',
+                                cursor: 'shadowide',
                                 padding: '4px',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -2593,7 +2679,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                             border: 'none',
                             borderRadius: '4px',
                             fontSize: '12px',
-                            cursor: 'pointer',
+                            cursor: 'shadowide',
                             display: 'flex',
                             alignItems: 'center',
                             gap: '4px'
@@ -2646,7 +2732,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                                       background: 'none', 
                                       border: 'none', 
                                       color: 'var(--text-secondary)', 
-                                      cursor: 'pointer',
+                                      cursor: 'shadowide',
                                       padding: '4px',
                                       display: 'flex',
                                       alignItems: 'center',
@@ -2672,7 +2758,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                                       background: 'none', 
                                       border: 'none', 
                                       color: 'var(--error-color)', 
-                                      cursor: 'pointer',
+                                      cursor: 'shadowide',
                                       padding: '4px',
                                       display: 'flex',
                                       alignItems: 'center',
@@ -2768,7 +2854,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                             color: 'var(--text-primary)',
                             border: '1px solid var(--border-primary)',
                             borderRadius: '4px',
-                            cursor: 'pointer'
+                            cursor: 'shadowide'
                           }}
                         >
                           Cancel
@@ -2781,7 +2867,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                             color: 'white',
                             border: 'none',
                             borderRadius: '4px',
-                            cursor: 'pointer'
+                            cursor: 'shadowide'
                           }}
                         >
                           Save
@@ -2849,7 +2935,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                             color: 'var(--text-primary)',
                             border: '1px solid var(--border-primary)',
                             borderRadius: '4px',
-                            cursor: 'pointer'
+                            cursor: 'shadowide'
                           }}
                         >
                           Cancel
@@ -2862,7 +2948,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                             color: 'white',
                             border: 'none',
                             borderRadius: '4px',
-                            cursor: 'pointer'
+                            cursor: 'shadowide'
                           }}
                         >
                           Save
@@ -2882,11 +2968,11 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                         <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 600 }}>Theme & Editor</h3>
                         <p style={{ margin: '2px 0 0', fontSize: '12px', color: 'var(--text-secondary)' }}>Colors, animations, fonts and editor behavior</p>
                       </div>
-                      <button onClick={() => setIsThemeLibraryVisible(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: '6px', border: '1px solid var(--accent-color)', background: 'transparent', color: 'var(--accent-color)', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                      <button onClick={() => setIsThemeLibraryVisible(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: '6px', border: '1px solid var(--accent-color)', background: 'transparent', color: 'var(--accent-color)', fontSize: '12px', fontWeight: 600, cursor: 'shadowide' }}>
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="7" height="7" rx="1"/><rect x="15" y="2" width="7" height="7" rx="1"/><rect x="2" y="15" width="7" height="7" rx="1"/><rect x="15" y="15" width="7" height="7" rx="1"/></svg>
                         Browse Themes
                       </button>
-                      <button onClick={() => setIsThemeEditorVisible(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: '6px', border: '1px solid var(--border-primary)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                      <button onClick={() => setIsThemeEditorVisible(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: '6px', border: '1px solid var(--border-primary)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontSize: '12px', fontWeight: 600, cursor: 'shadowide' }}>
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
                         Edit Theme
                       </button>
@@ -2904,12 +2990,12 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
 
                     {/* Quick preset + export/import */}
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                      <select onChange={(e) => { const t = presetThemes[e.target.value]; if (t) { setThemeSettings(t); setHasUnsavedChanges(true); } }} style={{ flex: 1, padding: '7px 10px', background: 'var(--bg-secondary)', border: '1px solid var(--border-primary)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '13px', cursor: 'pointer' }}>
+                      <select onChange={(e) => { const t = presetThemes[e.target.value]; if (t) { setThemeSettings(t); setHasUnsavedChanges(true); } }} style={{ flex: 1, padding: '7px 10px', background: 'var(--bg-secondary)', border: '1px solid var(--border-primary)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '13px', cursor: 'shadowide' }}>
                         <option value="">Quick-select preset…</option>
                         {Object.keys(presetThemes).map(n => <option key={n} value={n}>{n}</option>)}
                       </select>
-                      <button onClick={() => { const blob = new Blob([JSON.stringify({ theme: themeSettings, editor: editorSettings }, null, 2)], { type: 'application/json' }); const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: 'pointer-theme.json' }); document.body.appendChild(a); a.click(); document.body.removeChild(a); }} style={{ padding: '7px 12px', borderRadius: '6px', border: '1px solid var(--border-primary)', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>Export</button>
-                      <label style={{ padding: '7px 12px', borderRadius: '6px', border: '1px solid var(--border-primary)', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                      <button onClick={() => { const blob = new Blob([JSON.stringify({ theme: themeSettings, editor: editorSettings }, null, 2)], { type: 'application/json' }); const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: 'shadowide-theme.json' }); document.body.appendChild(a); a.click(); document.body.removeChild(a); }} style={{ padding: '7px 12px', borderRadius: '6px', border: '1px solid var(--border-primary)', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', fontSize: '12px', cursor: 'shadowide', whiteSpace: 'nowrap' }}>Export</button>
+                      <label style={{ padding: '7px 12px', borderRadius: '6px', border: '1px solid var(--border-primary)', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', fontSize: '12px', cursor: 'shadowide', whiteSpace: 'nowrap' }}>
                         Import
                         <input type="file" accept=".json" style={{ display: 'none' }} onChange={(e) => { const file = e.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = (ev) => { try { const imp = JSON.parse(ev.target?.result as string); if (!imp.theme) throw new Error(); setThemeSettings(imp.theme); if (imp.editor) setEditorSettings((p: any) => ({ ...p, ...imp.editor })); setHasUnsavedChanges(true); } catch { alert('Invalid theme file'); } e.target.value = ''; }; reader.readAsText(file); }} />
                       </label>
@@ -2943,7 +3029,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                           ))}
                           <div style={{ marginTop: 10, padding: '8px 10px', borderRadius: 6, border: '1px dashed var(--border-primary)', background: 'var(--bg-secondary)' }}>
                             <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '0 0 6px' }}>Generate palette from accent color</p>
-                            <button onClick={applyAutoPaletteFromAccent} style={{ padding: '4px 10px', borderRadius: 4, border: 'none', background: 'var(--accent-color)', color: '#fff', fontSize: '11px', cursor: 'pointer' }}>Auto-generate</button>
+                            <button onClick={applyAutoPaletteFromAccent} style={{ padding: '4px 10px', borderRadius: 4, border: 'none', background: 'var(--accent-color)', color: '#fff', fontSize: '11px', cursor: 'shadowide' }}>Auto-generate</button>
                           </div>
                         </div>
                       </div>
@@ -2956,13 +3042,13 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                         {Object.entries(themeSettings.customColors.customFileExtensions || {}).map(([ext, color], i) => (
                           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--bg-secondary)', padding: '4px 8px', borderRadius: 4 }}>
                             <input type="text" value={ext} onChange={e => { const ne = e.target.value.toLowerCase().trim(); if (!ne || ne === ext) return; const exts = { ...(themeSettings.customColors.customFileExtensions || {}) }; const col = exts[ext]; delete exts[ext]; exts[ne] = col; handleThemeSettingChange('customColors', { ...themeSettings.customColors, customFileExtensions: exts }); }} style={{ width: 60, padding: '2px 6px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: 3, color: 'var(--text-primary)', fontSize: 11 }} />
-                            <input type="color" value={color} onChange={e => { const exts = { ...(themeSettings.customColors.customFileExtensions || {}), [ext]: e.target.value }; handleThemeSettingChange('customColors', { ...themeSettings.customColors, customFileExtensions: exts }); }} style={{ width: 24, height: 24, padding: 0, border: 'none', background: 'transparent', cursor: 'pointer' }} />
+                            <input type="color" value={color} onChange={e => { const exts = { ...(themeSettings.customColors.customFileExtensions || {}), [ext]: e.target.value }; handleThemeSettingChange('customColors', { ...themeSettings.customColors, customFileExtensions: exts }); }} style={{ width: 24, height: 24, padding: 0, border: 'none', background: 'transparent', cursor: 'shadowide' }} />
                             <span style={{ flex: 1, fontSize: 11, color, fontFamily: 'monospace' }}>.{ext}</span>
-                            <button onClick={() => { const exts = { ...(themeSettings.customColors.customFileExtensions || {}) }; delete exts[ext]; handleThemeSettingChange('customColors', { ...themeSettings.customColors, customFileExtensions: exts }); }} style={{ background: 'none', border: 'none', color: 'var(--error-color)', cursor: 'pointer', fontSize: 14, padding: '0 2px' }}>×</button>
+                            <button onClick={() => { const exts = { ...(themeSettings.customColors.customFileExtensions || {}) }; delete exts[ext]; handleThemeSettingChange('customColors', { ...themeSettings.customColors, customFileExtensions: exts }); }} style={{ background: 'none', border: 'none', color: 'var(--error-color)', cursor: 'shadowide', fontSize: 14, padding: '0 2px' }}>×</button>
                           </div>
                         ))}
                       </div>
-                      <button onClick={() => { const exts = { ...(themeSettings.customColors.customFileExtensions || {}), 'ext': '#ffffff' }; handleThemeSettingChange('customColors', { ...themeSettings.customColors, customFileExtensions: exts }); }} style={{ padding: '5px 10px', borderRadius: 4, border: '1px solid var(--border-primary)', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer' }}>+ Add Extension</button>
+                      <button onClick={() => { const exts = { ...(themeSettings.customColors.customFileExtensions || {}), 'ext': '#ffffff' }; handleThemeSettingChange('customColors', { ...themeSettings.customColors, customFileExtensions: exts }); }} style={{ padding: '5px 10px', borderRadius: 4, border: '1px solid var(--border-primary)', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', fontSize: 12, cursor: 'shadowide' }}>+ Add Extension</button>
                     </CollapsibleSection>
 
                     {/* ── Terminal Colors ── */}
@@ -3400,7 +3486,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                                     padding: '0',
                                     border: '1px solid var(--border-primary)',
                                     borderRadius: '4px',
-                                    cursor: 'pointer',
+                                    cursor: 'shadowide',
                                   }}
                                 />
                                 <input
@@ -3460,7 +3546,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                                   alignItems: 'center',
                                   justifyContent: 'center',
                                   color: 'white',
-                                  cursor: 'pointer',
+                                  cursor: 'shadowide',
                                   fontSize: '14px'
                                 }}
                               >
@@ -3478,7 +3564,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                             border: 'none',
                             borderRadius: '4px',
                             color: 'white',
-                            cursor: 'pointer',
+                            cursor: 'shadowide',
                             fontSize: '13px',
                             width: 'fit-content',
                             marginTop: '8px'
@@ -3492,76 +3578,14 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                     {/* Reset button */}
                     <div style={{ borderTop: '1px solid var(--border-primary)', paddingTop: '16px', display: 'flex', gap: '12px' }}>
                         <button
-                          onClick={() => {
-                          if (confirm('Are you sure you want to reset all theme and editor settings to defaults?')) {
-                            setEditorSettings({
-                              fontFamily: 'monospace',
-                              fontSize: 13,
-                              lineHeight: 1.5,
-                              tabSize: 2,
-                              insertSpaces: true,
-                              wordWrap: true,
-                              rulers: [],
-                              formatOnSave: true,
-                              formatOnPaste: false,
-                              autoSave: true,
-                              autoAcceptGhostText: false,
-                            });
-                            
-                            setThemeSettings({
-                              name: 'vs-dark',
-                              customColors: {
-                                bgPrimary: '',
-                                bgSecondary: '',
-                                bgTertiary: '',
-                                bgSelected: '',
-                                bgHover: '',
-                                bgAccent: '',
-                                textPrimary: '',
-                                textSecondary: '',
-                                borderColor: '',
-                                borderPrimary: '',
-                                accentColor: '',
-                                accentHover: '',
-                                errorColor: '',
-                                titlebarBg: '',
-                                statusbarBg: '',
-                                statusbarFg: '',
-                                activityBarBg: '',
-                                activityBarFg: '',
-                                inlineCodeColor: '#cc0000',
-                              },
-                              editorColors: {
-                                "editor.background": "#1e1e1e",
-                                "editor.foreground": "#d4d4d4",
-                                "editorLineNumber.foreground": "#858585",
-                                "editorLineNumber.activeForeground": "#c6c6c6",
-                                "editorCursor.foreground": "#d4d4d4",
-                                "editor.selectionBackground": "#264f78",
-                                "editor.lineHighlightBackground": "#2d2d2d50",
-                              },
-                              tokenColors: [
-                                { token: 'keyword', foreground: '#569CD6', fontStyle: 'bold' },
-                                { token: 'comment', foreground: '#6A9955', fontStyle: 'italic' },
-                                { token: 'string', foreground: '#CE9178' },
-                                { token: 'number', foreground: '#B5CEA8' },
-                                { token: 'operator', foreground: '#D4D4D4' },
-                                { token: 'type', foreground: '#4EC9B0' },
-                                { token: 'function', foreground: '#DCDCAA' },
-                                { token: 'variable', foreground: '#9CDCFE' }
-                              ]
-                            });
-
-                            setHasUnsavedChanges(true);
-                                  }
-                                }}
-                                style={{
+                          onClick={() => setConfirmResetType('theme')}
+                          style={{
                             padding: '8px 16px',
                             background: 'var(--accent-color)',
                             border: 'none',
                             borderRadius: '4px',
                             color: 'white',
-                            cursor: 'pointer',
+                            cursor: 'shadowide',
                             fontSize: '13px',
                           display: 'flex',
                           alignItems: 'center',
@@ -3681,7 +3705,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                         </div>
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginTop: '12px' }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'shadowide' }}>
                           <input type="checkbox" checked={advanced.terminalCursorBlink ?? true} onChange={e => handleAdvancedSettingChange('terminalCursorBlink', e.target.checked)} />
                           Cursor Blink
                         </label>
@@ -3727,11 +3751,11 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                         </div>
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '12px' }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'shadowide' }}>
                           <input type="checkbox" checked={advanced.terminalCopyOnSelect ?? false} onChange={e => handleAdvancedSettingChange('terminalCopyOnSelect', e.target.checked)} />
                           Copy on Select
                         </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'shadowide' }}>
                           <input type="checkbox" checked={advanced.terminalRightClickPaste ?? true} onChange={e => handleAdvancedSettingChange('terminalRightClickPaste', e.target.checked)} />
                           Right-click to Paste
                         </label>
@@ -3760,7 +3784,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                                 type="color"
                                 value={advanced[key] ?? def}
                                 onChange={e => handleAdvancedSettingChange(key, e.target.value)}
-                                style={{ width: '28px', height: '28px', padding: 0, border: '1px solid var(--border-primary)', borderRadius: '4px', cursor: 'pointer', background: 'transparent' }}
+                                style={{ width: '28px', height: '28px', padding: 0, border: '1px solid var(--border-primary)', borderRadius: '4px', cursor: 'shadowide', background: 'transparent' }}
                               />
                               <input
                                 type="text"
@@ -3777,7 +3801,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                           const defaults: Record<string, string> = { terminalBg: '#141414', terminalFg: '#cccccc', terminalCursor: '#ffffff', terminalRed: '#f85149', terminalGreen: '#3fb950', terminalYellow: '#d29922', terminalBlue: '#58a6ff', terminalMagenta: '#bc8cff', terminalCyan: '#39c5cf' };
                           Object.entries(defaults).forEach(([k, v]) => handleAdvancedSettingChange(k, v));
                         }}
-                        style={{ marginTop: '12px', padding: '6px 12px', background: 'var(--bg-accent)', border: '1px solid var(--border-primary)', borderRadius: '4px', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '12px' }}
+                        style={{ marginTop: '12px', padding: '6px 12px', background: 'var(--bg-accent)', border: '1px solid var(--border-primary)', borderRadius: '4px', color: 'var(--text-primary)', cursor: 'shadowide', fontSize: '12px' }}
                       >
                         Reset to Defaults
                       </button>
@@ -3794,7 +3818,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                     <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-primary)' }}>
                       <h4 style={{ margin: '0 0 14px 0', fontSize: '14px' }}>Background & Resume</h4>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'pointer' }}>
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'shadowide' }}>
                           <input type="checkbox" style={{ marginTop: '2px' }}
                             checked={advanced.aiContinueInBackground ?? true}
                             onChange={e => handleAdvancedSettingChange('aiContinueInBackground', e.target.checked)} />
@@ -3805,7 +3829,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                             </div>
                           </div>
                         </label>
-                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'pointer' }}>
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'shadowide' }}>
                           <input type="checkbox" style={{ marginTop: '2px' }}
                             checked={advanced.aiAutoResume ?? true}
                             onChange={e => handleAdvancedSettingChange('aiAutoResume', e.target.checked)} />
@@ -3816,7 +3840,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                             </div>
                           </div>
                         </label>
-                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'pointer' }}>
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'shadowide' }}>
                           <input type="checkbox" style={{ marginTop: '2px' }}
                             checked={advanced.aiNotifyOnComplete ?? true}
                             onChange={e => handleAdvancedSettingChange('aiNotifyOnComplete', e.target.checked)} />
@@ -3844,7 +3868,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                     <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-primary)' }}>
                       <h4 style={{ margin: '0 0 14px 0', fontSize: '14px' }}>Agent Behavior</h4>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'pointer' }}>
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'shadowide' }}>
                           <input type="checkbox" style={{ marginTop: '2px' }}
                             checked={advanced.aiAutoRunTerminal ?? true}
                             onChange={e => handleAdvancedSettingChange('aiAutoRunTerminal', e.target.checked)} />
@@ -3855,7 +3879,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                             </div>
                           </div>
                         </label>
-                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'pointer' }}>
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'shadowide' }}>
                           <input type="checkbox" style={{ marginTop: '2px' }}
                             checked={advanced.aiAutoAcceptEdits ?? false}
                             onChange={e => handleAdvancedSettingChange('aiAutoAcceptEdits', e.target.checked)} />
@@ -3866,7 +3890,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                             </div>
                           </div>
                         </label>
-                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'pointer' }}>
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'shadowide' }}>
                           <input type="checkbox" style={{ marginTop: '2px' }}
                             checked={advanced.aiExploreBeforeEdit ?? true}
                             onChange={e => handleAdvancedSettingChange('aiExploreBeforeEdit', e.target.checked)} />
@@ -3904,7 +3928,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                     <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-primary)' }}>
                       <h4 style={{ margin: '0 0 14px 0', fontSize: '14px' }}>Chat & Context</h4>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'pointer' }}>
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'shadowide' }}>
                           <input type="checkbox" style={{ marginTop: '2px' }}
                             checked={advanced.aiIncludeOpenFiles ?? true}
                             onChange={e => handleAdvancedSettingChange('aiIncludeOpenFiles', e.target.checked)} />
@@ -3915,7 +3939,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                             </div>
                           </div>
                         </label>
-                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'pointer' }}>
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'shadowide' }}>
                           <input type="checkbox" style={{ marginTop: '2px' }}
                             checked={advanced.aiStreamResponses ?? true}
                             onChange={e => handleAdvancedSettingChange('aiStreamResponses', e.target.checked)} />
@@ -3926,7 +3950,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                             </div>
                           </div>
                         </label>
-                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'pointer' }}>
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'shadowide' }}>
                           <input type="checkbox" style={{ marginTop: '2px' }}
                             checked={advanced.aiSaveHistory ?? true}
                             onChange={e => handleAdvancedSettingChange('aiSaveHistory', e.target.checked)} />
@@ -3954,7 +3978,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                     <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-primary)' }}>
                       <h4 style={{ margin: '0 0 14px 0', fontSize: '14px' }}>Inline AI (Editor)</h4>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'pointer' }}>
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'shadowide' }}>
                           <input type="checkbox" style={{ marginTop: '2px' }}
                             checked={advanced.aiInlineCompletion ?? true}
                             onChange={e => handleAdvancedSettingChange('aiInlineCompletion', e.target.checked)} />
@@ -3965,7 +3989,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                             </div>
                           </div>
                         </label>
-                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'pointer' }}>
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'shadowide' }}>
                           <input type="checkbox" style={{ marginTop: '2px' }}
                             checked={advanced.aiBlameOnOpen ?? false}
                             onChange={e => handleAdvancedSettingChange('aiBlameOnOpen', e.target.checked)} />
@@ -4064,27 +4088,27 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                           </p>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'shadowide' }}>
                             <input type="checkbox" checked={advanced.smoothScrolling ?? true} onChange={e => handleAdvancedSettingChange('smoothScrolling', e.target.checked)} />
                             Smooth Scrolling
                           </label>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'shadowide' }}>
                             <input type="checkbox" checked={advanced.showStatusBar ?? true} onChange={e => handleAdvancedSettingChange('showStatusBar', e.target.checked)} />
                             Show Status Bar
                           </label>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'shadowide' }}>
                             <input type="checkbox" checked={advanced.showBreadcrumbs ?? true} onChange={e => handleAdvancedSettingChange('showBreadcrumbs', e.target.checked)} />
                             Show Breadcrumbs
                           </label>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'shadowide' }}>
                             <input type="checkbox" checked={advanced.showMinimap ?? false} onChange={e => handleAdvancedSettingChange('showMinimap', e.target.checked)} />
                             Show Minimap
                           </label>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'shadowide' }}>
                             <input type="checkbox" checked={advanced.confirmOnClose ?? false} onChange={e => handleAdvancedSettingChange('confirmOnClose', e.target.checked)} />
                             Confirm on Close
                           </label>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'shadowide' }}>
                             <input type="checkbox" checked={advanced.restoreLastSession ?? true} onChange={e => handleAdvancedSettingChange('restoreLastSession', e.target.checked)} />
                             Restore Last Session
                           </label>
@@ -4096,19 +4120,19 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                     <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-primary)' }}>
                       <h4 style={{ margin: '0 0 14px 0', fontSize: '14px' }}>File Handling</h4>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'shadowide' }}>
                           <input type="checkbox" checked={advanced.trimTrailingWhitespace ?? false} onChange={e => handleAdvancedSettingChange('trimTrailingWhitespace', e.target.checked)} />
                           Trim Trailing Whitespace on Save
                         </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'shadowide' }}>
                           <input type="checkbox" checked={advanced.insertFinalNewline ?? true} onChange={e => handleAdvancedSettingChange('insertFinalNewline', e.target.checked)} />
                           Insert Final Newline
                         </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'shadowide' }}>
                           <input type="checkbox" checked={advanced.detectIndentation ?? true} onChange={e => handleAdvancedSettingChange('detectIndentation', e.target.checked)} />
                           Auto-detect Indentation
                         </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'shadowide' }}>
                           <input type="checkbox" checked={advanced.showHiddenFiles ?? false} onChange={e => handleAdvancedSettingChange('showHiddenFiles', e.target.checked)} />
                           Show Hidden Files
                         </label>
@@ -4130,11 +4154,11 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                     <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-primary)' }}>
                       <h4 style={{ margin: '0 0 14px 0', fontSize: '14px' }}>Performance</h4>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'shadowide' }}>
                           <input type="checkbox" checked={advanced.hardwareAcceleration ?? true} onChange={e => handleAdvancedSettingChange('hardwareAcceleration', e.target.checked)} />
                           Hardware Acceleration
                         </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'shadowide' }}>
                           <input type="checkbox" checked={advanced.backgroundThrottling ?? false} onChange={e => handleAdvancedSettingChange('backgroundThrottling', e.target.checked)} />
                           Background Throttling
                         </label>
@@ -4155,18 +4179,8 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                     <div style={{ padding: '16px', background: 'rgba(248,81,73,0.05)', borderRadius: '8px', border: '1px solid rgba(248,81,73,0.2)' }}>
                       <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#f85149' }}>Danger Zone</h4>
                       <button
-                        onClick={() => {
-                          if (confirm('Are you sure you want to reset ALL settings to default values? This cannot be undone.')) {
-                            setModelConfigs({ 'default': { ...defaultConfig } });
-                            setModelAssignments({...defaultModelAssignments});
-                            setEditorSettings({ fontFamily: 'monospace', fontSize: 13, lineHeight: 1.5, tabSize: 2, insertSpaces: true, wordWrap: true, rulers: [], formatOnSave: true, formatOnPaste: false, autoSave: true, autoAcceptGhostText: false });
-                            setThemeSettings({ name: 'vs-dark', customColors: { bgPrimary: '', bgSecondary: '', bgTertiary: '', bgSelected: '', bgHover: '', bgAccent: '', textPrimary: '', textSecondary: '', borderColor: '', borderPrimary: '', accentColor: '', accentHover: '', errorColor: '', titlebarBg: '', statusbarBg: '', statusbarFg: '', activityBarBg: '', activityBarFg: '', inlineCodeColor: '#cc0000' }, editorColors: { "editor.background": "#1e1e1e", "editor.foreground": "#d4d4d4", "editorLineNumber.foreground": "#858585", "editorLineNumber.activeForeground": "#c6c6c6", "editorCursor.foreground": "#d4d4d4", "editor.selectionBackground": "#264f78", "editor.lineHighlightBackground": "#2d2d2d50" }, tokenColors: [{ token: 'keyword', foreground: '#569CD6', fontStyle: 'bold' }, { token: 'comment', foreground: '#6A9955', fontStyle: 'italic' }, { token: 'string', foreground: '#CE9178' }, { token: 'number', foreground: '#B5CEA8' }, { token: 'operator', foreground: '#D4D4D4' }, { token: 'type', foreground: '#4EC9B0' }, { token: 'function', foreground: '#DCDCAA' }, { token: 'variable', foreground: '#9CDCFE' }] });
-                            setDiscordRpcSettings({...defaultDiscordRpcSettings});
-                            setAdvanced({});
-                            setHasUnsavedChanges(true);
-                          }
-                        }}
-                        style={{ padding: '8px 16px', background: '#f85149', border: 'none', borderRadius: '4px', color: 'white', cursor: 'pointer', fontSize: '13px' }}
+                        onClick={() => setConfirmResetType('all')}
+                        style={{ padding: '8px 16px', background: '#f85149', border: 'none', borderRadius: '4px', color: 'white', cursor: 'shadowide', fontSize: '13px' }}
                       >
                         Reset All Settings to Defaults
                       </button>
@@ -4254,7 +4268,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                             type="text"
                             value={discordRpcSettings.largeImageKey}
                             onChange={(e) => handleDiscordRpcSettingChange('largeImageKey', e.target.value)}
-                            placeholder="pointer_logo"
+                            placeholder="shadowide_logo"
                             style={{
                               width: '100%',
                               padding: '8px',
@@ -4381,7 +4395,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                             type="url"
                             value={discordRpcSettings.button1Url || ''}
                             onChange={(e) => handleDiscordRpcSettingChange('button1Url', e.target.value)}
-                            placeholder="https://pointer.f1shy312.com"
+                            placeholder="https://shadowide.f1shy312.com"
                             style={{
                               width: '100%',
                               padding: '8px',
@@ -4613,7 +4627,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
               background: 'var(--bg-secondary)',
               color: 'var(--text-secondary)',
               fontSize: '13px',
-              cursor: 'pointer',
+              cursor: 'shadowide',
             }}
           >
             Cancel
@@ -4628,7 +4642,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
               background: isLoading ? 'var(--bg-secondary)' : 
                         hasUnsavedChanges ? 'var(--accent-color)' : 'var(--bg-hover)',
               color: isLoading ? 'var(--text-secondary)' : 'white',
-              cursor: isLoading ? 'not-allowed' : 'pointer',
+              cursor: isLoading ? 'not-allowed' : 'shadowide',
               fontSize: '13px',
             }}
           >
@@ -4682,7 +4696,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                   color: 'white',
                   fontWeight: 600,
                   fontSize: '13px',
-                  cursor: 'pointer',
+                  cursor: 'shadowide',
                 }}
               >
                 Save & Close
@@ -4701,7 +4715,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                   color: '#f85149',
                   fontWeight: 600,
                   fontSize: '13px',
-                  cursor: 'pointer',
+                  cursor: 'shadowide',
                 }}
               >
                 Discard Changes
@@ -4715,10 +4729,147 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                   background: 'var(--bg-secondary)',
                   color: 'var(--text-secondary)',
                   fontSize: '13px',
-                  cursor: 'pointer',
+                  cursor: 'shadowide',
                 }}
               >
                 Keep Editing
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmResetType && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0, 0, 0, 0.75)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 99999,
+          backdropFilter: 'blur(6px)',
+        }}>
+          <div style={{
+            width: '400px',
+            background: 'var(--bg-primary)',
+            borderRadius: '12px',
+            border: '1px solid var(--border-primary)',
+            padding: '24px',
+            boxShadow: '0 24px 48px rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <span style={{ fontSize: '24px' }}>⚠️</span>
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                Reset Settings
+              </h3>
+            </div>
+            <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.5', textAlign: 'left' }}>
+              {confirmResetType === 'theme' 
+                ? 'Are you sure you want to reset all theme and editor settings to defaults?' 
+                : 'Are you sure you want to reset ALL settings to default values? This cannot be undone.'}
+            </p>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '8px' }}>
+              <button
+                onClick={() => setConfirmResetType(null)}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--border-primary)',
+                  background: 'var(--bg-secondary)',
+                  color: 'var(--text-secondary)',
+                  fontSize: '13px',
+                  cursor: 'shadowide',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (confirmResetType === 'theme') {
+                    setEditorSettings({
+                      fontFamily: 'monospace',
+                      fontSize: 13,
+                      lineHeight: 1.5,
+                      tabSize: 2,
+                      insertSpaces: true,
+                      wordWrap: true,
+                      rulers: [],
+                      formatOnSave: true,
+                      formatOnPaste: false,
+                      autoSave: true,
+                      autoAcceptGhostText: false,
+                    });
+                    setThemeSettings({
+                      name: 'vs-dark',
+                      customColors: {
+                        bgPrimary: '',
+                        bgSecondary: '',
+                        bgTertiary: '',
+                        bgSelected: '',
+                        bgHover: '',
+                        bgAccent: '',
+                        textPrimary: '',
+                        textSecondary: '',
+                        borderColor: '',
+                        borderPrimary: '',
+                        accentColor: '',
+                        accentHover: '',
+                        errorColor: '',
+                        titlebarBg: '',
+                        statusbarBg: '',
+                        statusbarFg: '',
+                        activityBarBg: '',
+                        activityBarFg: '',
+                        inlineCodeColor: '#cc0000',
+                      },
+                      editorColors: {
+                        "editor.background": "#1e1e1e",
+                        "editor.foreground": "#d4d4d4",
+                        "editorLineNumber.foreground": "#858585",
+                        "editorLineNumber.activeForeground": "#c6c6c6",
+                        "editorCursor.foreground": "#d4d4d4",
+                        "editor.selectionBackground": "#264f78",
+                        "editor.lineHighlightBackground": "#2d2d2d50",
+                      },
+                      tokenColors: [
+                        { token: 'keyword', foreground: '#569CD6', fontStyle: 'bold' },
+                        { token: 'comment', foreground: '#6A9955', fontStyle: 'italic' },
+                        { token: 'string', foreground: '#CE9178' },
+                        { token: 'number', foreground: '#B5CEA8' },
+                        { token: 'operator', foreground: '#D4D4D4' },
+                        { token: 'type', foreground: '#4EC9B0' },
+                        { token: 'function', foreground: '#DCDCAA' },
+                        { token: 'variable', foreground: '#9CDCFE' }
+                      ]
+                    });
+                    setHasUnsavedChanges(true);
+                  } else {
+                    setModelConfigs({ 'default': { ...defaultConfig } });
+                    setModelAssignments({...defaultModelAssignments});
+                    setEditorSettings({ fontFamily: 'monospace', fontSize: 13, lineHeight: 1.5, tabSize: 2, insertSpaces: true, wordWrap: true, rulers: [], formatOnSave: true, formatOnPaste: false, autoSave: true, autoAcceptGhostText: false });
+                    setThemeSettings({ name: 'vs-dark', customColors: { bgPrimary: '', bgSecondary: '', bgTertiary: '', bgSelected: '', bgHover: '', bgAccent: '', textPrimary: '', textSecondary: '', borderColor: '', borderPrimary: '', accentColor: '', accentHover: '', errorColor: '', titlebarBg: '', statusbarBg: '', statusbarFg: '', activityBarBg: '', activityBarFg: '', inlineCodeColor: '#cc0000' }, editorColors: { "editor.background": "#1e1e1e", "editor.foreground": "#d4d4d4", "editorLineNumber.foreground": "#858585", "editorLineNumber.activeForeground": "#c6c6c6", "editorCursor.foreground": "#d4d4d4", "editor.selectionBackground": "#264f78", "editor.lineHighlightBackground": "#2d2d2d50" }, tokenColors: [{ token: 'keyword', foreground: '#569CD6', fontStyle: 'bold' }, { token: 'comment', foreground: '#6A9955', fontStyle: 'italic' }, { token: 'string', foreground: '#CE9178' }, { token: 'number', foreground: '#B5CEA8' }, { token: 'operator', foreground: '#D4D4D4' }, { token: 'type', foreground: '#4EC9B0' }, { token: 'function', foreground: '#DCDCAA' }, { token: 'variable', foreground: '#9CDCFE' }] });
+                    setDiscordRpcSettings({...defaultDiscordRpcSettings});
+                    setAdvanced({});
+                    setHasUnsavedChanges(true);
+                  }
+                  setConfirmResetType(null);
+                }}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: '#f85149',
+                  color: 'white',
+                  fontWeight: 600,
+                  fontSize: '13px',
+                  cursor: 'shadowide',
+                }}
+              >
+                Reset
               </button>
             </div>
           </div>

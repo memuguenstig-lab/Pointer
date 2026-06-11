@@ -49,7 +49,7 @@
   border: none;
   border-bottom: 1px solid var(--border-primary);
   color: var(--text-primary);
-  cursor: pointer;
+  cursor: shadowide;
   text-align: left;
   font-size: 12px;
   transition: background-color 0.2s ease;
@@ -67,7 +67,7 @@
   background: none;
   border: none;
   color: var(--text-secondary);
-  cursor: pointer;
+  cursor: shadowide;
   padding: 5px;
   border-radius: 4px;
   display: flex;
@@ -85,7 +85,7 @@
   background: none;
   border: none;
   color: var(--text-primary);
-  cursor: pointer;
+  cursor: shadowide;
   padding: 4px;
   font-size: 14px;
   transition: color 0.2s ease;
@@ -196,7 +196,7 @@
   align-items: center;
   padding: 10px 14px;
   background: linear-gradient(to bottom, #2a2a2a, #252525);
-  cursor: pointer;
+  cursor: shadowide;
   font-size: 14px;
   font-family: 'Fira Code', 'Consolas', monospace;
   user-select: none;
@@ -240,7 +240,7 @@
   border-radius: 4px;
   padding: 4px 10px;
   font-size: 12px;
-  cursor: pointer;
+  cursor: shadowide;
   transition: background-color 0.2s ease;
 }
 
@@ -443,7 +443,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  cursor: pointer;
+  cursor: shadowide;
   padding: 4px 0;
 }
 
@@ -609,7 +609,7 @@
 .remove-file-button {
   background: none;
   border: none;
-  cursor: pointer;
+  cursor: shadowide;
   font-size: 12px;
   color: var(--text-tertiary);
   display: flex;
@@ -663,7 +663,7 @@
 
 .file-suggestion-item {
   padding: 8px 12px;
-  cursor: pointer;
+  cursor: shadowide;
   font-size: 12px;
   border-bottom: 1px solid var(--border-primary);
   color: var(--text-primary);
@@ -693,7 +693,7 @@
   border: 1px solid var(--border-primary);
   background: var(--bg-secondary);
   color: var(--text-secondary);
-  cursor: pointer;
+  cursor: shadowide;
   font-size: 13px;
   font-weight: 500;
   display: flex;
@@ -794,7 +794,7 @@
   background: none;
   border: none;
   color: var(--text-tertiary);
-  cursor: pointer;
+  cursor: shadowide;
   display: flex;
   align-items: center;
   justify-content: center;

@@ -6,12 +6,12 @@ from datetime import datetime, timedelta
 import logging
 from typing import Optional, List, Dict, Any, Union
 
-logger = logging.getLogger('pointer_bot')
+logger = logging.getLogger('shadowide_bot')
 
-# Get pointer coin emoji
+# Get shadowide coin emoji
 def get_coin_emoji():
-    """Get the Pointer Coin emoji"""
-    emoji_id = os.getenv('POINTER_COIN_EMOJI_ID')
+    """Get the ShadowIDE Coin emoji"""
+    emoji_id = os.getenv('SHADOWIDE_COIN_EMOJI_ID')
     if emoji_id:
         return f"{emoji_id}"
     return "🪙"  # Fallback emoji

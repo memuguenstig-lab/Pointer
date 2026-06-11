@@ -10,7 +10,7 @@
     "serve": "vite preview",
     "dev:server": "vite --config ./vite.config.ts",
     "dev:electron": "electron .",
-    "dev": "node start-pointer.js",
+    "dev": "node start-shadowide.js",
     "electron:dev": "concurrently \"yarn start\" \"wait-on http://localhost:3000 && electron .\"",
     "electron:start": "electron .",
     "postinstall": "electron-builder install-app-deps",

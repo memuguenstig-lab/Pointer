@@ -1,9 +1,9 @@
 """
-Tests for Pointer CLI doctor checks.
+Tests for ShadowIDE CLI doctor checks.
 """
 
-from pointer_cli.config import Config
-from pointer_cli.doctor import DoctorCheck, apply_safe_fixes, run_doctor, summarize_results
+from shadowide_cli.config import Config
+from shadowide_cli.doctor import DoctorCheck, apply_safe_fixes, run_doctor, summarize_results
 
 
 class DummyResponse:
@@ -44,12 +44,12 @@ class TestDoctor:
         config.initialized = True
         config.save(str(config_path))
 
-        monkeypatch.setattr("pointer_cli.doctor.get_config_path", lambda: tmp_path)
-        monkeypatch.setattr("pointer_cli.doctor.ensure_config_dir", lambda: None)
-        monkeypatch.setattr("pointer_cli.doctor.get_project_root", lambda: tmp_path)
-        monkeypatch.setattr("pointer_cli.doctor.is_git_repo", lambda: True)
+        monkeypatch.setattr("shadowide_cli.doctor.get_config_path", lambda: tmp_path)
+        monkeypatch.setattr("shadowide_cli.doctor.ensure_config_dir", lambda: None)
+        monkeypatch.setattr("shadowide_cli.doctor.get_project_root", lambda: tmp_path)
+        monkeypatch.setattr("shadowide_cli.doctor.is_git_repo", lambda: True)
         monkeypatch.setattr(
-            "pointer_cli.doctor.request.urlopen",
+            "shadowide_cli.doctor.request.urlopen",
             lambda url, timeout=2.0: DummyResponse(200),
         )
 
@@ -64,12 +64,12 @@ class TestDoctor:
         """Doctor should warn when no config file exists yet."""
         config = Config()
 
-        monkeypatch.setattr("pointer_cli.doctor.get_config_path", lambda: tmp_path)
-        monkeypatch.setattr("pointer_cli.doctor.ensure_config_dir", lambda: None)
-        monkeypatch.setattr("pointer_cli.doctor.get_project_root", lambda: None)
-        monkeypatch.setattr("pointer_cli.doctor.is_git_repo", lambda: False)
+        monkeypatch.setattr("shadowide_cli.doctor.get_config_path", lambda: tmp_path)
+        monkeypatch.setattr("shadowide_cli.doctor.ensure_config_dir", lambda: None)
+        monkeypatch.setattr("shadowide_cli.doctor.get_project_root", lambda: None)
+        monkeypatch.setattr("shadowide_cli.doctor.is_git_repo", lambda: False)
         monkeypatch.setattr(
-            "pointer_cli.doctor.request.urlopen",
+            "shadowide_cli.doctor.request.urlopen",
             lambda url, timeout=2.0: DummyResponse(200),
         )
 
@@ -84,15 +84,15 @@ class TestDoctor:
         config = Config()
         config.api.base_url = "http://localhost:9999"
 
-        monkeypatch.setattr("pointer_cli.doctor.get_config_path", lambda: tmp_path)
-        monkeypatch.setattr("pointer_cli.doctor.ensure_config_dir", lambda: None)
-        monkeypatch.setattr("pointer_cli.doctor.get_project_root", lambda: tmp_path)
-        monkeypatch.setattr("pointer_cli.doctor.is_git_repo", lambda: True)
+        monkeypatch.setattr("shadowide_cli.doctor.get_config_path", lambda: tmp_path)
+        monkeypatch.setattr("shadowide_cli.doctor.ensure_config_dir", lambda: None)
+        monkeypatch.setattr("shadowide_cli.doctor.get_project_root", lambda: tmp_path)
+        monkeypatch.setattr("shadowide_cli.doctor.is_git_repo", lambda: True)
 
         def raise_url_error(url, timeout=2.0):
             raise OSError("connection refused")
 
-        monkeypatch.setattr("pointer_cli.doctor.request.urlopen", raise_url_error)
+        monkeypatch.setattr("shadowide_cli.doctor.request.urlopen", raise_url_error)
 
         checks = run_doctor(config, config_path=str(tmp_path / "config.json"), cwd=tmp_path)
         check_map = {check.name: check for check in checks}

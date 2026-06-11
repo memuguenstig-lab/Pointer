@@ -21,7 +21,7 @@ intents = discord.Intents.default()
 intents.members = True  # Needed for moderation commands
 intents.presences = True  # Needed for status information
 
-class PointerBot(commands.Bot):
+class ShadowIDEBot(commands.Bot):
     def __init__(self):
         super().__init__(
             command_prefix="!",  # Prefix won't be used with slash commands
@@ -47,7 +47,7 @@ class PointerBot(commands.Bot):
         logger.info(f"Logged in as {self.user.name} | {self.user.id}")
         await self.change_presence(activity=discord.Activity(
             type=discord.ActivityType.watching, 
-            name="Pointer | https://pointer.f1shy312.com"
+            name="ShadowIDE | https://shadowide.f1shy312.com"
         ))
         
         # Set up log channel
@@ -58,7 +58,7 @@ class PointerBot(commands.Bot):
             logger.info(f"Log channel set to: {self.log_channel.name}")
 
 async def main():
-    bot = PointerBot()
+    bot = ShadowIDEBot()
     async with bot:
         await bot.start(TOKEN)
 

@@ -6,7 +6,7 @@ import tempfile
 from pathlib import Path
 import pytest
 
-from pointer_cli.editor import CodeEditor, EditOperation, EditType
+from shadowide_cli.editor import CodeEditor, EditOperation, EditType
 from rich.console import Console
 
 class TestCodeEditor:

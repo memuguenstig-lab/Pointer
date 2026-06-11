@@ -58,7 +58,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
                 color: '#fff',
                 border: 'none',
                 borderRadius: '4px',
-                cursor: 'pointer'
+                cursor: 'shadowide'
               }}
             >
               Reload Application

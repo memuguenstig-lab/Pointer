@@ -19,9 +19,9 @@ const https   = require('https');
 function getModelsDir() {
   const p = process.platform;
   let base;
-  if (p === 'win32')    base = path.join(process.env.APPDATA || os.homedir(), 'Pointer');
-  else if (p === 'darwin') base = path.join(os.homedir(), 'Library', 'Application Support', 'Pointer');
-  else                  base = path.join(process.env.XDG_DATA_HOME || path.join(os.homedir(), '.local', 'share'), 'pointer');
+  if (p === 'win32')    base = path.join(process.env.APPDATA || os.homedir(), 'ShadowIDE');
+  else if (p === 'darwin') base = path.join(os.homedir(), 'Library', 'Application Support', 'ShadowIDE');
+  else                  base = path.join(process.env.XDG_DATA_HOME || path.join(os.homedir(), '.local', 'share'), 'shadowide');
   const dir = path.join(base, 'models');
   try { fs.mkdirSync(dir, { recursive: true }); } catch (_) {}
   return dir;
@@ -209,7 +209,7 @@ function fetchRange(url, start, end) {
   return new Promise((resolve, reject) => {
     const opts = {
       headers: {
-        'User-Agent': 'Pointer/1.0',
+        'User-Agent': 'ShadowIDE/1.0',
         'Range': `bytes=${start}-${end}`,
       },
     };
@@ -234,7 +234,7 @@ function fetchRange(url, start, end) {
  */
 function getFileMeta(url) {
   return new Promise((resolve, reject) => {
-    const req = https.request(url, { method: 'HEAD', headers: { 'User-Agent': 'Pointer/1.0' } }, res => {
+    const req = https.request(url, { method: 'HEAD', headers: { 'User-Agent': 'ShadowIDE/1.0' } }, res => {
       if (res.statusCode === 301 || res.statusCode === 302) {
         return getFileMeta(res.headers.location).then(resolve).catch(reject);
       }
@@ -302,7 +302,7 @@ async function downloadParallel(url, dest) {
 
 function downloadSingleStream(url, dest, resumeFrom) {
   return new Promise((resolve, reject) => {
-    const headers = { 'User-Agent': 'Pointer/1.0' };
+    const headers = { 'User-Agent': 'ShadowIDE/1.0' };
     if (resumeFrom > 0) headers['Range'] = `bytes=${resumeFrom}-`;
 
     const file = fs.createWriteStream(dest, { flags: resumeFrom > 0 ? 'a' : 'w' });

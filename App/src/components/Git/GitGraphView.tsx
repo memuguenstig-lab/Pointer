@@ -200,16 +200,16 @@ const GitGraphView: React.FC = () => {
                 <circle
                   cx={cx} cy={cy} r={DOT_R + 3}
                   fill="transparent"
-                  style={{ cursor: 'pointer' }}
+                  style={{ cursor: 'shadowide' }}
                   onMouseEnter={(ev) => {
                     const rect = containerRef.current?.getBoundingClientRect();
                     setTooltip({ commit: c, x: ev.clientX - (rect?.left ?? 0), y: ev.clientY - (rect?.top ?? 0) });
                   }}
                   onMouseLeave={() => setTooltip(null)}
                 />
-                <circle cx={cx} cy={cy} r={DOT_R} fill={color} stroke="var(--bg-primary)" strokeWidth={1.5} style={{ pointerEvents: 'none' }} />
+                <circle cx={cx} cy={cy} r={DOT_R} fill={color} stroke="var(--bg-primary)" strokeWidth={1.5} style={{ shadowideEvents: 'none' }} />
                 {c.isCurrent && (
-                  <circle cx={cx} cy={cy} r={DOT_R + 3} fill="none" stroke={color} strokeWidth={1} opacity={0.5} style={{ pointerEvents: 'none' }} />
+                  <circle cx={cx} cy={cy} r={DOT_R + 3} fill="none" stroke={color} strokeWidth={1} opacity={0.5} style={{ shadowideEvents: 'none' }} />
                 )}
               </g>
             );
@@ -290,7 +290,7 @@ const GitGraphView: React.FC = () => {
           zIndex: 100,
           boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
           maxWidth: 320,
-          pointerEvents: 'none',
+          shadowideEvents: 'none',
         }}>
           <div style={{ fontFamily: 'monospace', color: '#58a6ff', marginBottom: 4 }}>{tooltip.commit.hash}</div>
           <div style={{ fontWeight: 600, marginBottom: 4, color: 'var(--text-primary)' }}>{tooltip.commit.message}</div>

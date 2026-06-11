@@ -155,7 +155,7 @@ const SplitEditor: React.FC<SplitEditorProps> = ({
               <button
                 onClick={e => { e.stopPropagation(); handleSplit(group.id); }}
                 title="Split Editor (Ctrl+\\)"
-                style={{ padding: '0 8px', background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', flexShrink: 0, fontSize: 14 }}
+                style={{ padding: '0 8px', background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'shadowide', flexShrink: 0, fontSize: 14 }}
               >
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
                   <rect x="1" y="1" width="14" height="14" rx="1.5"/>
@@ -167,7 +167,7 @@ const SplitEditor: React.FC<SplitEditorProps> = ({
                 <button
                   onClick={e => { e.stopPropagation(); const ng = groups.filter(g => g.id !== group.id); onGroupsChange(ng); onActiveGroupChange(ng[0].id); }}
                   title="Close Editor Group"
-                  style={{ padding: '0 6px', background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', flexShrink: 0, fontSize: 12 }}
+                  style={{ padding: '0 6px', background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'shadowide', flexShrink: 0, fontSize: 12 }}
                 >✕</button>
               )}
             </div>

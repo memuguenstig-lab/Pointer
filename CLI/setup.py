@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Pointer CLI - A professional command-line interface for AI-powered local codebase assistance.
+ShadowIDE CLI - A professional command-line interface for AI-powered local codebase assistance.
 """
 
 from setuptools import setup, find_packages
@@ -12,14 +12,14 @@ with open("requirements.txt", "r", encoding="utf-8") as fh:
     requirements = [line.strip() for line in fh if line.strip() and not line.startswith("#")]
 
 setup(
-    name="pointer-cli",
+    name="shadowide-cli",
     version="1.0.0",
-    author="Pointer CLI Team",
-    author_email="team@pointer-cli.dev",
+    author="ShadowIDE CLI Team",
+    author_email="team@shadowide-cli.dev",
     description="A professional command-line interface for AI-powered local codebase assistance",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/pointer-cli/pointer-cli",
+    url="https://github.com/shadowide-cli/shadowide-cli",
     packages=find_packages(),
     classifiers=[
         "Development Status :: 5 - Production/Stable",
@@ -39,11 +39,11 @@ setup(
     install_requires=requirements,
     entry_points={
         "console_scripts": [
-            "pointer=pointer_cli.main:main",
+            "shadowide=shadowide_cli.main:main",
         ],
     },
     include_package_data=True,
     package_data={
-        "pointer_cli": ["config/*.json", "templates/*.txt"],
+        "shadowide_cli": ["config/*.json", "templates/*.txt"],
     },
 )

@@ -203,7 +203,7 @@ Startet Frontend, Backend und optional Electron zusammen.
 
 ### Option 2: Produktionsmodus
 ```bash
-node start-pointer.js
+node start-shadowide.js
 ```
 
 ### Option 3: Komponenten separat

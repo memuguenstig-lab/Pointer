@@ -1,10 +1,10 @@
-# Pointer - Modern Development Suite
+# ShadowIDE - Modern Development Suite
 
 A comprehensive development suite consisting of a modern code editor, community Discord bots, and a web presence - all built with React, TypeScript, Python, and Next.js.
 
-- **Website**: [pointer.f1shy312.com](https://pointer.f1shy312.com)
+- **Website**: [shadowide.f1shy312.com](https://shadowide.f1shy312.com)
 - **Discord**: [Join our Discord](https://discord.gg/vhgc8THmNk)
-- **GitHub**: [Source Code](https://github.com/PointerIDE/Pointer)
+- **GitHub**: [Source Code](https://github.com/memuguenstig-lab/ShadowIDE)
 
 > **Note**: This is an ambitious multi-component project that brings together a VS Code-like editor, community tools, and web presence. (Community contributions welcome!)
 
@@ -22,7 +22,7 @@ A comprehensive development suite consisting of a modern code editor, community 
 ---
 
 ### 🌐 [**Website**](Website/README.md) - Landing Page & Web Presence  
-> Next.js marketing website and web-based tools for the Pointer ecosystem.
+> Next.js marketing website and web-based tools for the ShadowIDE ecosystem.
 
 **Features**: Landing page, documentation, web tools, static site generation
 
@@ -52,9 +52,9 @@ A comprehensive development suite consisting of a modern code editor, community 
 
 ### One-Command Setup (Code Editor)
 ```bash
-git clone https://github.com/PointerIDE/Pointer.git
-cd Pointer
-node start-pointer.js
+git clone https://github.com/memuguenstig-lab/ShadowIDE.git
+cd ShadowIDE
+node start-shadowide.js
 ```
 
 **For detailed setup of individual components, see their respective README files above.**
@@ -62,7 +62,7 @@ node start-pointer.js
 ## 📁 Repository Structure
 
 ```
-Pointer/
+ShadowIDE/
 ├── App/           # 📝 Code Editor (Electron + React + Python)
 │   └── README.md  # → Detailed editor setup guide
 ├── Website/       # 🌐 Landing Page (Next.js)

@@ -1,5 +1,5 @@
 @echo off
-REM Pointer Build and Setup Script for Windows
+REM ShadowIDE Build and Setup Script for Windows
 REM Umfassendes Setup-Script mit Error-Handling und Debugging
 
 setlocal enabledelayedexpansion
@@ -101,7 +101,7 @@ REM ============================================================================
 cls
 echo.
 echo ╔════════════════════════════════════════════════════════════════════════════╗
-echo ║                    Pointer Build ^& Setup Script v%SCRIPT_VERSION%                 ║
+echo ║                    ShadowIDE Build ^& Setup Script v%SCRIPT_VERSION%                 ║
 echo ║               Umfassendes Setup mit Error-Handling ^& Debugging              ║
 echo ╚════════════════════════════════════════════════════════════════════════════╝
 echo.
@@ -292,7 +292,7 @@ echo.
 goto :eof
 
 :show_help
-echo Pointer Build ^& Setup Script
+echo ShadowIDE Build ^& Setup Script
 echo.
 echo Verwendung: build.bat [OPTIONEN]
 echo.
@@ -336,7 +336,7 @@ call :write_log "Start-Optionen:" "Info"
 call :write_log "  1. Entwicklungsmodus (Frontend + Backend):" "Info"
 call :write_log "     yarn dev" "Debug"
 call :write_log "  2. Produktionsstart:" "Info"
-call :write_log "     node start-pointer.js" "Debug"
+call :write_log "     node start-shadowide.js" "Debug"
 call :write_log "  3. Komponenten separat:" "Info"
 call :write_log "     Terminal 1: cd backend ^&^& python run.py" "Debug"
 call :write_log "     Terminal 2: yarn start" "Debug"

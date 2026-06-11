@@ -3,7 +3,7 @@ import os
 import logging
 from datetime import datetime
 
-logger = logging.getLogger('pointer_bot')
+logger = logging.getLogger('shadowide_bot')
 
 class Database:
     def __init__(self, db_path="data/moderation.db"):

@@ -13,7 +13,7 @@ import logging
 from utils.helpers import create_embed, parse_time, format_time_until, seconds_to_dhms
 from utils.db import Database
 
-logger = logging.getLogger('pointer_bot')
+logger = logging.getLogger('shadowide_bot')
 
 class GiveawayView(discord.ui.View):
     """View for giveaway interaction buttons"""

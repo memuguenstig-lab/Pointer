@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Pointer Installer Test Script
+ * ShadowIDE Installer Test Script
  * Tests the installation components without building the full installer
  */
 
@@ -219,7 +219,7 @@ function testMacScript() {
 }
 
 async function runAllTests() {
-  console.log('Pointer Installer Component Tests');
+  console.log('ShadowIDE Installer Component Tests');
   console.log('=================================\n');
   
   const tests = [

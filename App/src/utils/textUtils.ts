@@ -84,7 +84,7 @@ export function containsMarkdownCodeBlocks(content: string): boolean {
 }
 
 /**
- * Identifies incomplete code pointer blocks where the start tag exists but not the end tag
+ * Identifies incomplete code shadowide blocks where the start tag exists but not the end tag
  * 
  * @param content The content to check for incomplete code blocks
  * @returns An array of objects containing info about incomplete blocks (filename and startIndex)
@@ -581,11 +581,11 @@ export const extractCodeBlocks = (content: string) => {
     return result;
   };
 
-  const pointerRegex = /Shadow:Code\+(.+?):start\s*([\s\S]*?)\s*Shadow:Code\+\1:end/g;
-  let pointerMatch;
-  while ((pointerMatch = pointerRegex.exec(content)) !== null) {
-    const filename = pointerMatch[1].trim();
-    const code = pointerMatch[2].trim();
+  const shadowideRegex = /Shadow:Code\+(.+?):start\s*([\s\S]*?)\s*Shadow:Code\+\1:end/g;
+  let shadowideMatch;
+  while ((shadowideMatch = shadowideRegex.exec(content)) !== null) {
+    const filename = shadowideMatch[1].trim();
+    const code = shadowideMatch[2].trim();
     if (filename && code) {
       codeBlocks.push({
         language: '',

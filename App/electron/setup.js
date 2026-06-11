@@ -1,6 +1,6 @@
 'use strict';
 /**
- * Pointer Setup Manager
+ * ShadowIDE Setup Manager
  * Runs on first launch (or when deps are missing) to:
  *  1. Check Node.js is installed
  *  2. Run npm install for backend-node and app dependencies
@@ -37,7 +37,7 @@ function downloadFile(url, dest, onProgress) {
     const file = fs.createWriteStream(dest);
     https.get(url, { 
       headers: { 
-        'User-Agent': 'Pointer-Installer/1.0',
+        'User-Agent': 'ShadowIDE-Installer/1.0',
         'Accept': '*/*'
       },
       timeout: 30000
@@ -221,7 +221,7 @@ async function runNpmInstall(dir, label, onStatus, startPct) {
  */
 async function runSetup({ appRoot, onStatus }) {
   try {
-    onStatus('Starting Pointer setup...', 0);
+    onStatus('Starting ShadowIDE setup...', 0);
     onStatus('Checking Node.js installation...', 2);
 
     const nodeVer = await getNodeVersion();
@@ -260,7 +260,7 @@ async function runSetup({ appRoot, onStatus }) {
     await runNpmInstall(backendDir, 'backend', onStatus, 70);
     await runNpmInstall(appDir, 'app', onStatus, 85);
 
-    onStatus('Setup complete! Pointer is ready to use.', 100);
+    onStatus('Setup complete! ShadowIDE is ready to use.', 100);
     
   } catch (error) {
     onStatus(`Setup failed: ${error.message}`, 100);

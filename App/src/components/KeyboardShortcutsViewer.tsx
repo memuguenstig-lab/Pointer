@@ -92,7 +92,7 @@ const KeyboardShortcutsViewer: React.FC<{ isOpen: boolean; onClose: () => void }
               border: 'none',
               color: 'var(--text-secondary)',
               fontSize: '20px',
-              cursor: 'pointer',
+              cursor: 'shadowide',
               padding: '4px 8px'
             }}
           >
@@ -139,7 +139,7 @@ const KeyboardShortcutsViewer: React.FC<{ isOpen: boolean; onClose: () => void }
               color: 'var(--text-primary)',
               fontSize: '12px',
               outline: 'none',
-              cursor: 'pointer'
+              cursor: 'shadowide'
             }}
           >
             <option value="">All Categories</option>
@@ -159,7 +159,7 @@ const KeyboardShortcutsViewer: React.FC<{ isOpen: boolean; onClose: () => void }
               backgroundColor: showAnalytics ? 'var(--accent)' : 'var(--bg-secondary)',
               color: showAnalytics ? '#fff' : 'var(--text-primary)',
               fontSize: '12px',
-              cursor: 'pointer',
+              cursor: 'shadowide',
               fontWeight: showAnalytics ? 'bold' : 'normal'
             }}
           >
@@ -232,7 +232,7 @@ const ShortcutsGrid: React.FC<{ shortcuts: any[] }> = ({ shortcuts }) => {
             style={{
               borderBottom: '1px solid var(--border-color)',
               backgroundColor: idx % 2 === 0 ? 'var(--bg-primary)' : 'var(--bg-secondary)',
-              cursor: 'pointer'
+              cursor: 'shadowide'
             }}
           >
             <td style={{

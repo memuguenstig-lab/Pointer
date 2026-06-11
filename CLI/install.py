@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Pointer CLI Installation Script
+ShadowIDE CLI Installation Script
 
-This script installs Pointer CLI and ensures the 'pointer' command is available globally.
+This script installs ShadowIDE CLI and ensures the 'shadowide' command is available globally.
 """
 
 import os
@@ -32,9 +32,9 @@ def check_pip():
         print("❌ Error: pip is not available")
         return False
 
-def install_pointer_cli():
-    """Install Pointer CLI in development mode."""
-    print("🔧 Installing Pointer CLI in development mode...")
+def install_shadowide_cli():
+    """Install ShadowIDE CLI in development mode."""
+    print("🔧 Installing ShadowIDE CLI in development mode...")
     
     try:
         # Install in development mode
@@ -51,16 +51,16 @@ def install_pointer_cli():
         return False
 
 def verify_installation():
-    """Verify that the pointer command is available."""
+    """Verify that the shadowide command is available."""
     print("🔍 Verifying installation...")
     
-    # Check if pointer command is available
-    pointer_path = shutil.which("pointer")
-    if pointer_path:
-        print(f"✅ 'pointer' command found at: {pointer_path}")
+    # Check if shadowide command is available
+    shadowide_path = shutil.which("shadowide")
+    if shadowide_path:
+        print(f"✅ 'shadowide' command found at: {shadowide_path}")
         return True
     else:
-        print("❌ 'pointer' command not found in PATH")
+        print("❌ 'shadowide' command not found in PATH")
         return False
 
 def get_scripts_directory():
@@ -68,7 +68,7 @@ def get_scripts_directory():
     # Method 1: Try to get from pip show
     try:
         result = subprocess.run([
-            sys.executable, "-m", "pip", "show", "-f", "pointer-cli"
+            sys.executable, "-m", "pip", "show", "-f", "shadowide-cli"
         ], capture_output=True, text=True)
         
         if result.returncode == 0:
@@ -135,11 +135,11 @@ def get_scripts_directory():
     
     return None
 
-def create_pointer_batch_file():
-    """Create a pointer.bat file in a directory that's in PATH."""
+def create_shadowide_batch_file():
+    """Create a shadowide.bat file in a directory that's in PATH."""
     try:
         batch_content = f"""@echo off
-python -m pointer_cli %*"""
+python -m shadowide_cli %*"""
         
         # Try to find a directory that's in PATH where we can create the batch file
         path_dirs = os.environ.get('PATH', '').split(';')
@@ -156,12 +156,12 @@ python -m pointer_cli %*"""
                                 f.write("test")
                             test_file.unlink()  # Delete test file
                             
-                            # Create pointer.bat in this directory
-                            batch_file = path_path / "pointer.bat"
+                            # Create shadowide.bat in this directory
+                            batch_file = path_path / "shadowide.bat"
                             with open(batch_file, 'w') as f:
                                 f.write(batch_content)
                             
-                            print(f"✅ Created pointer.bat in: {batch_file}")
+                            print(f"✅ Created shadowide.bat in: {batch_file}")
                             return True
                         except Exception:
                             continue
@@ -173,26 +173,26 @@ python -m pointer_cli %*"""
             windows_apps = Path.home() / "AppData" / "Local" / "Microsoft" / "WindowsApps"
             if windows_apps.exists():
                 try:
-                    batch_file = windows_apps / "pointer.bat"
+                    batch_file = windows_apps / "shadowide.bat"
                     with open(batch_file, 'w') as f:
                         f.write(batch_content)
-                    print(f"✅ Created pointer.bat in WindowsApps: {batch_file}")
+                    print(f"✅ Created shadowide.bat in WindowsApps: {batch_file}")
                     return True
                 except Exception:
                     pass
         
         # Fallback: create in current directory
-        batch_file = Path.cwd() / "pointer.bat"
+        batch_file = Path.cwd() / "shadowide.bat"
         with open(batch_file, 'w') as f:
             f.write(batch_content)
         
-        print(f"✅ Created pointer.bat in current directory: {batch_file}")
+        print(f"✅ Created shadowide.bat in current directory: {batch_file}")
         print("💡 You can copy this file to a directory in your PATH")
-        print("💡 Or use: .\\pointer instead of pointer")
+        print("💡 Or use: .\\shadowide instead of shadowide")
         return True
         
     except Exception as e:
-        print(f"❌ Failed to create pointer.bat: {e}")
+        print(f"❌ Failed to create shadowide.bat: {e}")
         return False
 
 def add_to_path_windows(scripts_dir):
@@ -242,15 +242,15 @@ def debug_path_info():
     except Exception as e:
         print(f"Site info error: {e}")
     
-    # Check if pointer.exe exists in common locations
+    # Check if shadowide.exe exists in common locations
     if platform.system() == "Windows":
         possible_locations = [
-            Path(sys.executable).parent / "Scripts" / "pointer.exe",
-            Path.home() / "AppData" / "Local" / "Programs" / "Python" / "Python311" / "Scripts" / "pointer.exe",
-            Path.home() / "AppData" / "Roaming" / "Python" / "Python311" / "Scripts" / "pointer.exe",
+            Path(sys.executable).parent / "Scripts" / "shadowide.exe",
+            Path.home() / "AppData" / "Local" / "Programs" / "Python" / "Python311" / "Scripts" / "shadowide.exe",
+            Path.home() / "AppData" / "Roaming" / "Python" / "Python311" / "Scripts" / "shadowide.exe",
         ]
         
-        print("\n🔍 Checking for pointer.exe:")
+        print("\n🔍 Checking for shadowide.exe:")
         for location in possible_locations:
             if location.exists():
                 print(f"✅ Found: {location}")
@@ -279,8 +279,8 @@ def check_path_setup():
                 if add_to_path_windows(scripts_dir):
                     return True
                 else:
-                    print("🔧 Creating pointer.bat as alternative...")
-                    if create_pointer_batch_file():
+                    print("🔧 Creating shadowide.bat as alternative...")
+                    if create_shadowide_batch_file():
                         return True
                     else:
                         print("\n   Manual Windows PATH setup:")
@@ -292,8 +292,8 @@ def check_path_setup():
     else:
         print("⚠️  Could not determine scripts directory")
         if platform.system() == "Windows":
-            print("🔧 Creating pointer.bat as alternative...")
-            if create_pointer_batch_file():
+            print("🔧 Creating shadowide.bat as alternative...")
+            if create_shadowide_batch_file():
                 return True
         debug_path_info()
     
@@ -301,24 +301,24 @@ def check_path_setup():
 
 def show_usage_instructions():
     """Show usage instructions after installation."""
-    print("\n🎉 Pointer CLI Installation Complete!")
+    print("\n🎉 ShadowIDE CLI Installation Complete!")
     print("\n📖 Usage Instructions:")
-    print("  1. Run: pointer (or .\\pointer on Windows)")
+    print("  1. Run: shadowide (or .\\shadowide on Windows)")
     print("  2. Initialize configuration on first run")
     print("  3. Start chatting with your codebase!")
     print("\n🔧 Available Commands:")
-    print("  pointer              - Start the CLI")
-    print("  pointer --version    - Show version")
-    print("  pointer --init       - Initialize configuration")
-    print("  pointer --help       - Show help")
+    print("  shadowide              - Start the CLI")
+    print("  shadowide --version    - Show version")
+    print("  shadowide --init       - Initialize configuration")
+    print("  shadowide --help       - Show help")
     print("\n💡 Alternative Usage:")
-    print("  python -m pointer_cli - Always works")
+    print("  python -m shadowide_cli - Always works")
     print("\n📁 Configuration Location:")
-    print("  ~/.pointer-cli/config.json")
+    print("  ~/.shadowide-cli/config.json")
 
 def main():
     """Main installation function."""
-    print("🚀 Pointer CLI Installation Script")
+    print("🚀 ShadowIDE CLI Installation Script")
     print("=" * 40)
     
     # Check prerequisites
@@ -328,13 +328,13 @@ def main():
     if not check_pip():
         sys.exit(1)
     
-    # Install Pointer CLI
-    if not install_pointer_cli():
+    # Install ShadowIDE CLI
+    if not install_shadowide_cli():
         sys.exit(1)
     
     # Verify installation
     if not verify_installation():
-        print("\n⚠️  Installation completed but 'pointer' command not found in PATH")
+        print("\n⚠️  Installation completed but 'shadowide' command not found in PATH")
         path_setup_success = check_path_setup()
         
         if path_setup_success:
@@ -342,11 +342,11 @@ def main():
             if verify_installation():
                 print("✅ Installation and PATH setup verified!")
             else:
-                print("⚠️  PATH updated but 'pointer' command still not found")
-                print("💡 Try restarting your terminal and running: pointer")
-                print("💡 Or use: python -m pointer_cli")
+                print("⚠️  PATH updated but 'shadowide' command still not found")
+                print("💡 Try restarting your terminal and running: shadowide")
+                print("💡 Or use: python -m shadowide_cli")
         else:
-            print("\n💡 Try running: python -m pointer_cli")
+            print("\n💡 Try running: python -m shadowide_cli")
     else:
         print("✅ Installation and PATH setup verified!")
     

@@ -1,2 +1,2 @@
-pointer_cli
+shadowide_cli
 tests

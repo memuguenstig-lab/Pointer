@@ -1,4 +1,4 @@
-; ── Pointer NSIS Custom Script ──────────────────────────────────────────────
+; ── ShadowIDE NSIS Custom Script ──────────────────────────────────────────────
 ; Runs AFTER electron-builder default NSIS install.
 ; Checks for Node.js, installs it if missing, then runs npm install.
 
@@ -60,7 +60,7 @@
     DetailPrint "Installing Node.js silently..."
     ExecWait 'msiexec /i "$TEMP\node_installer.msi" /quiet /norestart ADDLOCAL=ALL' $2
     ${If} $2 != 0
-      MessageBox MB_OK|MB_ICONEXCLAMATION "Node.js installation failed (error code: $2).$\n$\nPlease install Node.js manually from https://nodejs.org and restart the Pointer installer." /SD IDOK
+      MessageBox MB_OK|MB_ICONEXCLAMATION "Node.js installation failed (error code: $2).$\n$\nPlease install Node.js manually from https://nodejs.org and restart the ShadowIDE installer." /SD IDOK
       DetailPrint "Node.js installation failed with code: $2"
     ${Else}
       DetailPrint "Node.js installed successfully."
@@ -126,7 +126,7 @@
     Pop $0
   express_ok:
 
-  DetailPrint "Pointer installation completed successfully!"
+  DetailPrint "ShadowIDE installation completed successfully!"
 
 !macroend
 

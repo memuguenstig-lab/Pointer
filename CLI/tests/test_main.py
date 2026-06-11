@@ -1,5 +1,5 @@
 """
-Tests for Pointer CLI command entry points.
+Tests for ShadowIDE CLI command entry points.
 """
 
 import json
@@ -7,7 +7,7 @@ from types import SimpleNamespace
 
 from typer.testing import CliRunner
 
-from pointer_cli.main import (
+from shadowide_cli.main import (
     app,
     EXIT_CONFIG_ERROR,
     EXIT_DEPENDENCY_ERROR,
@@ -25,7 +25,7 @@ class TestMainCommands:
     """Test top-level CLI commands."""
 
     def test_config_show_outputs_json(self, tmp_path):
-        """`pointer config show` should print the config file contents."""
+        """`shadowide config show` should print the config file contents."""
         config_path = tmp_path / "config.json"
         config_path.write_text(
             json.dumps(
@@ -71,7 +71,7 @@ class TestMainCommands:
         assert '"initialized": true' in result.stdout.lower()
 
     def test_config_set_updates_nested_value(self, tmp_path):
-        """`pointer config set` should persist nested config changes."""
+        """`shadowide config set` should persist nested config changes."""
         config_path = tmp_path / "config.json"
 
         result = runner.invoke(
@@ -84,7 +84,7 @@ class TestMainCommands:
         assert saved["api"]["base_url"] == "http://localhost:9000"
 
     def test_config_unset_restores_default_value(self, tmp_path):
-        """`pointer config unset` should reset fields to their defaults."""
+        """`shadowide config unset` should reset fields to their defaults."""
         config_path = tmp_path / "config.json"
         config_path.write_text(
             json.dumps(
@@ -128,9 +128,9 @@ class TestMainCommands:
         assert saved["ui"]["show_diffs"] is True
 
     def test_config_edit_falls_back_to_printing_path(self, tmp_path, monkeypatch):
-        """`pointer config edit` should print the config path if opening fails."""
+        """`shadowide config edit` should print the config path if opening fails."""
         config_path = tmp_path / "config.json"
-        monkeypatch.setattr("pointer_cli.main.os.startfile", lambda path: (_ for _ in ()).throw(OSError("nope")), raising=False)
+        monkeypatch.setattr("shadowide_cli.main.os.startfile", lambda path: (_ for _ in ()).throw(OSError("nope")), raising=False)
 
         result = runner.invoke(app, ["config", "edit", "--config", str(config_path)])
 
@@ -138,7 +138,7 @@ class TestMainCommands:
         assert str(config_path) in result.stdout
 
     def test_init_non_interactive_writes_config(self, tmp_path):
-        """`pointer init --non-interactive` should create an initialized config."""
+        """`shadowide init --non-interactive` should create an initialized config."""
         config_path = tmp_path / "config.json"
 
         result = runner.invoke(
@@ -189,7 +189,7 @@ class TestMainCommands:
         assert result.exit_code == EXIT_USER_CANCELLED
 
     def test_status_command_outputs_environment_summary(self, tmp_path):
-        """`pointer status` should print a concise environment summary."""
+        """`shadowide status` should print a concise environment summary."""
         config_path = tmp_path / "config.json"
         config_path.write_text(
             json.dumps(
@@ -231,12 +231,12 @@ class TestMainCommands:
         result = runner.invoke(app, ["status", "--config", str(config_path)])
 
         assert result.exit_code == 0
-        assert "Pointer CLI Status" in result.stdout
+        assert "ShadowIDE CLI Status" in result.stdout
         assert "status-model" in result.stdout
         assert "http://localhost:7777" in result.stdout
 
     def test_status_json_outputs_machine_readable_status(self, tmp_path):
-        """`pointer status --json` should emit structured JSON."""
+        """`shadowide status --json` should emit structured JSON."""
         config_path = tmp_path / "config.json"
         config_path.write_text(
             json.dumps(
@@ -281,7 +281,7 @@ class TestMainCommands:
         assert payload["api_base_url"] == "http://localhost:7777"
 
     def test_doctor_json_outputs_machine_readable_result(self, tmp_path):
-        """`pointer doctor --json` should emit structured JSON."""
+        """`shadowide doctor --json` should emit structured JSON."""
         config_path = tmp_path / "config.json"
         config_path.write_text(
             json.dumps(
@@ -370,7 +370,7 @@ class TestMainCommands:
         assert payload["summary"]["failures"] >= 1
 
     def test_doctor_fix_repairs_invalid_config(self, tmp_path):
-        """`pointer doctor --fix --json` should repair safe config issues."""
+        """`shadowide doctor --fix --json` should repair safe config issues."""
         config_path = tmp_path / "config.json"
         config_path.write_text(
             json.dumps(
@@ -417,7 +417,7 @@ class TestMainCommands:
         assert saved["api"]["model_name"] == "gpt-oss-20b"
 
     def test_context_show_outputs_summary(self, tmp_path, monkeypatch):
-        """`pointer context show` should summarize indexed project files."""
+        """`shadowide context show` should summarize indexed project files."""
         (tmp_path / ".git").mkdir()
         (tmp_path / "app.py").write_text("print('hello')\n", encoding="utf-8")
         config_path = tmp_path / "config.json"
@@ -460,11 +460,11 @@ class TestMainCommands:
         result = runner.invoke(app, ["context", "show", "--config", str(config_path)])
 
         assert result.exit_code == 0
-        assert "Pointer CLI Context" in result.stdout
+        assert "ShadowIDE CLI Context" in result.stdout
         assert "Total files" in result.stdout
 
     def test_context_search_finds_file(self, tmp_path, monkeypatch):
-        """`pointer context search` should find matches in file content previews."""
+        """`shadowide context search` should find matches in file content previews."""
         (tmp_path / ".git").mkdir()
         (tmp_path / "module.py").write_text("special_keyword = True\n", encoding="utf-8")
         config_path = tmp_path / "config.json"
@@ -510,7 +510,7 @@ class TestMainCommands:
         assert "module.py" in result.stdout
 
     def test_context_files_lists_indexed_files(self, tmp_path, monkeypatch):
-        """`pointer context files` should list indexed files and respect extension filters."""
+        """`shadowide context files` should list indexed files and respect extension filters."""
         (tmp_path / ".git").mkdir()
         (tmp_path / "module.py").write_text("print('x')\n", encoding="utf-8")
         (tmp_path / "notes.md").write_text("# hi\n", encoding="utf-8")
@@ -558,7 +558,7 @@ class TestMainCommands:
         assert "notes.md" not in result.stdout
 
     def test_context_rebuild_reindexes_files(self, tmp_path, monkeypatch):
-        """`pointer context rebuild` should succeed and report indexed file count."""
+        """`shadowide context rebuild` should succeed and report indexed file count."""
         (tmp_path / ".git").mkdir()
         (tmp_path / "module.py").write_text("print('x')\n", encoding="utf-8")
         config_path = tmp_path / "config.json"
@@ -604,7 +604,7 @@ class TestMainCommands:
         assert "Context rebuilt" in result.stdout
 
     def test_context_stats_json_outputs_summary(self, tmp_path, monkeypatch):
-        """`pointer context stats --json` should emit summary statistics."""
+        """`shadowide context stats --json` should emit summary statistics."""
         (tmp_path / ".git").mkdir()
         (tmp_path / "module.py").write_text("print('x')\n", encoding="utf-8")
         config_path = tmp_path / "config.json"
@@ -652,7 +652,7 @@ class TestMainCommands:
         assert ".py" in payload["extensions"]
 
     def test_context_inspect_shows_preview(self, tmp_path, monkeypatch):
-        """`pointer context inspect` should show a detailed preview for one file."""
+        """`shadowide context inspect` should show a detailed preview for one file."""
         (tmp_path / ".git").mkdir()
         (tmp_path / "module.py").write_text("special_keyword = True\nprint('hello')\n", encoding="utf-8")
         config_path = tmp_path / "config.json"
@@ -699,7 +699,7 @@ class TestMainCommands:
         assert "special_keyword = True" in result.stdout
 
     def test_context_inspect_json_outputs_structured_data(self, tmp_path, monkeypatch):
-        """`pointer context inspect --json` should emit machine-readable file details."""
+        """`shadowide context inspect --json` should emit machine-readable file details."""
         (tmp_path / ".git").mkdir()
         (tmp_path / "module.py").write_text("print('hello')\n", encoding="utf-8")
         config_path = tmp_path / "config.json"
@@ -789,7 +789,7 @@ class TestMainCommands:
         assert result.exit_code == EXIT_CONFIG_ERROR
 
     def test_chats_export_writes_markdown_file(self, tmp_path):
-        """`pointer chats export` should write a markdown export."""
+        """`shadowide chats export` should write a markdown export."""
         config_path = tmp_path / "config.json"
         chats_dir = tmp_path / "chats"
         chats_dir.mkdir()
@@ -826,7 +826,7 @@ class TestMainCommands:
         assert "Demo Chat" in output_path.read_text(encoding="utf-8")
 
     def test_chats_rename_updates_saved_chat(self, tmp_path):
-        """`pointer chats rename` should update the saved chat title."""
+        """`shadowide chats rename` should update the saved chat title."""
         config_path = tmp_path / "config.json"
         chats_dir = tmp_path / "chats"
         chats_dir.mkdir()
@@ -856,7 +856,7 @@ class TestMainCommands:
         assert saved["title"] == "New Title"
 
     def test_chats_list_json_outputs_saved_chats(self, tmp_path):
-        """`pointer chats list --json` should emit stored chat metadata."""
+        """`shadowide chats list --json` should emit stored chat metadata."""
         config_path = tmp_path / "config.json"
         chats_dir = tmp_path / "chats"
         chats_dir.mkdir()
@@ -882,7 +882,7 @@ class TestMainCommands:
         assert payload[0]["id"] == chat_id
 
     def test_chats_delete_removes_saved_chat(self, tmp_path):
-        """`pointer chats delete` should remove the chat file."""
+        """`shadowide chats delete` should remove the chat file."""
         config_path = tmp_path / "config.json"
         chats_dir = tmp_path / "chats"
         chats_dir.mkdir()
@@ -908,7 +908,7 @@ class TestMainCommands:
         assert not chat_path.exists()
 
     def test_chats_current_json_outputs_latest_chat(self, tmp_path):
-        """`pointer chats current --json` should return the most recently modified chat."""
+        """`shadowide chats current --json` should return the most recently modified chat."""
         config_path = tmp_path / "config.json"
         chats_dir = tmp_path / "chats"
         chats_dir.mkdir()
@@ -948,7 +948,7 @@ class TestMainCommands:
         assert payload["id"] == newer_id
 
     def test_models_command_lists_configured_model(self, tmp_path):
-        """`pointer models` should always show the configured model."""
+        """`shadowide models` should always show the configured model."""
         config_path = tmp_path / "config.json"
         config_path.write_text(
             json.dumps(
@@ -991,7 +991,7 @@ class TestMainCommands:
         assert "demo-model" in result.stdout
 
     def test_models_json_outputs_configured_model(self, tmp_path):
-        """`pointer models --json` should emit machine-readable model data."""
+        """`shadowide models --json` should emit machine-readable model data."""
         config_path = tmp_path / "config.json"
         config_path.write_text(
             json.dumps(
@@ -1035,7 +1035,7 @@ class TestMainCommands:
         assert payload["configured_model"] == "demo-model"
 
     def test_ping_command_returns_dependency_error_when_unreachable(self, tmp_path):
-        """`pointer ping` should use the dependency exit code on failure."""
+        """`shadowide ping` should use the dependency exit code on failure."""
         config_path = tmp_path / "config.json"
         config_path.write_text(
             json.dumps(
@@ -1077,7 +1077,7 @@ class TestMainCommands:
         assert result.exit_code == EXIT_DEPENDENCY_ERROR
 
     def test_ping_json_outputs_error_payload_when_unreachable(self, tmp_path):
-        """`pointer ping --json` should emit structured failure details."""
+        """`shadowide ping --json` should emit structured failure details."""
         config_path = tmp_path / "config.json"
         config_path.write_text(
             json.dumps(

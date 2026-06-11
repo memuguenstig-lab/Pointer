@@ -58,7 +58,7 @@ const ChatMessage = memo(({ message, index, isAnyProcessing = false, onEditMessa
       });
     }
 
-    window.dispatchEvent(new CustomEvent('pointer-open-settings', {
+    window.dispatchEvent(new CustomEvent('shadowide-open-settings', {
       detail: {
         category: 'models',
       },
@@ -423,7 +423,7 @@ const ChatMessage = memo(({ message, index, isAnyProcessing = false, onEditMessa
                 background: 'var(--accent-color)',
                 border: '1px solid var(--accent-color)',
                 color: 'white',
-                cursor: isAnyProcessing ? 'not-allowed' : 'pointer',
+                cursor: isAnyProcessing ? 'not-allowed' : 'shadowide',
                 padding: '4px 12px',
                 borderRadius: '4px',
                 fontSize: '12px',
@@ -461,7 +461,7 @@ const ChatMessage = memo(({ message, index, isAnyProcessing = false, onEditMessa
                 background: 'transparent',
                 border: '1px solid var(--error-color)',
                 color: 'var(--error-color)',
-                cursor: 'pointer',
+                cursor: 'shadowide',
                 padding: '2px 8px',
                 borderRadius: '3px',
                 fontSize: '11px',
@@ -487,7 +487,7 @@ const ChatMessage = memo(({ message, index, isAnyProcessing = false, onEditMessa
                 background: 'transparent',
                 border: 'none',
                 color: 'var(--text-secondary)',
-                cursor: 'pointer',
+                cursor: 'shadowide',
                 padding: '2px 6px',
                 borderRadius: '3px',
                 fontSize: '11px',

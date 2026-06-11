@@ -49,7 +49,7 @@ const styles = {
   iconButton: {
     background: 'transparent',
     border: 'none',
-    cursor: 'pointer',
+    cursor: 'shadowide',
     color: 'var(--text-primary)',
     padding: '4px',
     display: 'flex',
@@ -73,7 +73,7 @@ const styles = {
     borderBottom: '2px solid transparent',
     color: 'var(--text-secondary)',
     padding: '6px 12px',
-    cursor: 'pointer',
+    cursor: 'shadowide',
     fontSize: '12px',
     display: 'flex',
     alignItems: 'center',
@@ -121,7 +121,7 @@ const styles = {
     border: 'none',
     borderRadius: '4px',
     padding: '8px 16px',
-    cursor: 'pointer',
+    cursor: 'shadowide',
     marginTop: '16px',
     fontSize: '13px',
   },
@@ -170,7 +170,7 @@ const styles = {
     padding: '8px 16px',
     borderRadius: '4px',
     border: 'none',
-    cursor: 'pointer',
+    cursor: 'shadowide',
     backgroundColor: 'var(--accent-color)',
     color: 'white',
     ':disabled': {
@@ -209,7 +209,7 @@ const styles = {
     background: 'none',
     border: 'none',
     color: 'var(--text-secondary)',
-    cursor: 'pointer',
+    cursor: 'shadowide',
     padding: '4px',
     marginLeft: '8px',
   },
@@ -442,7 +442,7 @@ const GitView: React.FC<GitViewProps> = ({ onBack }) => {
               color: 'var(--text-primary)',
               borderRadius: 4,
               padding: '4px 10px',
-              cursor: 'pointer',
+              cursor: 'shadowide',
               fontSize: 12,
             }}
           >

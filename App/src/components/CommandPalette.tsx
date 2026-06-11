@@ -168,7 +168,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onOpen
         <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-primary)', padding: '0 12px', gap: 0 }}>
           {(['commands', 'files', 'symbols'] as Mode[]).map(m => (
             <button key={m} onClick={() => setQuery(m === 'commands' ? '>' : m === 'symbols' ? '@' : '')}
-              style={{ padding: '6px 12px', background: 'none', border: 'none', borderBottom: mode === m ? '2px solid var(--accent-color)' : '2px solid transparent', color: mode === m ? 'var(--text-primary)' : 'var(--text-secondary)', cursor: 'pointer', fontSize: 12, textTransform: 'capitalize' }}>
+              style={{ padding: '6px 12px', background: 'none', border: 'none', borderBottom: mode === m ? '2px solid var(--accent-color)' : '2px solid transparent', color: mode === m ? 'var(--text-primary)' : 'var(--text-secondary)', cursor: 'shadowide', fontSize: 12, textTransform: 'capitalize' }}>
               {m}
             </button>
           ))}
@@ -193,7 +193,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onOpen
             </div>
           ) : results.map((r, i) => (
             <div key={r.id + i} onClick={() => execute(r)}
-              style={{ padding: '9px 16px', background: i === selectedIndex ? 'var(--bg-hover)' : 'transparent', borderLeft: `3px solid ${i === selectedIndex ? 'var(--accent-color)' : 'transparent'}`, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
+              style={{ padding: '9px 16px', background: i === selectedIndex ? 'var(--bg-hover)' : 'transparent', borderLeft: `3px solid ${i === selectedIndex ? 'var(--accent-color)' : 'transparent'}`, cursor: 'shadowide', display: 'flex', alignItems: 'center', gap: 10 }}>
               <span style={{ fontSize: 14, width: 18, textAlign: 'center', flexShrink: 0, color: 'var(--text-secondary)' }}>{r.icon}</span>
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.label}</div>

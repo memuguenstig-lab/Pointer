@@ -165,7 +165,7 @@ const Terminal: React.FC<TerminalProps> = ({ isVisible, errorCount = 0, warningC
               <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
                 display: 'flex', alignItems: 'center', gap: 5,
                 padding: '0 12px', height: '100%',
-                background: 'none', border: 'none', cursor: 'pointer',
+                background: 'none', border: 'none', cursor: 'shadowide',
                 borderBottom: isActive ? '2px solid var(--accent-color, #0078d4)' : '2px solid transparent',
                 color: isActive ? 'var(--text-primary, #e0e0e0)' : 'var(--text-secondary, #888)',
                 fontSize: 12, whiteSpace: 'nowrap', userSelect: 'none',
@@ -256,7 +256,7 @@ const Terminal: React.FC<TerminalProps> = ({ isVisible, errorCount = 0, warningC
                           <div style={{ width: 1, background: 'var(--border-color)', flexShrink: 0 }} />
                         )}
                         <div
-                          style={{ flex: 1, overflow: 'hidden', position: 'relative', cursor: 'pointer' }}
+                          style={{ flex: 1, overflow: 'hidden', position: 'relative', cursor: 'shadowide' }}
                           onClick={() => setActiveId(inst.id)}
                         >
                           {inst.id === activeId && (
@@ -309,13 +309,13 @@ const Terminal: React.FC<TerminalProps> = ({ isVisible, errorCount = 0, warningC
                     <button
                       onClick={handleExplainError}
                       disabled={isExplainingError}
-                      style={{ padding: '2px 8px', fontSize: '11px', borderRadius: '3px', border: '1px solid rgba(248,81,73,0.4)', background: 'rgba(248,81,73,0.1)', color: '#f85149', cursor: 'pointer', flexShrink: 0 }}
+                      style={{ padding: '2px 8px', fontSize: '11px', borderRadius: '3px', border: '1px solid rgba(248,81,73,0.4)', background: 'rgba(248,81,73,0.1)', color: '#f85149', cursor: 'shadowide', flexShrink: 0 }}
                     >
                       {isExplainingError ? '…' : '✨ Explain'}
                     </button>
                     <button
                       onClick={() => { setTerminalError(null); setErrorExplanation(''); }}
-                      style={{ padding: '2px 6px', fontSize: '11px', borderRadius: '3px', border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', flexShrink: 0 }}
+                      style={{ padding: '2px 6px', fontSize: '11px', borderRadius: '3px', border: 'none', background: 'transparent', color: 'var(--text-secondary)', cursor: 'shadowide', flexShrink: 0 }}
                     >✕</button>
                   </div>
                   {errorExplanation && (
@@ -356,7 +356,7 @@ const Terminal: React.FC<TerminalProps> = ({ isVisible, errorCount = 0, warningC
                     onClick={() => { setActiveId(inst.id); setActiveTab('terminal'); }}
                     style={{
                       display: 'flex', flexDirection: 'column', gap: 2,
-                      padding: '6px 8px', cursor: 'pointer',
+                      padding: '6px 8px', cursor: 'shadowide',
                       background: isActive ? 'rgba(88,166,255,0.1)' : 'transparent',
                       borderLeft: isActive ? '2px solid var(--accent-color, #0078d4)' : '2px solid transparent',
                       color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
@@ -379,7 +379,7 @@ const Terminal: React.FC<TerminalProps> = ({ isVisible, errorCount = 0, warningC
                           title="Close terminal"
                           style={{
                             fontSize: 10, padding: '1px 3px', borderRadius: 2,
-                            lineHeight: 1, flexShrink: 0, cursor: 'pointer',
+                            lineHeight: 1, flexShrink: 0, cursor: 'shadowide',
                             opacity: 0, transition: 'opacity 0.1s',
                           }}
                           onMouseEnter={e => { e.currentTarget.style.opacity = '1'; e.currentTarget.style.color = '#f85149'; }}

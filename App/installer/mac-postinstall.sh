@@ -1,5 +1,5 @@
 #!/bin/bash
-# Pointer macOS post-install script
+# ShadowIDE macOS post-install script
 # Runs after the app is copied to /Applications
 
 set -e  # Exit on error
@@ -8,7 +8,7 @@ APP_DIR="$(dirname "$0")/../Resources"
 BACKEND_DIR="$APP_DIR/backend-node"
 APP_RESOURCES="$APP_DIR/app"
 
-echo "=== Pointer macOS Setup ==="
+echo "=== ShadowIDE macOS Setup ==="
 echo "Checking Node.js..."
 
 # Check multiple possible node locations
@@ -60,7 +60,7 @@ if [ -z "$NODE_FOUND" ]; then
         # Fallback to system installation with user confirmation
         echo "User directory installation failed. Requesting system installation..."
         osascript <<EOF
-display dialog "Pointer needs to install Node.js to run.$\n$\nThis requires administrator privileges." with title "Pointer - Install Node.js" buttons {"Cancel", "Install"} default button "Install" cancel button "Cancel" with icon caution
+display dialog "ShadowIDE needs to install Node.js to run.$\n$\nThis requires administrator privileges." with title "ShadowIDE - Install Node.js" buttons {"Cancel", "Install"} default button "Install" cancel button "Cancel" with icon caution
 EOF
         if [ $? -eq 0 ]; then
           sudo installer -pkg "$INSTALLER" -target /
@@ -77,7 +77,7 @@ EOF
     open "https://nodejs.org/en/download/"
     
     osascript <<EOF
-display dialog "Node.js is required to run Pointer.$\n$\nPlease install Node.js from nodejs.org and then launch Pointer again.$\n$\nThe download page has been opened in your browser." with title "Pointer - Node.js Required" buttons {"OK"} default button "OK" with icon caution
+display dialog "Node.js is required to run ShadowIDE.$\n$\nPlease install Node.js from nodejs.org and then launch ShadowIDE again.$\n$\nThe download page has been opened in your browser." with title "ShadowIDE - Node.js Required" buttons {"OK"} default button "OK" with icon caution
 EOF
     exit 1
   fi
@@ -96,7 +96,7 @@ echo "Node.js found: $NODE_VERSION"
 # Check Node.js version
 if [ "$NODE_MAJOR" -lt 18 ]; then
   echo "WARNING: Node.js version $NODE_VERSION is older than required (18+)."
-  echo "Pointer may not work correctly."
+  echo "ShadowIDE may not work correctly."
 fi
 
 # Install backend dependencies with retry
@@ -117,7 +117,7 @@ if [ -d "$BACKEND_DIR" ]; then
         sleep 5
       else
         echo "WARNING: Backend dependencies installation failed after $MAX_RETRIES attempts."
-        echo "Pointer will try to start anyway."
+        echo "ShadowIDE will try to start anyway."
       fi
     fi
   done
@@ -141,11 +141,11 @@ if [ -d "$APP_RESOURCES" ]; then
         sleep 5
       else
         echo "WARNING: App dependencies installation failed after $MAX_RETRIES attempts."
-        echo "Pointer will try to start anyway."
+        echo "ShadowIDE will try to start anyway."
       fi
     fi
   done
 fi
 
-echo "=== Pointer setup complete ==="
-echo "You can now launch Pointer from your Applications folder."
+echo "=== ShadowIDE setup complete ==="
+echo "You can now launch ShadowIDE from your Applications folder."

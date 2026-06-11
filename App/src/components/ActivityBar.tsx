@@ -47,7 +47,7 @@ const ActivityBar: React.FC<ActivityBarProps> = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          cursor: 'pointer',
+          cursor: 'shadowide',
           border: 'none',
           background: isActive ? 'rgba(255,255,255,0.1)' : 'transparent',
           color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',

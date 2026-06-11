@@ -38,7 +38,7 @@ function StashDiffPopup({ directory, stashIndex, onClose }: { directory: string;
     <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: '55vw', minWidth: '400px', background: 'var(--bg-primary)', borderLeft: '1px solid var(--border-color)', zIndex: 1000, display: 'flex', flexDirection: 'column', boxShadow: '-4px 0 24px rgba(0,0,0,0.35)' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderBottom: '1px solid var(--border-color)', background: 'var(--bg-secondary)', flexShrink: 0 }}>
         <span style={{ fontSize: '13px', fontWeight: 600 }}>Stash Preview — stash@{`{${stashIndex}}`}</span>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '16px' }}>✕</button>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'shadowide', color: 'var(--text-secondary)', fontSize: '16px' }}>✕</button>
       </div>
       <div style={{ flex: 1, overflow: 'auto', padding: '8px 0' }}>
         {loading ? <div style={{ padding: '20px', color: 'var(--text-secondary)', fontSize: '12px' }}>Loading diff…</div> : renderDiff(diff ?? '')}
@@ -87,7 +87,7 @@ const styles = {
     border: 'none',
     borderRadius: '4px',
     padding: '6px 12px',
-    cursor: 'pointer',
+    cursor: 'shadowide',
     fontSize: '13px',
   },
   input: {
@@ -225,7 +225,7 @@ const GitStashView: React.FC<GitStashViewProps> = ({ refreshStatus }) => {
           {error}
           <button 
             onClick={() => setError(null)}
-            style={{ float: 'right', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-primary)' }}
+            style={{ float: 'right', background: 'transparent', border: 'none', cursor: 'shadowide', color: 'var(--text-primary)' }}
           >
             ✕
           </button>

@@ -34,7 +34,7 @@ const styles = {
     background: 'none',
     border: 'none',
     color: 'var(--text-secondary)',
-    cursor: 'pointer',
+    cursor: 'shadowide',
     padding: '4px',
     marginLeft: '8px',
   },

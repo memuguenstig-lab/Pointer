@@ -163,7 +163,7 @@ export const quickLinks: QuickLink[] = [
     action: {
       type: 'external',
       label: 'Open Website',
-      url: 'https://pointer.f1shy312.com',
+      url: 'https://shadowide.f1shy312.com',
     },
   },
   {

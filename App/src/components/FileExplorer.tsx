@@ -147,7 +147,7 @@ const FileExplorerItem: React.FC<{
           display: 'flex',
           alignItems: 'center',
           height: '22px',
-          cursor: 'pointer',
+          cursor: 'shadowide',
           backgroundColor: item.id === currentFileId
             ? 'color-mix(in srgb, var(--accent-color) 25%, transparent)'
             : isHovered ? 'var(--bg-hover)' : 'transparent',
@@ -404,7 +404,7 @@ const buttonStyle = {
   background: 'transparent',
   border: 'none',
   color: 'var(--text-secondary)',
-  cursor: 'pointer',
+  cursor: 'shadowide',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -417,7 +417,7 @@ const buttonStyle = {
 
 const contextMenuItemStyle = {
   padding: '6px 12px',
-  cursor: 'pointer',
+  cursor: 'shadowide',
   fontSize: '13px',
   color: 'var(--text-primary)',
   ':hover': {
@@ -836,7 +836,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
           style={{
             paddingLeft: isHovered && !isSelected ? `${depth * 20 + 6}px` : `${depth * 20}px`,
             paddingRight: '8px',
-            cursor: 'pointer',
+            cursor: 'shadowide',
             display: 'flex',
             alignItems: 'center',
             height: '24px',

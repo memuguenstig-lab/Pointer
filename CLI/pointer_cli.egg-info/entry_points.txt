@@ -1,2 +1,2 @@
 [console_scripts]
-pointer = pointer_cli.main:main
+shadowide = shadowide_cli.main:main

@@ -11,7 +11,7 @@ from utils.db import Database
 from utils.time_converter import parse_time_string, get_future_timestamp, get_formatted_timestamp
 from utils.logger import log_to_channel
 
-logger = logging.getLogger('pointer_bot')
+logger = logging.getLogger('shadowide_bot')
 
 class Moderation(commands.Cog):
     def __init__(self, bot):
@@ -62,7 +62,7 @@ class Moderation(commands.Cog):
             emoji = emoji_map.get(action, "📢")
             
             embed = discord.Embed(
-                title=f"{emoji} Pointer Discord Moderation",
+                title=f"{emoji} ShadowIDE Discord Moderation",
                 description=f"You have been **{action}** from **{guild_name}**",
                 color=color,
                 timestamp=datetime.datetime.now()
@@ -100,7 +100,7 @@ class Moderation(commands.Cog):
                     embed.add_field(name="⏱️ Duration", value=duration or "Permanent", inline=False)
             
             # Add footer with timestamp
-            embed.set_footer(text="Pointer Moderation System", icon_url="https://pointer.f1shy312.com/static/logo.png")
+            embed.set_footer(text="ShadowIDE Moderation System", icon_url="https://shadowide.f1shy312.com/static/logo.png")
             
             await user.send(embed=embed)
             return True
@@ -163,7 +163,7 @@ class Moderation(commands.Cog):
             embed.add_field(name="⏱️ Duration", value=duration or "Permanent", inline=False)
         
         # Set footer
-        embed.set_footer(text=f"User ID: {target.id} | Pointer Moderation", icon_url="https://pointer.f1shy312.com/static/logo.png")
+        embed.set_footer(text=f"User ID: {target.id} | ShadowIDE Moderation", icon_url="https://shadowide.f1shy312.com/static/logo.png")
         
         return embed
     
@@ -232,7 +232,7 @@ class Moderation(commands.Cog):
                         timestamp=datetime.datetime.now()
                     )
                     embed.add_field(name="📅 Expired", value=f"<t:{current_time}:F>", inline=True)
-                    embed.set_footer(text=f"User ID: {user.id} | Pointer Moderation", icon_url="https://pointer.f1shy312.com/static/logo.png")
+                    embed.set_footer(text=f"User ID: {user.id} | ShadowIDE Moderation", icon_url="https://shadowide.f1shy312.com/static/logo.png")
                     await log_to_channel(self.bot, embed)
                     
                     # Try to DM the user
@@ -281,7 +281,7 @@ class Moderation(commands.Cog):
                         timestamp=datetime.datetime.now()
                     )
                     embed.add_field(name="📅 Expired", value=f"<t:{current_time}:F>", inline=True)
-                    embed.set_footer(text=f"User ID: {member.id} | Pointer Moderation", icon_url="https://pointer.f1shy312.com/static/logo.png")
+                    embed.set_footer(text=f"User ID: {member.id} | ShadowIDE Moderation", icon_url="https://shadowide.f1shy312.com/static/logo.png")
                     await log_to_channel(self.bot, embed)
                     
                     # Try to DM the user
@@ -787,7 +787,7 @@ class Moderation(commands.Cog):
                 inline=False
             )
         
-        embed.set_footer(text=f"User ID: {user.id} | Pointer Moderation", icon_url="https://pointer.f1shy312.com/static/logo.png")
+        embed.set_footer(text=f"User ID: {user.id} | ShadowIDE Moderation", icon_url="https://shadowide.f1shy312.com/static/logo.png")
         await interaction.response.send_message(embed=embed, ephemeral=True)
     
     @app_commands.command(name="clear", description="Clear messages in the current channel")
@@ -831,7 +831,7 @@ class Moderation(commands.Cog):
             )
             embed.add_field(name="Channel", value=f"{interaction.channel.name} (`{interaction.channel.id}`)", inline=True)
             embed.add_field(name="Amount", value=f"{total_deleted} messages", inline=True)
-            embed.set_footer(text=f"Moderator: {interaction.user.name} | Pointer Moderation", icon_url=interaction.user.display_avatar.url)
+            embed.set_footer(text=f"Moderator: {interaction.user.name} | ShadowIDE Moderation", icon_url=interaction.user.display_avatar.url)
             
             # Log to the log channel
             await log_to_channel(self.bot, embed)
@@ -867,7 +867,7 @@ class Moderation(commands.Cog):
             )
             embed.add_field(name="Channel", value=f"{interaction.channel.name} (`{interaction.channel.id}`)", inline=True)
             embed.add_field(name="Amount", value=f"{len(deleted)} message{'s' if len(deleted) != 1 else ''}", inline=True)
-            embed.set_footer(text=f"Moderator: {interaction.user.name} | Pointer Moderation", icon_url=interaction.user.display_avatar.url)
+            embed.set_footer(text=f"Moderator: {interaction.user.name} | ShadowIDE Moderation", icon_url=interaction.user.display_avatar.url)
             
             # Log to the log channel
             await log_to_channel(self.bot, embed)
@@ -916,7 +916,7 @@ class Moderation(commands.Cog):
             )
             embed.add_field(name="Channel", value=f"{interaction.channel.name} (`{interaction.channel.id}`)", inline=True)
             embed.add_field(name="Moderator", value=f"{interaction.user.name} (`{interaction.user.id}`)", inline=True)
-            embed.set_footer(text="Pointer Moderation System", icon_url="https://pointer.f1shy312.com/static/logo.png")
+            embed.set_footer(text="ShadowIDE Moderation System", icon_url="https://shadowide.f1shy312.com/static/logo.png")
             
             # Log to the log channel
             await log_to_channel(self.bot, embed)
@@ -976,7 +976,7 @@ class Moderation(commands.Cog):
             )
             embed.add_field(name="Channel", value=f"{interaction.channel.name} (`{interaction.channel.id}`)", inline=True)
             embed.add_field(name="Moderator", value=f"{interaction.user.name} (`{interaction.user.id}`)", inline=True)
-            embed.set_footer(text="Pointer Moderation System", icon_url="https://pointer.f1shy312.com/static/logo.png")
+            embed.set_footer(text="ShadowIDE Moderation System", icon_url="https://shadowide.f1shy312.com/static/logo.png")
             
             # Log to the log channel
             await log_to_channel(self.bot, embed)
@@ -1037,8 +1037,8 @@ class Moderation(commands.Cog):
         if title:
             embed.title = title
         
-        # Set footer with Pointer branding
-        embed.set_footer(text="Pointer Discord", icon_url="https://pointer.f1shy312.com/static/logo.png")
+        # Set footer with ShadowIDE branding
+        embed.set_footer(text="ShadowIDE Discord", icon_url="https://shadowide.f1shy312.com/static/logo.png")
         
         # Create log embed
         log_embed = discord.Embed(
@@ -1054,7 +1054,7 @@ class Moderation(commands.Cog):
         
         log_embed.add_field(name="Color", value=color or "default", inline=True)
         log_embed.add_field(name="Channel", value=f"{interaction.channel.name} (`{interaction.channel.id}`)", inline=True)
-        log_embed.set_footer(text=f"Sent by: {interaction.user.name} | Pointer Moderation", icon_url=interaction.user.display_avatar.url)
+        log_embed.set_footer(text=f"Sent by: {interaction.user.name} | ShadowIDE Moderation", icon_url=interaction.user.display_avatar.url)
         
         # Log to the log channel
         await log_to_channel(self.bot, log_embed)
@@ -1204,7 +1204,7 @@ class Moderation(commands.Cog):
             )
         
         # Set footer with timestamp
-        embed.set_footer(text=f"Requested by {interaction.user.name} | Pointer Moderation", icon_url="https://pointer.f1shy312.com/static/logo.png")
+        embed.set_footer(text=f"Requested by {interaction.user.name} | ShadowIDE Moderation", icon_url="https://shadowide.f1shy312.com/static/logo.png")
         
         # Create view with buttons
         view = discord.ui.View(timeout=60)  # 60 second timeout
@@ -1258,7 +1258,7 @@ class Moderation(commands.Cog):
                         inline=False
                     )
                 
-                warnings_embed.set_footer(text=f"User ID: {user.id} | Pointer Moderation", icon_url="https://pointer.f1shy312.com/static/logo.png")
+                warnings_embed.set_footer(text=f"User ID: {user.id} | ShadowIDE Moderation", icon_url="https://shadowide.f1shy312.com/static/logo.png")
                 
                 await button_interaction.response.send_message(embed=warnings_embed, ephemeral=True)
             
@@ -1560,7 +1560,7 @@ class Moderation(commands.Cog):
         
         # Create embed
         embed = discord.Embed(
-            title="📊 Pointer Bot Information",
+            title="📊 ShadowIDE Bot Information",
             color=discord.Color.blue(),
             timestamp=datetime.datetime.now()
         )
@@ -1574,7 +1574,7 @@ class Moderation(commands.Cog):
                 f"**ID:** `{bot_user.id}`\n"
                 f"**Created:** <t:{int(bot_user.created_at.timestamp())}:R>\n"
                 f"**Uptime:** {uptime_str}\n"
-                f"**Developer:** [F1sHy312](https://pointer.f1shy312.com)\n"
+                f"**Developer:** [F1sHy312](https://shadowide.f1shy312.com)\n"
                 f"**Latency:** {round(self.bot.latency * 1000)}ms\n"
                 f"**Commands:** {len(self.bot.tree.get_commands())}"
             ),
@@ -1621,14 +1621,14 @@ class Moderation(commands.Cog):
         embed.add_field(
             name="🔗 Links",
             value=(
-                f"[Pointer Website](https://pointer.f1shy312.com)\n"
-                f"[GitHub](https://github.com/f1shyondrugs/Pointer)"
+                f"[ShadowIDE Website](https://shadowide.f1shy312.com)\n"
+                f"[GitHub](https://github.com/f1shyondrugs/ShadowIDE)"
             ),
             inline=False
         )
         
         # Footer
-        embed.set_footer(text="Pointer Discord Bot", icon_url="https://pointer.f1shy312.com/static/logo.png")
+        embed.set_footer(text="ShadowIDE Discord Bot", icon_url="https://shadowide.f1shy312.com/static/logo.png")
         
         await interaction.response.send_message(embed=embed)
 

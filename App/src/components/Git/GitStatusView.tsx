@@ -58,7 +58,7 @@ function FileDiffPopup({ directory, filePath, staged, onClose }: {
             {staged ? '(staged)' : '(unstaged)'}
           </span>
         </div>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '16px' }}>✕</button>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'shadowide', color: 'var(--text-secondary)', fontSize: '16px' }}>✕</button>
       </div>
       <div style={{ flex: 1, overflow: 'auto', padding: '8px 0' }}>
         {loading ? (
@@ -93,7 +93,7 @@ const styles = {
     fontSize: '13px',
     borderRadius: '4px',
     marginBottom: '4px',
-    cursor: 'pointer',
+    cursor: 'shadowide',
   },
   staged: {
     backgroundColor: 'rgba(0, 170, 0, 0.1)',
@@ -117,7 +117,7 @@ const styles = {
     border: 'none',
     borderRadius: '4px',
     padding: '8px 16px',
-    cursor: 'pointer',
+    cursor: 'shadowide',
     fontSize: '13px',
     marginRight: '8px',
   },
@@ -454,7 +454,7 @@ const GitStatusView: React.FC<GitStatusViewProps> = ({ gitStatus, refreshStatus,
                   <button
                     onClick={(e) => { e.stopPropagation(); setDiffFile({ path: file, staged: true }); }}
                     title="View diff"
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '11px', padding: '0 4px', flexShrink: 0, opacity: 0.7 }}
+                    style={{ background: 'none', border: 'none', cursor: 'shadowide', color: 'var(--text-secondary)', fontSize: '11px', padding: '0 4px', flexShrink: 0, opacity: 0.7 }}
                   >
                     ⟨/⟩
                   </button>
@@ -495,7 +495,7 @@ const GitStatusView: React.FC<GitStatusViewProps> = ({ gitStatus, refreshStatus,
                   <button
                     onClick={(e) => { e.stopPropagation(); setDiffFile({ path: file, staged: false }); }}
                     title="View diff"
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '11px', padding: '0 4px', flexShrink: 0, opacity: 0.7 }}
+                    style={{ background: 'none', border: 'none', cursor: 'shadowide', color: 'var(--text-secondary)', fontSize: '11px', padding: '0 4px', flexShrink: 0, opacity: 0.7 }}
                   >
                     ⟨/⟩
                   </button>
@@ -556,7 +556,7 @@ const GitStatusView: React.FC<GitStatusViewProps> = ({ gitStatus, refreshStatus,
                   padding: '3px 8px', fontSize: '10px', borderRadius: '3px',
                   border: '1px solid var(--border-color)',
                   background: isGeneratingMessage ? 'var(--bg-accent)' : 'var(--bg-secondary)',
-                  color: 'var(--text-secondary)', cursor: 'pointer',
+                  color: 'var(--text-secondary)', cursor: 'shadowide',
                   display: 'flex', alignItems: 'center', gap: '3px',
                   opacity: isGeneratingMessage ? 0.7 : 1,
                 }}
@@ -601,7 +601,7 @@ const GitStatusView: React.FC<GitStatusViewProps> = ({ gitStatus, refreshStatus,
           {error}
           <button
             onClick={() => setError(null)}
-            style={{ float: 'right', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-primary)' }}
+            style={{ float: 'right', background: 'transparent', border: 'none', cursor: 'shadowide', color: 'var(--text-primary)' }}
           >
             ✕
           </button>
@@ -612,7 +612,7 @@ const GitStatusView: React.FC<GitStatusViewProps> = ({ gitStatus, refreshStatus,
       <div style={{ padding: '8px 0 0' }}>
         <button
           onClick={() => setShowPRPanel(v => !v)}
-          style={{ fontSize: '12px', padding: '5px 12px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }}
+          style={{ fontSize: '12px', padding: '5px 12px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'shadowide' }}
         >
           {showPRPanel ? '✕ Close PR' : '📋 Generate PR Description'}
         </button>
@@ -632,7 +632,7 @@ const GitStatusView: React.FC<GitStatusViewProps> = ({ gitStatus, refreshStatus,
             <button
               onClick={handleGeneratePRDescription}
               disabled={isGeneratingPR}
-              style={{ padding: '4px 10px', fontSize: '12px', borderRadius: '4px', border: 'none', background: 'var(--accent-color)', color: '#fff', cursor: 'pointer', opacity: isGeneratingPR ? 0.7 : 1 }}
+              style={{ padding: '4px 10px', fontSize: '12px', borderRadius: '4px', border: 'none', background: 'var(--accent-color)', color: '#fff', cursor: 'shadowide', opacity: isGeneratingPR ? 0.7 : 1 }}
             >
               {isGeneratingPR ? '…' : '✨ Generate'}
             </button>
@@ -647,7 +647,7 @@ const GitStatusView: React.FC<GitStatusViewProps> = ({ gitStatus, refreshStatus,
               />
               <button
                 onClick={() => navigator.clipboard.writeText(prDescription)}
-                style={{ alignSelf: 'flex-start', padding: '4px 10px', fontSize: '11px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }}
+                style={{ alignSelf: 'flex-start', padding: '4px 10px', fontSize: '11px', borderRadius: '4px', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'shadowide' }}
               >
                 Copy
               </button>

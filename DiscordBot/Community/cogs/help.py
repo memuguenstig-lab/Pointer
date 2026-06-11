@@ -100,7 +100,7 @@ class Help(commands.Cog):
         
         # Get initial embed
         embed = create_embed(
-            title="Pointer Bot Help",
+            title="ShadowIDE Bot Help",
             description="Select a category to view its commands:",
             color=discord.Color.blue()
         )
@@ -108,7 +108,7 @@ class Help(commands.Cog):
         # Add category descriptions
         embed.add_field(
             name="💰 Economy",
-            value="Commands for managing your Pointer Coins",
+            value="Commands for managing your ShadowIDE Coins",
             inline=True
         )
         embed.add_field(

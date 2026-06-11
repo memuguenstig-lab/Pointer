@@ -58,7 +58,7 @@ const styles = {
     border: 'none',
     borderRadius: '4px',
     padding: '6px 12px',
-    cursor: 'pointer',
+    cursor: 'shadowide',
     fontSize: '13px',
   },
   error: {
@@ -264,7 +264,7 @@ const GitPullRequestView: React.FC<GitPullRequestViewProps> = () => {
           {error}
           <button 
             onClick={() => setError(null)}
-            style={{ float: 'right', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-primary)' }}
+            style={{ float: 'right', background: 'transparent', border: 'none', cursor: 'shadowide', color: 'var(--text-primary)' }}
           >
             ✕
           </button>
@@ -276,7 +276,7 @@ const GitPullRequestView: React.FC<GitPullRequestViewProps> = () => {
           {successMessage}
           <button 
             onClick={() => setSuccessMessage(null)}
-            style={{ float: 'right', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-primary)' }}
+            style={{ float: 'right', background: 'transparent', border: 'none', cursor: 'shadowide', color: 'var(--text-primary)' }}
           >
             ✕
           </button>

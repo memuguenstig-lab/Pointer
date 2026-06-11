@@ -1174,7 +1174,7 @@ export const EmbeddedModelSetup: React.FC<Props> = ({ onModelReady }) => {
 
         {/* Row 1: Search */}
         <div style={{ position: 'relative' }}>
-          <svg style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', opacity: 0.35, pointerEvents: 'none' }}
+          <svg style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', opacity: 0.35, shadowideEvents: 'none' }}
             width="12" height="12" viewBox="0 0 16 16" fill="var(--text-primary)">
             <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.099zm-5.242 1.656a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z"/>
           </svg>
@@ -1204,7 +1204,7 @@ export const EmbeddedModelSetup: React.FC<Props> = ({ onModelReady }) => {
                   border: `1px solid ${category === cat ? 'var(--accent-color)' : 'var(--border-color)'}`,
                   background: category === cat ? 'rgba(14,99,156,0.15)' : 'transparent',
                   color: category === cat ? 'var(--accent-color)' : 'var(--text-secondary)',
-                  cursor: 'pointer', transition: 'all 0.15s', fontWeight: category === cat ? 600 : 400,
+                  cursor: 'shadowide', transition: 'all 0.15s', fontWeight: category === cat ? 600 : 400,
                 }}
               >
                 {cat}
@@ -1232,7 +1232,7 @@ export const EmbeddedModelSetup: React.FC<Props> = ({ onModelReady }) => {
                   border: `1px solid ${hasActive || showFilterPanel ? 'var(--accent-color)' : 'var(--border-color)'}`,
                   background: hasActive || showFilterPanel ? 'rgba(14,99,156,0.15)' : 'transparent',
                   color: hasActive || showFilterPanel ? 'var(--accent-color)' : 'var(--text-secondary)',
-                  cursor: 'pointer', transition: 'all 0.15s',
+                  cursor: 'shadowide', transition: 'all 0.15s',
                 }}
               >
                 <svg width="11" height="11" viewBox="0 0 16 16" fill="currentColor">
@@ -1274,7 +1274,7 @@ export const EmbeddedModelSetup: React.FC<Props> = ({ onModelReady }) => {
                         border: `1px solid ${sizeFilter === sf.key ? '#bc8cff' : 'var(--border-color)'}`,
                         background: sizeFilter === sf.key ? 'rgba(188,140,255,0.15)' : 'transparent',
                         color: sizeFilter === sf.key ? '#bc8cff' : 'var(--text-secondary)',
-                        cursor: 'pointer', transition: 'all 0.12s',
+                        cursor: 'shadowide', transition: 'all 0.12s',
                       }}
                     >
                       {sf.label}
@@ -1296,7 +1296,7 @@ export const EmbeddedModelSetup: React.FC<Props> = ({ onModelReady }) => {
                         border: `1px solid ${sortKey === o.key ? 'var(--accent-color)' : 'var(--border-color)'}`,
                         background: sortKey === o.key ? 'rgba(14,99,156,0.15)' : 'transparent',
                         color: sortKey === o.key ? 'var(--accent-color)' : 'var(--text-secondary)',
-                        cursor: 'pointer', transition: 'all 0.12s',
+                        cursor: 'shadowide', transition: 'all 0.12s',
                       }}
                     >
                       {o.label}
@@ -1314,7 +1314,7 @@ export const EmbeddedModelSetup: React.FC<Props> = ({ onModelReady }) => {
                     border: `1px solid ${showDownloadedOnly ? '#3fb950' : 'var(--border-color)'}`,
                     background: showDownloadedOnly ? 'rgba(63,185,80,0.15)' : 'transparent',
                     color: showDownloadedOnly ? '#3fb950' : 'var(--text-secondary)',
-                    cursor: 'pointer', transition: 'all 0.12s',
+                    cursor: 'shadowide', transition: 'all 0.12s',
                   }}
                 >
                   ✓ Downloaded only
@@ -1326,7 +1326,7 @@ export const EmbeddedModelSetup: React.FC<Props> = ({ onModelReady }) => {
                     border: `1px solid ${showRecommendedOnly ? 'var(--accent-color)' : 'var(--border-color)'}`,
                     background: showRecommendedOnly ? 'rgba(14,99,156,0.15)' : 'transparent',
                     color: showRecommendedOnly ? 'var(--accent-color)' : 'var(--text-secondary)',
-                    cursor: 'pointer', transition: 'all 0.12s',
+                    cursor: 'shadowide', transition: 'all 0.12s',
                   }}
                 >
                   ★ Recommended only
@@ -1337,7 +1337,7 @@ export const EmbeddedModelSetup: React.FC<Props> = ({ onModelReady }) => {
                     style={{
                       marginLeft: 'auto', padding: '3px 9px', fontSize: '11px', borderRadius: '4px',
                       border: '1px solid var(--border-color)', background: 'transparent',
-                      color: 'var(--text-secondary)', cursor: 'pointer', opacity: 0.7,
+                      color: 'var(--text-secondary)', cursor: 'shadowide', opacity: 0.7,
                     }}
                   >
                     ✕ Reset filters
@@ -1365,7 +1365,7 @@ export const EmbeddedModelSetup: React.FC<Props> = ({ onModelReady }) => {
               borderRadius: '6px',
               border: `1px solid ${selected === model.id ? 'var(--accent-color)' : 'var(--border-color)'}`,
               background: selected === model.id ? 'rgba(14,99,156,0.08)' : 'var(--bg-secondary)',
-              cursor: 'pointer', transition: 'all 0.12s',
+              cursor: 'shadowide', transition: 'all 0.12s',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
@@ -1413,7 +1413,7 @@ export const EmbeddedModelSetup: React.FC<Props> = ({ onModelReady }) => {
                   title="Delete model from disk"
                   style={{
                     background: 'rgba(248,81,73,0.1)', border: '1px solid rgba(248,81,73,0.3)',
-                    borderRadius: '4px', cursor: 'pointer',
+                    borderRadius: '4px', cursor: 'shadowide',
                     color: '#f85149', padding: '2px 6px', flexShrink: 0,
                     display: 'flex', alignItems: 'center', gap: '3px', fontSize: '10px',
                   }}
@@ -1478,7 +1478,7 @@ export const EmbeddedModelSetup: React.FC<Props> = ({ onModelReady }) => {
               style={{
                 padding: '2px 8px', fontSize: '11px',
                 background: 'rgba(248,81,73,0.1)', border: '1px solid rgba(248,81,73,0.3)',
-                borderRadius: '4px', color: '#f85149', cursor: 'pointer',
+                borderRadius: '4px', color: '#f85149', cursor: 'shadowide',
               }}
             >
               Cancel
@@ -1507,7 +1507,7 @@ export const EmbeddedModelSetup: React.FC<Props> = ({ onModelReady }) => {
                 <button
                   onClick={() => handleCancelQueued(qid)}
                   style={{
-                    background: 'none', border: 'none', cursor: 'pointer',
+                    background: 'none', border: 'none', cursor: 'shadowide',
                     color: '#f85149', fontSize: '12px', padding: '0 2px', lineHeight: 1,
                   }}
                   title="Remove from queue"
@@ -1529,7 +1529,7 @@ export const EmbeddedModelSetup: React.FC<Props> = ({ onModelReady }) => {
                 flex: 1, padding: '7px 14px',
                 background: 'var(--accent-color)', color: '#fff',
                 border: 'none', borderRadius: '4px',
-                cursor: loading ? 'not-allowed' : 'pointer',
+                cursor: loading ? 'not-allowed' : 'shadowide',
                 opacity: loading ? 0.7 : 1, fontSize: '12px', fontWeight: 500,
               }}
             >
@@ -1546,7 +1546,7 @@ export const EmbeddedModelSetup: React.FC<Props> = ({ onModelReady }) => {
                 style={{
                   padding: '7px 10px', fontSize: '12px', borderRadius: '4px',
                   border: '1px solid var(--border-color)', background: 'var(--bg-secondary)',
-                  color: 'var(--text-secondary)', cursor: 'pointer',
+                  color: 'var(--text-secondary)', cursor: 'shadowide',
                 }}
               >
                 + Queue
@@ -1563,7 +1563,7 @@ export const EmbeddedModelSetup: React.FC<Props> = ({ onModelReady }) => {
                 flex: 1, padding: '7px 14px',
                 background: 'var(--accent-color)', color: '#fff',
                 border: 'none', borderRadius: '4px',
-                cursor: loadingModel ? 'not-allowed' : 'pointer',
+                cursor: loadingModel ? 'not-allowed' : 'shadowide',
                 opacity: loadingModel ? 0.7 : 1, fontSize: '12px', fontWeight: 500,
               }}
             >
@@ -1576,7 +1576,7 @@ export const EmbeddedModelSetup: React.FC<Props> = ({ onModelReady }) => {
               style={{
                 padding: '7px 10px', fontSize: '12px', borderRadius: '4px',
                 border: '1px solid var(--border-color)', background: 'var(--bg-secondary)',
-                color: 'var(--text-secondary)', cursor: 'pointer',
+                color: 'var(--text-secondary)', cursor: 'shadowide',
                 display: 'flex', alignItems: 'center', gap: '4px',
               }}
             >
@@ -1604,7 +1604,7 @@ export const EmbeddedModelSetup: React.FC<Props> = ({ onModelReady }) => {
             style={{
               padding: '7px 10px', fontSize: '12px', borderRadius: '4px',
               border: '1px solid var(--border-color)', background: 'var(--bg-secondary)',
-              color: 'var(--text-secondary)', cursor: 'pointer',
+              color: 'var(--text-secondary)', cursor: 'shadowide',
               display: 'flex', alignItems: 'center', gap: '4px',
             }}
           >
@@ -1634,7 +1634,7 @@ export const EmbeddedModelSetup: React.FC<Props> = ({ onModelReady }) => {
             </span>
             <button
               onClick={() => setShowBenchmark(false)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '16px' }}
+              style={{ background: 'none', border: 'none', cursor: 'shadowide', color: 'var(--text-secondary)', fontSize: '16px' }}
             >✕</button>
           </div>
           <div style={{ flex: 1, padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -1695,7 +1695,7 @@ export const EmbeddedModelSetup: React.FC<Props> = ({ onModelReady }) => {
                   style={{
                     padding: '7px 14px', fontSize: '12px', borderRadius: '4px',
                     border: '1px solid var(--border-color)', background: 'var(--bg-secondary)',
-                    color: 'var(--text-secondary)', cursor: 'pointer', marginTop: 'auto',
+                    color: 'var(--text-secondary)', cursor: 'shadowide', marginTop: 'auto',
                   }}
                 >
                   ↻ Run again

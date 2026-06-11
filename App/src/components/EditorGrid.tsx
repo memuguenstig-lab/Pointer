@@ -1184,7 +1184,7 @@ DO NOT include the [CURSOR] marker in your response. Provide ONLY the completion
         node.style.color = 'rgba(255, 255, 255, 0.5)'; // Semi-transparent white
         node.style.fontStyle = 'italic';
         node.style.display = 'inline-block';
-        node.style.pointerEvents = 'none'; // Make it non-interactive
+        node.style.shadowideEvents = 'none'; // Make it non-interactive
         node.textContent = displayText;
         return node;
       },
@@ -1898,7 +1898,7 @@ DO NOT include the [CURSOR] marker in your response. Provide ONLY the completion
         node.style.background = 'var(--accent-color)';
         node.style.color = 'var(--bg-primary)';
         node.style.borderRadius = '4px';
-        node.style.cursor = 'pointer';
+        node.style.cursor = 'shadowide';
         node.style.opacity = '0.7';
         node.style.transition = 'opacity 0.2s';
         node.style.marginLeft = '8px';
@@ -2195,7 +2195,7 @@ DO NOT include the [CURSOR] marker in your response. Provide ONLY the completion
               </div>
               <button
                 onClick={() => setFunctionExplanationDialog(prev => ({ ...prev, isOpen: false }))}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 16, flexShrink: 0, lineHeight: 1 }}
+                style={{ background: 'none', border: 'none', cursor: 'shadowide', color: 'var(--text-secondary)', fontSize: 16, flexShrink: 0, lineHeight: 1 }}
               >✕</button>
             </div>
 
@@ -2235,7 +2235,7 @@ DO NOT include the [CURSOR] marker in your response. Provide ONLY the completion
                   style={{
                     padding: '4px 10px', fontSize: 11, borderRadius: 4,
                     border: '1px solid var(--border-color)', background: 'var(--bg-secondary)',
-                    color: 'var(--text-secondary)', cursor: 'pointer',
+                    color: 'var(--text-secondary)', cursor: 'shadowide',
                   }}
                 >
                   Copy

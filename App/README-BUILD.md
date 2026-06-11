@@ -147,7 +147,7 @@ jobs:
       - run: cd App && yarn install && yarn dist:win
       - uses: actions/upload-artifact@v3
         with:
-          name: pointer-windows-installer
+          name: shadowide-windows-installer
           path: App/release/*.exe
 
   build-macos:
@@ -158,7 +158,7 @@ jobs:
       - run: cd App && yarn install && yarn dist:mac
       - uses: actions/upload-artifact@v3
         with:
-          name: pointer-macos-installer
+          name: shadowide-macos-installer
           path: App/release/*.dmg
 ```
 

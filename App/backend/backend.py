@@ -336,7 +336,7 @@ async def get_codebase_indexing_info():
 
 @app.post("/api/codebase/cleanup-old-cache")
 async def cleanup_old_codebase_cache():
-    """Clean up old .pointer_cache directory in the workspace."""
+    """Clean up old .shadowide_cache directory in the workspace."""
     if not codebase_indexer:
         return {"error": "No codebase indexer initialized"}
     
@@ -1104,7 +1104,7 @@ async def ide_state_update_cursor(payload: dict):
     """
     Frontend compatibility endpoint.
 
-    Pointer's Discord Rich Presence is updated via Electron IPC, not this backend,
+    ShadowIDE's Discord Rich Presence is updated via Electron IPC, not this backend,
     but the UI does a POST to keep the editor state in sync.
     """
     # Payload shape: { file_path: string, line: number, column: number }
@@ -2601,7 +2601,7 @@ async def github_callback(code: str, state: str):
     """Handle the GitHub OAuth callback."""
     try:
         # Validate state parameter
-        if state != "pointer_oauth":
+        if state != "shadowide_oauth":
             return HTMLResponse("""
                 <html>
                     <head>
@@ -3274,19 +3274,19 @@ def get_app_data_path() -> Path:
     if system == "windows":
         # Windows: Use AppData/Roaming for user-specific settings
         base_path = os.environ.get('APPDATA', os.path.expanduser('~/AppData/Roaming'))
-        return Path(base_path) / 'Pointer' / 'data'
+        return Path(base_path) / 'ShadowIDE' / 'data'
     elif system == "darwin":  # macOS
         # macOS: Use Application Support directory - properly expand home directory
         home_dir = Path.home()
-        return home_dir / 'Library' / 'Application Support' / 'Pointer' / 'data'
+        return home_dir / 'Library' / 'Application Support' / 'ShadowIDE' / 'data'
     else:  # Linux and other Unix-like systems
         # Linux: Use XDG data directory or fallback to home - properly expand paths
         xdg_data_home = os.environ.get('XDG_DATA_HOME')
         if xdg_data_home:
-            return Path(xdg_data_home) / 'pointer' / 'data'
+            return Path(xdg_data_home) / 'shadowide' / 'data'
         else:
             home_dir = Path.home()
-            return home_dir / '.local' / 'share' / 'pointer' / 'data'
+            return home_dir / '.local' / 'share' / 'shadowide' / 'data'
 
 def get_chats_directory() -> Path:
     """Get the chats directory path"""

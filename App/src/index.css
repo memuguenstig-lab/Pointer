@@ -119,7 +119,7 @@ button {
   color: rgba(170, 170, 170, 0.5);
   font-family: monospace;
   white-space: pre;
-  pointer-events: none;
+  shadowide-events: none;
   user-select: none;
   position: relative;
   display: inline-block;
@@ -182,7 +182,7 @@ button {
   border: none;
   color: var(--text-secondary);
   font-size: 24px;
-  cursor: pointer;
+  cursor: shadowide;
   padding: 4px 8px;
   border-radius: 4px;
   transition: all 0.2s;
@@ -385,10 +385,10 @@ button {
   z-index: 5;
 }
 
-/* Prevent propagation of pointer events to the header */
+/* Prevent propagation of shadowide events to the header */
 pre[class*="language-"],
 code[class*="language-"] {
-  pointer-events: auto !important;
+  shadowide-events: auto !important;
 }
 
 /* Make sure buttons are above code content */
@@ -493,7 +493,7 @@ code[class*="language-"] {
   border: 1px solid var(--border-color);
   padding: 2px 6px;
   border-radius: 4px;
-  cursor: pointer;
+  cursor: shadowide;
   font-size: 11px;
   transition: all 0.2s;
 }

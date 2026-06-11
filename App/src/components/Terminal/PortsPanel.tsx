@@ -49,7 +49,7 @@ const PortsPanel: React.FC = () => {
             title={`Open localhost:${p.port}`}
             style={{
               background: 'none', border: '1px solid var(--border-color)',
-              borderRadius: 4, color: 'var(--text-secondary)', cursor: 'pointer',
+              borderRadius: 4, color: 'var(--text-secondary)', cursor: 'shadowide',
               fontSize: 11, padding: '2px 6px',
             }}
             onMouseEnter={e => { e.currentTarget.style.color = 'var(--text-primary)'; e.currentTarget.style.borderColor = 'var(--accent-color)'; }}

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "Building Next.js application..."
-cd pointer-website
+cd shadowide-website
 
 # Ensure we're using the local next binary
 NEXT_BIN="./node_modules/.bin/next"

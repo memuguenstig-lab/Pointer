@@ -1,6 +1,6 @@
-# Pointer Discord Bot
+# ShadowIDE Discord Bot
 
-A Discord bot for the [Pointer](https://pointer.f1shy312.com) project, providing moderation tools through slash commands.
+A Discord bot for the [ShadowIDE](https://shadowide.f1shy312.com) project, providing moderation tools through slash commands.
 
 ## Features
 

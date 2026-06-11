@@ -1,6 +1,6 @@
-# Pointer Discord Bot
+# ShadowIDE Discord Bot
 
-A comprehensive Discord bot for the Pointer community with economy, giveaways, leveling, and fun features.
+A comprehensive Discord bot for the ShadowIDE community with economy, giveaways, leveling, and fun features.
 
 ## Features
 
@@ -29,8 +29,8 @@ A comprehensive Discord bot for the Pointer community with economy, giveaways, l
    # Log channel for bot notifications (required)
    LOG_CHANNEL_ID=channel_id_for_logs
    
-   # Emoji ID for the Pointer Coin (required)
-   POINTER_COIN_EMOJI_ID=emoji_id_for_pointer_coin
+   # Emoji ID for the ShadowIDE Coin (required)
+   SHADOWIDE_COIN_EMOJI_ID=emoji_id_for_shadowide_coin
    
    # Role ID to ping for giveaways (optional)
    GIVEAWAY_PING_ROLE_ID=role_id_to_ping_for_giveaways

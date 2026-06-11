@@ -1,6 +1,6 @@
-# Pointer Discord Bot Suite
+# ShadowIDE Discord Bot Suite
 
-Comprehensive Discord bot ecosystem for the Pointer community featuring economy, moderation, giveaways, leveling, and community management tools. Built with Python and discord.py.
+Comprehensive Discord bot ecosystem for the ShadowIDE community featuring economy, moderation, giveaways, leveling, and community management tools. Built with Python and discord.py.
 
 ![Python](https://img.shields.io/badge/Python-Bot-green) ![Discord.py](https://img.shields.io/badge/discord.py-Library-blue) ![SQLite](https://img.shields.io/badge/SQLite-Database-orange)
 
@@ -79,7 +79,7 @@ Comprehensive Discord bot ecosystem for the Pointer community featuring economy,
    DISCORD_TOKEN=your_discord_bot_token_here
    GUILD_ID=your_guild_id_here
    LOG_CHANNEL_ID=channel_id_for_logs
-   POINTER_COIN_EMOJI_ID=emoji_id_for_pointer_coin
+   SHADOWIDE_COIN_EMOJI_ID=emoji_id_for_shadowide_coin
    
    # Optional
    GIVEAWAY_PING_ROLE_ID=role_id_to_ping_for_giveaways
@@ -436,7 +436,7 @@ pip install discord.py --upgrade
 
 ## 📝 License
 
-This component is part of the Pointer project, licensed under the MIT License.
+This component is part of the ShadowIDE project, licensed under the MIT License.
 
 ## 🙏 Acknowledgments
 

@@ -2,7 +2,7 @@ import json
 import os
 import logging
 
-logger = logging.getLogger('pointer_bot')
+logger = logging.getLogger('shadowide_bot')
 
 class Database:
     @staticmethod

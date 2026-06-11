@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Pointer Build and Setup Script
+# ShadowIDE Build and Setup Script
 # Umfassendes Setup-Script mit Error-Handling und Debugging
 
 set -o pipefail
@@ -313,7 +313,7 @@ start_application() {
         local args=""
         [ "$BACKGROUND" = true ] && args="$args --background"
         [ "$SKIP_CHECKS" = true ] && args="$args --skip-checks"
-        node start-pointer.js $args
+        node start-shadowide.js $args
     fi
 }
 
@@ -392,7 +392,7 @@ parse_arguments() {
 
 show_help() {
     cat << 'EOF'
-Pointer Build & Setup Script
+ShadowIDE Build & Setup Script
 
 Verwendung: ./build.sh [OPTIONEN]
 
@@ -418,7 +418,7 @@ EOF
 main() {
     cat << "EOF"
 ╔════════════════════════════════════════════════════════════════════════════╗
-║                    Pointer Build & Setup Script v1.0                      ║
+║                    ShadowIDE Build & Setup Script v1.0                      ║
 ║               Umfassendes Setup mit Error-Handling & Debugging             ║
 ╚════════════════════════════════════════════════════════════════════════════╝
 
@@ -453,7 +453,7 @@ EOF
     write_log "  1. Entwicklungsmodus (Frontend + Backend):" "Info"
     write_log "     yarn dev" "Debug"
     write_log "  2. Produktionsstart:" "Info"
-    write_log "     node start-pointer.js" "Debug"
+    write_log "     node start-shadowide.js" "Debug"
     write_log "  3. Komponenten separat:" "Info"
     write_log "     Terminal 1: cd backend && python run.py" "Debug"
     write_log "     Terminal 2: yarn start" "Debug"

@@ -17,7 +17,7 @@ const CollapsibleSection: React.FC<Props> = ({ title, defaultOpen = true, childr
           width: '100%', display: 'flex', alignItems: 'center', gap: '8px',
           padding: '8px 12px', background: 'var(--bg-secondary)',
           border: '1px solid var(--border-primary)', borderRadius: open ? '6px 6px 0 0' : '6px',
-          color: 'var(--text-primary)', cursor: 'pointer', fontSize: '13px', fontWeight: 600,
+          color: 'var(--text-primary)', cursor: 'shadowide', fontSize: '13px', fontWeight: 600,
           textAlign: 'left',
         }}
       >

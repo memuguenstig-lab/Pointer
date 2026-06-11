@@ -1,6 +1,6 @@
-# Pointer Website
+# ShadowIDE Website
 
-Marketing website and web presence for the Pointer development suite. Built with Next.js, TypeScript, and Tailwind CSS for a modern, responsive, and fast experience.
+Marketing website and web presence for the ShadowIDE development suite. Built with Next.js, TypeScript, and Tailwind CSS for a modern, responsive, and fast experience.
 
 ![Next.js](https://img.shields.io/badge/Next.js-Website-black) ![TypeScript](https://img.shields.io/badge/TypeScript-Typed-blue) ![Tailwind](https://img.shields.io/badge/Tailwind-CSS-blue)
 
@@ -13,7 +13,7 @@ Marketing website and web presence for the Pointer development suite. Built with
 - **Modern UI** - Clean, professional design with Tailwind CSS
 
 ### 📄 **Content & Pages**
-- **Landing Page** - Showcase Pointer suite features and benefits
+- **Landing Page** - Showcase ShadowIDE suite features and benefits
 - **Documentation** - Comprehensive guides and API documentation
 - **Download Section** - Links to desktop app downloads
 - **Community Links** - Discord, GitHub, and social media integration
@@ -34,7 +34,7 @@ Marketing website and web presence for the Pointer development suite. Built with
 
 1. **Navigate to Website Directory**
    ```bash
-   cd Website/pointer-website
+   cd Website/shadowide-website
    ```
 
 2. **Install Dependencies**
@@ -84,7 +84,7 @@ Use the Python static server for simple deployment:
 cd Website
 
 # Build the site first
-cd pointer-website && npm run build && cd ..
+cd shadowide-website && npm run build && cd ..
 
 # Serve static files
 python web.py
@@ -108,7 +108,7 @@ chmod +x build.sh
 
 ```
 Website/
-├── pointer-website/              # Next.js application
+├── shadowide-website/              # Next.js application
 │   ├── src/                      # Source code
 │   │   ├── app/                  # Next.js app directory
 │   │   │   ├── page.tsx          # Landing page
@@ -141,7 +141,7 @@ Website/
 
 ### Next.js Configuration
 
-Edit `pointer-website/next.config.ts`:
+Edit `shadowide-website/next.config.ts`:
 
 ```typescript
 /** @type {import('next').NextConfig} */
@@ -158,7 +158,7 @@ module.exports = nextConfig
 
 ### Tailwind Configuration
 
-Customize styling in `pointer-website/tailwind.config.ts`:
+Customize styling in `shadowide-website/tailwind.config.ts`:
 
 ```typescript
 import type { Config } from 'tailwindcss'
@@ -189,7 +189,7 @@ Create `.env.local` for environment-specific settings:
 # Site configuration
 NEXT_PUBLIC_SITE_URL=https://pointr.sh
 NEXT_PUBLIC_DISCORD_INVITE=https://discord.gg/vhgc8THmNk
-NEXT_PUBLIC_GITHUB_URL=https://github.com/PointerIDE/Pointer
+NEXT_PUBLIC_GITHUB_URL=https://github.com/ShadowIDEIDE/ShadowIDE
 
 # Analytics (optional)
 NEXT_PUBLIC_GA_ID=your-google-analytics-id
@@ -249,22 +249,22 @@ export default function NewComponent({ title, description }: Props) {
 
 1. **Connect GitHub repository** to Vercel
 2. **Configure build settings**:
-   - Build Command: `cd Website/pointer-website && npm run build`
-   - Output Directory: `Website/pointer-website/out`
+   - Build Command: `cd Website/shadowide-website && npm run build`
+   - Output Directory: `Website/shadowide-website/out`
 3. **Deploy automatically** on push to main branch
 
 ### Netlify
 
 1. **Connect repository** to Netlify
 2. **Set build settings**:
-   - Build command: `cd Website/pointer-website && npm run build && npm run export`
-   - Publish directory: `Website/pointer-website/out`
+   - Build command: `cd Website/shadowide-website && npm run build && npm run export`
+   - Publish directory: `Website/shadowide-website/out`
 
 ### GitHub Pages
 
 ```bash
 # Build and deploy to gh-pages branch
-cd pointer-website
+cd shadowide-website
 npm run build
 npm run export
 
@@ -280,10 +280,10 @@ Create `Dockerfile`:
 FROM node:18-alpine
 
 WORKDIR /app
-COPY pointer-website/package*.json ./
+COPY shadowide-website/package*.json ./
 RUN npm install
 
-COPY pointer-website/ ./
+COPY shadowide-website/ ./
 RUN npm run build
 
 EXPOSE 3000
@@ -296,7 +296,7 @@ For simple static hosting:
 
 ```bash
 # Build static files
-cd pointer-website
+cd shadowide-website
 npm run build
 npm run export
 
@@ -376,14 +376,14 @@ export default function RootLayout({
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Pointer - Modern Code Editor',
+  title: 'ShadowIDE - Modern Code Editor',
   description: 'AI-powered code editor with VS Code-like interface',
   keywords: 'code editor, AI, development, programming',
   openGraph: {
-    title: 'Pointer Code Editor',
+    title: 'ShadowIDE Code Editor',
     description: 'Modern development suite with AI assistance',
     url: 'https://pointr.sh',
-    siteName: 'Pointer',
+    siteName: 'ShadowIDE',
     images: ['/images/og-image.png'],
   },
 }
@@ -415,7 +415,7 @@ export const metadata: Metadata = {
 
 ## 📝 License
 
-This component is part of the Pointer project, licensed under the MIT License.
+This component is part of the ShadowIDE project, licensed under the MIT License.
 
 ## 🙏 Acknowledgments
 

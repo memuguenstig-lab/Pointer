@@ -26,7 +26,7 @@ function DiffPane({ label, content, color, onAccept }: {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 10px', background: `${color}18`, borderBottom: `1px solid ${color}33`, flexShrink: 0 }}>
         <span style={{ fontSize: 11, fontWeight: 600, color, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</span>
         {onAccept && (
-          <button onClick={onAccept} style={{ fontSize: 10, padding: '2px 8px', borderRadius: 3, border: `1px solid ${color}66`, background: `${color}22`, color, cursor: 'pointer' }}>
+          <button onClick={onAccept} style={{ fontSize: 10, padding: '2px 8px', borderRadius: 3, border: `1px solid ${color}66`, background: `${color}22`, color, cursor: 'shadowide' }}>
             Accept
           </button>
         )}
@@ -142,7 +142,7 @@ const GitConflictResolver: React.FC<GitConflictResolverProps> = ({ onAllResolved
             key={c.path}
             onClick={() => !c.resolved && selectFile(c.path)}
             style={{
-              padding: '6px 12px', fontSize: 12, cursor: c.resolved ? 'default' : 'pointer',
+              padding: '6px 12px', fontSize: 12, cursor: c.resolved ? 'default' : 'shadowide',
               background: selected === c.path ? 'rgba(14,99,156,0.12)' : 'transparent',
               borderLeft: `2px solid ${c.resolved ? '#3fb950' : selected === c.path ? 'var(--accent-color)' : '#f0883e'}`,
               display: 'flex', alignItems: 'center', gap: 6,
@@ -157,7 +157,7 @@ const GitConflictResolver: React.FC<GitConflictResolverProps> = ({ onAllResolved
 
       {error && (
         <div style={{ padding: '6px 12px', background: 'rgba(248,81,73,0.1)', color: '#f85149', fontSize: 12, flexShrink: 0 }}>
-          {error} <button onClick={() => setError(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f85149', marginLeft: 8 }}>✕</button>
+          {error} <button onClick={() => setError(null)} style={{ background: 'none', border: 'none', cursor: 'shadowide', color: '#f85149', marginLeft: 8 }}>✕</button>
         </div>
       )}
 
@@ -198,14 +198,14 @@ const GitConflictResolver: React.FC<GitConflictResolverProps> = ({ onAllResolved
                   <div style={{ display: 'flex', gap: 6 }}>
                     <button
                       onClick={() => setMerged(versions.ours + '\n' + versions.theirs)}
-                      style={{ fontSize: 10, padding: '2px 8px', borderRadius: 3, border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }}
+                      style={{ fontSize: 10, padding: '2px 8px', borderRadius: 3, border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'shadowide' }}
                     >
                       Accept Both
                     </button>
                     <button
                       onClick={handleResolve}
                       disabled={saving || !merged.trim()}
-                      style={{ fontSize: 11, padding: '4px 12px', borderRadius: 4, border: 'none', background: '#3fb950', color: '#fff', cursor: 'pointer', fontWeight: 600, opacity: saving ? 0.7 : 1 }}
+                      style={{ fontSize: 11, padding: '4px 12px', borderRadius: 4, border: 'none', background: '#3fb950', color: '#fff', cursor: 'shadowide', fontWeight: 600, opacity: saving ? 0.7 : 1 }}
                     >
                       {saving ? 'Saving…' : '✓ Mark Resolved'}
                     </button>

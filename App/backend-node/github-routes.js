@@ -9,9 +9,9 @@ const router = express.Router();
 
 function getAppDataPath() {
   const p = process.platform;
-  if (p === 'win32') return path.join(process.env.APPDATA || os.homedir(), 'Pointer', 'data');
-  if (p === 'darwin') return path.join(os.homedir(), 'Library', 'Application Support', 'Pointer', 'data');
-  return path.join(process.env.XDG_DATA_HOME || path.join(os.homedir(), '.local', 'share'), 'pointer', 'data');
+  if (p === 'win32') return path.join(process.env.APPDATA || os.homedir(), 'ShadowIDE', 'data');
+  if (p === 'darwin') return path.join(os.homedir(), 'Library', 'Application Support', 'ShadowIDE', 'data');
+  return path.join(process.env.XDG_DATA_HOME || path.join(os.homedir(), '.local', 'share'), 'shadowide', 'data');
 }
 
 function getToken() {
@@ -34,7 +34,7 @@ async function githubFetch(urlPath, token) {
       hostname: 'api.github.com',
       path: urlPath,
       headers: {
-        'User-Agent': 'Pointer-IDE',
+        'User-Agent': 'ShadowIDE-IDE',
         'Accept': 'application/vnd.github.v3+json',
         ...(token ? { 'Authorization': `token ${token}` } : {})
       }
@@ -71,7 +71,7 @@ router.get('/github/popular-repos', async (req, res) => {
 router.get('/github/client-id', async (req, res) => {
   try {
     const r = await new Promise((resolve, reject) => {
-      https.get('https://pointerapi.f1shy312.com/github/client_id', { headers: { 'User-Agent': 'Pointer-IDE' } }, resp => {
+      https.get('https://shadowideapi.f1shy312.com/github/client_id', { headers: { 'User-Agent': 'ShadowIDE-IDE' } }, resp => {
         let d = ''; resp.on('data', c => d += c); resp.on('end', () => resolve(JSON.parse(d)));
       }).on('error', reject);
     });
@@ -86,10 +86,10 @@ router.get('/github/callback', async (req, res) => {
     const tokenData = await new Promise((resolve, reject) => {
       const body = JSON.stringify({ code });
       const opts = {
-        hostname: 'pointerapi.f1shy312.com',
+        hostname: 'shadowideapi.f1shy312.com',
         path: '/exchange-token',
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body), 'User-Agent': 'Pointer-IDE' }
+        headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body), 'User-Agent': 'ShadowIDE-IDE' }
       };
       const req2 = https.request(opts, resp => {
         let d = ''; resp.on('data', c => d += c); resp.on('end', () => resolve(JSON.parse(d)));
