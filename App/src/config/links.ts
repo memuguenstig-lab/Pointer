@@ -157,7 +157,7 @@ export const quickLinks: QuickLink[] = [
   {
     id: 'project-home',
     name: 'Project Website',
-    description: 'Pointer website, downloads, and project info.',
+    description: 'Shadow website, downloads, and project info.',
     category: 'Project',
     accent: '#ff7a59',
     action: {

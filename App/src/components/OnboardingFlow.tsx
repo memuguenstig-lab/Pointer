@@ -17,7 +17,7 @@ const WelcomeStep = () => (
   <div style={{ textAlign: 'center', padding: '8px 0 16px' }}>
     <div style={{ fontSize: 64, marginBottom: 16, lineHeight: 1 }}>👋</div>
     <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.7, maxWidth: 420, margin: '0 auto' }}>
-      Pointer is an AI-powered code editor that runs entirely on your machine.
+      Shadow is an AI-powered code editor that runs entirely on your machine.
       Your code never leaves your computer — the AI works locally or via your own API keys.
     </p>
     <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 20, flexWrap: 'wrap' }}>
@@ -167,7 +167,7 @@ const ReadyStep = () => (
 // ── Steps definition ───────────────────────────────────────────────────────
 
 const STEPS: Step[] = [
-  { id: 'welcome', title: 'Welcome to Pointer', subtitle: 'Your AI-powered code editor', icon: '✦', content: <WelcomeStep />, accent: '#58a6ff' },
+  { id: 'welcome', title: 'Welcome to Shadow', subtitle: 'Your AI-powered code editor', icon: '✦', content: <WelcomeStep />, accent: '#58a6ff' },
   { id: 'editor',  title: 'The Editor',         subtitle: 'Monaco-based, keyboard-first', icon: '⌨', content: <EditorStep />, accent: '#3fb950' },
   { id: 'ai',      title: 'AI Agent',            subtitle: 'Your autonomous coding partner', icon: '🤖', content: <AIStep />, accent: '#bc8cff' },
   { id: 'models',  title: 'Choose Your AI',      subtitle: 'Local, embedded, or cloud', icon: '⚙', content: <ModelsStep />, accent: '#f0883e' },

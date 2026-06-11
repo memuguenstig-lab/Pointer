@@ -37,12 +37,12 @@ const MobileHeader: React.FC<MobileHeaderProps> = ({
       WebkitAppRegion: 'no-drag',
     } as React.CSSProperties}>
       {/* Logo */}
-      <img src={logo} alt="Pointer" style={{ width: 22, height: 22, borderRadius: 4, flexShrink: 0 }} />
+      <img src={logo} alt="Shadow" style={{ width: 22, height: 22, borderRadius: 4, flexShrink: 0 }} />
 
       {/* File/workspace name */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-          {currentFileName || workspaceName || 'Pointer'}
+          {currentFileName || workspaceName || 'Shadow'}
         </div>
         {workspaceName && currentFileName && (
           <div style={{ fontSize: 10, color: 'var(--text-secondary)', opacity: 0.7 }}>{workspaceName}</div>

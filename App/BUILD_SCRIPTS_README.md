@@ -1,4 +1,4 @@
-# Pointer Build & Setup Scripts
+# Shadow Build & Setup Scripts
 
 Umfassende Build- und Setup-Skripte mit erweiterten Fehlerbehandlung, Debugging und automatischer Problemlösung.
 
@@ -248,7 +248,7 @@ Passe diese nach Bedarf an.
 
 ## 🆓 Kostenlos & Open Source
 
-Diese Scripts sind Teil des Pointer Projekts und unter MIT License verfügbar.
+Diese Scripts sind Teil des Shadow Projekts und unter MIT License verfügbar.
 
 ## 📞 Support
 
@@ -259,4 +259,4 @@ Bei Problemen:
 
 ---
 
-**Viel Spaß mit Pointer! 🚀**
+**Viel Spaß mit Shadow! 🚀**

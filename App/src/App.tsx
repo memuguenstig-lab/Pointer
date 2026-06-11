@@ -20,7 +20,6 @@ import ToastContainer from './components/ToastContainer';
 import Titlebar from './components/Titlebar';
 import MobileHeader from './components/MobileHeader';
 import GitView from './components/Git/GitView';
-import LinksView from './components/LinksView';
 import { GitService } from './services/gitService';
 import CloneRepositoryModal from './components/CloneRepositoryModal';
 import { PathConfig } from './config/paths';
@@ -293,7 +292,7 @@ const App: React.FC = () => {
     details: "Editing {file} | Line {line}:{column}",
     state: "Workspace: {workspace}",
     largeImageKey: "pointer_logo",
-    largeImageText: "Pointer - Code Editor",
+    largeImageText: "Shadow - Code Editor",
     smallImageKey: "code",
     smallImageText: "{languageId} | Line {line}:{column}",
     button1Label: "Website",
@@ -1496,7 +1495,6 @@ const App: React.FC = () => {
   // Add this state for Explorer and Git view toggle (derived from activeView)
   const isGitViewActive = activeView === 'git';
   const isExplorerViewActive = activeView === 'explorer';
-  const isLinksViewActive = activeView === 'links';
 
   useEffect(() => {
     let mounted = true;
@@ -1576,7 +1574,7 @@ const App: React.FC = () => {
       const position = editor.current?.getPosition();
       const model = editor.current?.getModel();
       const fileName = getCurrentFileName();
-      const workspaceName = fileSystem.items[fileSystem.rootId]?.name || 'Pointer';
+      const workspaceName = fileSystem.items[fileSystem.rootId]?.name || 'Shadow';
       const languageId = model?.getLanguageId() || 'plaintext';
       const content = model?.getValue() || '';
       const fileSize = `${Math.round(content.length / 1024)} KB`;
@@ -1781,7 +1779,7 @@ const App: React.FC = () => {
             isPanelVisible={fileSystem.terminalOpen}
             currentFileName={getCurrentFileName()}
             workspaceName={fileSystem.items[fileSystem.rootId]?.name || ''}
-            titleFormat={dynamicTitleFormat || settingsData.advanced?.titleFormat || '{filename} - {workspace} - Pointer'}
+            titleFormat={dynamicTitleFormat || settingsData.advanced?.titleFormat || '{filename} - {workspace} - Shadow'}
           />
         )}
         {/* VSCode-style layout: ActivityBar + Sidebar + Editor + Chat */}
@@ -1808,7 +1806,7 @@ const App: React.FC = () => {
               >
                 {/* VSCode-style panel header */}
                 <div className="sidebar-panel-header">
-                  {isGitViewActive ? 'Source Control' : isLinksViewActive ? 'Connections' : 'Explorer'}
+                  {isGitViewActive ? 'Source Control' : 'Explorer'}
                 </div>
                 {isLoading ? (
                   <div style={{ padding: '16px', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -1817,8 +1815,6 @@ const App: React.FC = () => {
                   </div>
                 ) : isGitViewActive ? (
                   <GitView onBack={handleToggleExplorerView} />
-                ) : isLinksViewActive ? (
-                  <LinksView />
                 ) : isExplorerViewActive ? (
                   <FileExplorer
                     items={memoizedItems}

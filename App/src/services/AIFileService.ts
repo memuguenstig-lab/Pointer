@@ -155,7 +155,7 @@ Return ONLY the file extension.`;
 
   private static async extractFileOperations(aiResponse: string): Promise<FileOperation[]> {
     const operations: FileOperation[] = [];
-    const pointerRegex = /Pointer:Code\+(.+?):start\s*([\s\S]*?)\s*Pointer:Code\+\1:end/g;
+    const pointerRegex = /Shadow:Code\+(.+?):start\s*([\s\S]*?)\s*Shadow:Code\+\1:end/g;
     let match;
 
     while ((match = pointerRegex.exec(aiResponse)) !== null) {

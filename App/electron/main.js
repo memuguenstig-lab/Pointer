@@ -1,5 +1,5 @@
 if ((process.platform === 'win32') && process.argv.includes('--interactive')) require('windows-debugger')({
-  title: 'Pointer Debugger',
+  title: 'Shadow Debugger',
   eval: (code) => eval(code)
 });
 
@@ -40,12 +40,12 @@ let discordRpcSettings = {
   enabled: true,
   details: "Editing {file} | Line {line}:{column}",
   state: "Workspace: {workspace}",
-  largeImageKey: "pointer_logo",
-  largeImageText: "Pointer - Code Editor",
+  largeImageKey: "shadow_logo",
+  largeImageText: "Shadow - Code Editor",
   smallImageKey: "code",
   smallImageText: "{languageId} | Line {line}:{column}",
   button1Label: "Website",
-  button1Url: "https://pointer.f1shy312.com",
+  button1Url: "https://shadow.f1shy312.com",
   button2Label: "Join the Discord 🚀",
   button2Url: "https://discord.gg/vhgc8THmNk"
 };

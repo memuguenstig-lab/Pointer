@@ -93,12 +93,12 @@ export function findIncompleteCodeBlocks(content: string): Array<{filename: stri
   if (!content) return [];
   
   const incompleteBlocks: Array<{filename: string, startIndex: number, partialCode: string}> = [];
-  const startTagRegex = /Pointer:Code\+(.*?):start\s*([\s\S]*?)(?=(Pointer:Code\+\1:end|$))/g;
+  const startTagRegex = /Shadow:Code\+(.*?):start\s*([\s\S]*?)(?=(Shadow:Code\+\1:end|$))/g;
   
   let match;
   while ((match = startTagRegex.exec(content)) !== null) {
     const [fullMatch, filename, partialCode] = match;
-    const endTagExists = content.includes(`Pointer:Code+${filename}:end`);
+    const endTagExists = content.includes(`Shadow:Code+${filename}:end`);
     
     if (!endTagExists) {
       incompleteBlocks.push({
@@ -448,7 +448,7 @@ export const stripThinkTags = (text: string): string => {
 };
 
 /**
- * Removes full markdown code blocks and Pointer workspace code fences from text.
+ * Removes full markdown code blocks and Shadow workspace code fences from text.
  * This is intended for assistant messages where the actual file content should
  * be applied to the workspace instead of being shown in the chat.
  *
@@ -460,8 +460,8 @@ export const stripWorkspaceCodeBlocks = (text: string): string => {
 
   let result = text;
 
-  // Remove Pointer-specific file blocks first so we do not leave behind markers.
-  result = result.replace(/Pointer:Code\+[\s\S]*?:start\s*[\s\S]*?Pointer:Code\+[\s\S]*?:end/g, '');
+  // Remove Shadow-specific file blocks first so we do not leave behind markers.
+  result = result.replace(/Shadow:Code\+[\s\S]*?:start\s*[\s\S]*?Shadow:Code\+[\s\S]*?:end/g, '');
 
   // Remove fenced code blocks entirely.
   result = result.replace(/```[\s\S]*?```/g, '');
@@ -581,7 +581,7 @@ export const extractCodeBlocks = (content: string) => {
     return result;
   };
 
-  const pointerRegex = /Pointer:Code\+(.+?):start\s*([\s\S]*?)\s*Pointer:Code\+\1:end/g;
+  const pointerRegex = /Shadow:Code\+(.+?):start\s*([\s\S]*?)\s*Shadow:Code\+\1:end/g;
   let pointerMatch;
   while ((pointerMatch = pointerRegex.exec(content)) !== null) {
     const filename = pointerMatch[1].trim();

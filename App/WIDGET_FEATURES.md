@@ -1,4 +1,4 @@
-# Inline Widgets für Pointer IDE - Feature-Dokumentation
+# Inline Widgets für Shadow IDE - Feature-Dokumentation
 
 ## Implementierte Features
 

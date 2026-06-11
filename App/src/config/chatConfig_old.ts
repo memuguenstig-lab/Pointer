@@ -26,7 +26,7 @@ export interface ExtendedMessage extends Message {
 }
 
 // Core system traits and capabilities
-const CORE_TRAITS = `You are an AI coding assistant embedded in Pointer IDE. You have direct access to the user's codebase, file system, terminal, and git repository through a set of tools. Use them proactively — never guess when you can verify.
+const CORE_TRAITS = `You are an AI coding assistant embedded in Shadow IDE. You have direct access to the user's codebase, file system, terminal, and git repository through a set of tools. Use them proactively — never guess when you can verify.
 
 ## Capabilities
 
@@ -179,7 +179,7 @@ The codebase has been fully indexed with advanced AI analysis. Use this intellig
 };
 
 // Specialized mode system messages
-export const CONCISE_CHAT_SYSTEM = (currentWorkingDirectory: string): string => `You are an AI coding assistant in Pointer IDE.
+export const CONCISE_CHAT_SYSTEM = (currentWorkingDirectory: string): string => `You are an AI coding assistant in Shadow IDE.
 Working directory: ${currentWorkingDirectory || 'unknown'}
 
 You have tools to read/write files, search the codebase, run terminal commands, and browse the web. Use them when needed — don't guess about code you haven't read.
@@ -193,7 +193,7 @@ If the user seems to be talking about code, files, folders, the project structur
 
 Be direct. Answer the question, show the code, skip the preamble.`;
 
-export const ADVANCED_AGENT_SYSTEM = (): string => `You are an AI coding agent embedded in Pointer IDE. You operate autonomously to complete tasks end-to-end.
+export const ADVANCED_AGENT_SYSTEM = (): string => `You are an AI coding agent embedded in Shadow IDE. You operate autonomously to complete tasks end-to-end.
 
 ## Tools available
 

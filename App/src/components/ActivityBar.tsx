@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type ActivityView = 'explorer' | 'git' | 'links' | null;
+export type ActivityView = 'explorer' | 'git' | null;
 
 interface ActivityBarProps {
   activeView: ActivityView;
@@ -122,14 +122,6 @@ const ActivityBar: React.FC<ActivityBarProps> = ({
           </svg>
         )}
 
-        {/* Links */}
-        {btn('links', 'Connections',
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path d="M9 14a4 4 0 0 1 0-5.657l1.343-1.343a4 4 0 0 1 5.657 0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
-            <path d="M15 10a4 4 0 0 1 0 5.657l-1.343 1.343a4 4 0 0 1-5.657 0" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
-            <path d="M10.5 12h3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
-          </svg>
-        )}
 
         {/* Terminal */}
         {btn('terminal', 'Terminal (Ctrl+`)',

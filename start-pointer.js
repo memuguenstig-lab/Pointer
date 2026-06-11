@@ -17,6 +17,9 @@ const showHelp = args.includes('--help') || args.includes('-h');
 const BACKEND_PORT = process.env.BACKEND_PORT || 23816;
 const SERVER_PORT = process.env.SERVER_PORT || 3000;
 
+// Determine working directory dynamically (support split structure running from root)
+const workingDir = fs.existsSync(path.join(process.cwd(), 'App')) ? path.join(process.cwd(), 'App') : process.cwd();
+
 // Display help message
 if (showHelp) {
   console.log(chalk.cyan(`
@@ -114,7 +117,7 @@ async function verifyProjectSetup(strict = false) {
 function checkNodeModules(location = '.') {
   const modulePath = path.join(location, 'node_modules');
   if (!fs.existsSync(modulePath)) {
-    console.log(chalk.yellow('\n⚠️  node_modules not found. Installing dependencies...'));
+    console.log(chalk.yellow(`\n⚠️  node_modules not found in ${location}. Installing dependencies...`));
     const { execSync } = require('child_process');
     try {
       const cwd = location;
@@ -165,11 +168,15 @@ async function buildProject() {
     console.log(chalk.cyan(`   📁 Building in: ${buildDir}`));
     
     // Use npm instead of yarn.cmd (more reliable)
-    const buildProcess = spawn('npm', ['run', 'build'], {
-      stdio: 'inherit',
-      shell: true,
-      cwd: buildDir
-    });
+    const buildProcess = spawn(
+      process.platform === 'win32' ? 'npm.cmd' : 'npm',
+      ['run', 'build'],
+      {
+        stdio: 'inherit',
+        shell: false,
+        cwd: buildDir
+      }
+    );
     
     buildProcess.on('close', (code) => {
       if (code === 0) {
@@ -206,7 +213,7 @@ async function testBackendHealth(port, maxRetries = 5) {
 }
 
 // Function to test server connection
-async function testServerHealth(port, maxRetries = 5) {
+async function testServerHealth(port, maxRetries = 15) {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       const inUse = await isPortInUse(port);
@@ -215,11 +222,11 @@ async function testServerHealth(port, maxRetries = 5) {
       }
       if (attempt < maxRetries) {
         console.log(chalk.yellow(`  ⏳ Server health check attempt ${attempt}/${maxRetries}...`));
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 2000));
       }
     } catch (error) {
       if (attempt < maxRetries) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 2000));
       }
     }
   }
@@ -244,8 +251,8 @@ function startProcess(command, args, name, color, env = {}) {
   console.log(chalk[color](`\n▶️  Starting ${name}...`));
   
   const options = { 
-    shell: true,
     stdio: 'pipe',
+    cwd: workingDir,
     env: { ...process.env, ...env }
   };
   
@@ -253,8 +260,10 @@ function startProcess(command, args, name, color, env = {}) {
   if (runInBackground && name !== 'Backend') {
     options.detached = true;
   }
-  
-  const childProcess = spawn(command, args, options);
+
+  // Join command + args into a single string to avoid DEP0190 (shell:true + args array)
+  const fullCommand = args && args.length > 0 ? `${command} ${args.join(' ')}` : command;
+  const childProcess = spawn(fullCommand, [], { ...options, shell: true });
   
   childProcess.stdout.on('data', (data) => {
     const output = data.toString().trim();
@@ -363,25 +372,16 @@ async function main() {
     // Start server with custom port
     const serverProcess = startProcess('npm', ['run', 'dev:server'], 'Server', 'blue', { VITE_PORT: serverPort.toString() });
     
-    // Wait for server to start if not skipping checks
-    if (!skipChecks) {
-      console.log(chalk.blue(`⏳ Waiting for dev server to initialize on port ${serverPort}...`));
-      try {
-        const isHealthy = await testServerHealth(serverPort);
-        if (isHealthy) {
-          console.log(chalk.green('✅ Dev server started successfully!'));
-        } else {
-          throw new Error('Server health check failed');
-        }
-      } catch (error) {
-        console.error(chalk.red('❌ Dev server failed to start within timeout period.'));
-        console.log(chalk.red('   Try: yarn dev:server'));
-        if (backendProcess) backendProcess.kill();
-        serverProcess.kill();
-        process.exit(1);
-      }
-    } else {
-      console.log(chalk.yellow('⏭️  Skipping server startup verification'));
+    // Always wait for Vite to be ready before starting Electron
+    console.log(chalk.blue(`⏳ Waiting for dev server to initialize on port ${serverPort}...`));
+    try {
+      await tcpPortUsed.waitUntilUsed(serverPort, 500, 60000);
+      console.log(chalk.green('✅ Dev server started successfully!'));
+    } catch (error) {
+      console.error(chalk.red('❌ Dev server failed to start within timeout period.'));
+      if (backendProcess) backendProcess.kill();
+      serverProcess.kill();
+      process.exit(1);
     }
     
     // Start electron with custom server port
@@ -457,4 +457,4 @@ async function main() {
 main().catch(error => {
   console.error('Error running Pointer:', error);
   process.exit(1);
-}); 
+});

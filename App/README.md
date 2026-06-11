@@ -1,4 +1,4 @@
-# Pointer Code Editor
+# Shadow Code Editor
 
 A modern, AI-powered code editor built with Electron, React, TypeScript, and Python. Features VS Code-like interface, integrated terminal, AI assistance, and professional development tools.
 
@@ -11,7 +11,7 @@ A modern, AI-powered code editor built with Electron, React, TypeScript, and Pyt
 
 ### Installation & Run
 ```bash
-cd Pointer
+cd Shadow
 node start-pointer.js
 ```
 
@@ -181,8 +181,8 @@ MIT License - See [LICENSE](../LICENSE)
 
 1. **Clone Repository**
    ```bash
-   git clone https://github.com/PointerIDE/Pointer.git
-   cd Pointer/App
+   git clone https://github.com/PointerIDE/Shadow.git
+   cd Shadow/App
    ```
 
 2. **Install Frontend Dependencies**
@@ -631,7 +631,7 @@ cd backend && python -m pytest
 
 ## 📝 License
 
-This component is part of the Pointer project, licensed under the MIT License.
+This component is part of the Shadow project, licensed under the MIT License.
 
 ## 🙏 Acknowledgments
 

@@ -8,7 +8,7 @@ Die AI antwortet mit "Sorry, but I can't assist with that request" bei bestimmte
 
 ## Ursache
 
-Dies ist **kein App-Problem**, sondern ein Problem des LLM-Providers (LM Studio). Die Nachricht "Sorry, but I can't assist with that request" kommt direkt vom LLM-Modell, nicht von der Pointer IDE App.
+Dies ist **kein App-Problem**, sondern ein Problem des LLM-Providers (LM Studio). Die Nachricht "Sorry, but I can't assist with that request" kommt direkt vom LLM-Modell, nicht von der Shadow IDE App.
 
 LM Studio hat einen integrierten Content-Filter/Safety-Filter, der bestimmte Anfragen blockiert, wenn sie als sensibel oder unsicher eingestuft werden.
 

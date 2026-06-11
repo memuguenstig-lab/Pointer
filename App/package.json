@@ -1,5 +1,5 @@
 {
-  "name": "pointer",
+  "name": "shadow",
   "version": "1.0.0",
   "description": "A modern code editor powered by your local LLM",
   "main": "electron/main.js",
@@ -63,7 +63,8 @@
     "@capacitor/preferences": "^6.0.0",
     "@capacitor/browser": "^6.0.0",
     "@capacitor/splash-screen": "^6.0.0",
-    "@capacitor/status-bar": "^6.0.0"
+    "@capacitor/status-bar": "^6.0.0",
+    "@mlc-ai/web-llm": "^0.2.73"
   },
   "devDependencies": {
     "@types/katex": "^0.16.7",
@@ -84,7 +85,7 @@
   },
   "proxy": "http://localhost:1234",
   "build": {
-    "appId": "com.pointer",
+    "appId": "com.shadow",
     "mac": {
       "category": "public.app-category.developer-tools",
       "icon": "electron/logo.png",
@@ -108,8 +109,8 @@
     "publish": [
       {
         "provider": "github",
-        "owner": "PointerIDE",
-        "repo": "Pointer"
+        "owner": "ShadowIDE",
+        "repo": "Shadow"
       }
     ]
   }

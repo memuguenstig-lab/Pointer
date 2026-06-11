@@ -1,4 +1,4 @@
-# Pointer — Building the Installer
+# Shadow — Building the Installer
 
 ## Prerequisites (build machine only — NOT required for end users)
 - Node.js 18+ and yarn
@@ -26,8 +26,8 @@ yarn dist
 ```
 
 The finished installer is placed in `App/release/`:
-- Windows: `Pointer Setup 1.0.0.exe`
-- macOS: `Pointer-1.0.0.dmg`
+- Windows: `Shadow Setup 1.0.0.exe`
+- macOS: `Shadow-1.0.0.dmg`
 
 ## Advanced Build Options
 
@@ -46,7 +46,7 @@ yarn build && electron-builder --win --config.forceCodeSigning=false
 ## What the installer does
 
 ### Windows (.exe via NSIS)
-1. Installs Pointer to `C:\Program Files\Pointer` (customizable location)
+1. Installs Shadow to `C:\Program Files\Shadow` (customizable location)
 2. Checks for Node.js installation with multiple fallback strategies:
    - Uses local Node.js installer if included (`node-win-x64.zip`)
    - Downloads Node.js 20 LTS with retry logic (3 attempts)
@@ -56,7 +56,7 @@ yarn build && electron-builder --win --config.forceCodeSigning=false
 5. Sets up environment variables
 
 ### macOS (.dmg)
-1. Copies Pointer.app to /Applications
+1. Copies Shadow.app to /Applications
 2. Runs post-install script that:
    - Checks for Node.js in multiple locations
    - Offers local installation if available
@@ -236,8 +236,8 @@ yarn installer:verify
    ```
 
 3. **Test the built installer:**
-   - Windows: Run `release/Pointer Setup 1.0.0.exe`
-   - macOS: Mount `release/Pointer-1.0.0.dmg` and copy to Applications
+   - Windows: Run `release/Shadow Setup 1.0.0.exe`
+   - macOS: Mount `release/Shadow-1.0.0.dmg` and copy to Applications
 
 ## Next Steps
 

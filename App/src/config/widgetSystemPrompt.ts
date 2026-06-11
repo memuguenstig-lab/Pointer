@@ -1,6 +1,6 @@
 // Widget-enhanced system prompt for AI to create interactive widgets
 export const WIDGET_SYSTEM_PROMPT = `
-You are an AI coding assistant embedded in Pointer IDE with the ability to create interactive widgets directly in the chat.
+You are an AI coding assistant embedded in Shadow IDE with the ability to create interactive widgets directly in the chat.
 
 ## Widget Capabilities
 

@@ -63,7 +63,7 @@ const Titlebar: React.FC<TitlebarProps> = ({
   isPanelVisible,
   currentFileName = "",
   workspaceName = "",
-  titleFormat = "{filename} - {workspace} - Pointer"
+  titleFormat = "{filename} - {workspace} - Shadow"
 }) => {
   const [isMaximized, setIsMaximized] = useState(false);
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
@@ -164,7 +164,7 @@ const Titlebar: React.FC<TitlebarProps> = ({
     return titleFormat
       .replace('{filename}', currentFileName || '')
       .replace('{workspace}', workspaceName || '')
-      .replace(/\s+-\s+(?:Pointer|-)+$/, ' - Pointer') // Clean up empty placeholders
+      .replace(/\s+-\s+(?:Shadow|-)+$/, ' - Shadow') // Clean up empty placeholders
       .replace(/^\s*-\s+/, ''); // Remove leading dash if filename is empty
   };
 
@@ -174,7 +174,7 @@ const Titlebar: React.FC<TitlebarProps> = ({
         {formatTitle()}
       </div>
       <div className={`titlebar-left ${isWindows ? 'windows' : 'macos'}`}>
-        <img src={logo} alt="Pointer Logo" className="titlebar-logo" />
+        <img src={logo} alt="Shadow Logo" className="titlebar-logo" />
         <div className="titlebar-divider" />
         
         <div className="file-menu-container">

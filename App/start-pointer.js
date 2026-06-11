@@ -17,6 +17,10 @@ const showHelp = args.includes('--help') || args.includes('-h');
 const BACKEND_PORT = process.env.BACKEND_PORT || 23816;
 const SERVER_PORT = process.env.SERVER_PORT || 3000;
 
+// Determine working directory dynamically (support split structure running from root)
+const workingDir = fs.existsSync(path.join(process.cwd(), 'App')) ? path.join(process.cwd(), 'App') : process.cwd();
+
+
 // Display help message
 if (showHelp) {
   console.log(chalk.cyan(`
@@ -249,6 +253,7 @@ function startProcess(command, args, name, color, env = {}) {
   
   const options = { 
     stdio: 'pipe',
+    cwd: workingDir,
     env: { ...process.env, ...env }
   };
   

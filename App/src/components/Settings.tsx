@@ -9,6 +9,8 @@ import { presetThemes } from '../themes/presetThemes';
 import { PathConfig } from '../config/paths';
 import { ModelDiscoveryService, ModelInfo } from '../services/ModelDiscoveryService';
 import EmbeddedModelSetup from './EmbeddedModelSetup';
+import MobileModelSetup from './MobileModelSetup';
+import { IS_MOBILE } from '../platform/usePlatform';
 import CollapsibleSection from './CollapsibleSection';
 import ThemeEditor from './ThemeEditor';
 // Add electron API import with proper typing
@@ -103,10 +105,10 @@ const defaultDiscordRpcSettings: DiscordRpcSettings = {
   details: 'Editing {file}',
   state: 'Workspace: {workspace}',
   largeImageKey: 'pointer_logo',
-  largeImageText: 'Pointer - Code Editor',
+  largeImageText: 'Shadow - Code Editor',
   smallImageKey: 'code',
   smallImageText: '{languageId} | Line {line}:{column}',
-  button1Label: 'Download Pointer',
+  button1Label: 'Download Shadow',
   button1Url: 'https://pointer.f1shy312.com',
   button2Label: '',
   button2Url: '',
@@ -269,6 +271,7 @@ const settingsCategories = [
   { id: 'keybindings', name: 'Keybindings',           group: 'Editor' },
   { id: 'discord',     name: 'Discord RPC',           group: 'Other' },
   { id: 'github',      name: 'GitHub',                group: 'Other' },
+  { id: 'connections', name: 'Connections',           group: 'Other' },
   { id: 'git-config',  name: 'Git',                   group: 'Other' },
   { id: 'advanced',    name: 'Advanced',              group: 'Other' },
 ];
@@ -464,10 +467,11 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
   const [editingPrompt, setEditingPrompt] = useState<string | null>(null);
   const [editingRule, setEditingRule] = useState<string | null>(null);
   const [advanced, setAdvanced] = useState<Record<string, any>>({
-    titleFormat: '{filename} - {workspace} - Pointer'
+    titleFormat: '{filename} - {workspace} - Shadow'
   });
   const [isLoading, setIsLoading] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [showUnsavedChangesPrompt, setShowUnsavedChangesPrompt] = useState(false);
   const settingsSnapshotRef = useRef<string>('');
   const hasCapturedInitialSnapshotRef = useRef(false);
 
@@ -1323,36 +1327,31 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
   useEffect(() => {
     if (!isVisible) {
       hasCapturedInitialSnapshotRef.current = false;
+      settingsSnapshotRef.current = '';
+      setHasUnsavedChanges(false);
       return;
     }
 
-    if (isLoading || hasCapturedInitialSnapshotRef.current) {
+    if (isLoading) {
       return;
     }
 
-    settingsSnapshotRef.current = serializeCurrentSettings();
-    hasCapturedInitialSnapshotRef.current = true;
-    setHasUnsavedChanges(false);
-  }, [
-    isVisible,
-    isLoading,
-    modelConfigs,
-    modelAssignments,
-    editorSettings,
-    themeSettings,
-    discordRpcSettings,
-    promptsSettings,
-    advanced,
-  ]);
+    if (!hasCapturedInitialSnapshotRef.current) {
+      const timer = setTimeout(() => {
+        settingsSnapshotRef.current = serializeCurrentSettings();
+        hasCapturedInitialSnapshotRef.current = true;
+        setHasUnsavedChanges(false);
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [isVisible, isLoading]);
 
   const handleClose = () => {
     const currentSnapshot = serializeCurrentSettings();
     const hasRealChanges = currentSnapshot !== settingsSnapshotRef.current;
 
     if (hasUnsavedChanges && hasRealChanges) {
-      if (confirm('You have unsaved changes. Are you sure you want to close without saving?')) {
-        onClose();
-      }
+      setShowUnsavedChangesPrompt(true);
     } else {
       setHasUnsavedChanges(false);
       onClose();
@@ -1494,7 +1493,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
       console.warn(`Autocompletion connection test failed (endpoint: ${testEndpoint}):`, message);
 
       const userMessage = message.includes('Unable to reach model endpoint')
-        ? `${message} Ensure Pointer backend or local AI adapter is running.`
+        ? `${message} Ensure Shadow backend or local AI adapter is running.`
         : message;
 
       setAutocompletionConnectionStatus({
@@ -2213,12 +2212,20 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                             <div style={{ fontSize: '13px', fontWeight: 500, marginBottom: '12px', color: 'var(--text-primary)' }}>
                               Embedded AI Model
                             </div>
-                            <EmbeddedModelSetup
-                              onModelReady={(modelId) => {
-                                handleModelConfigChange(activeTab, 'id', modelId);
-                                handleModelConfigChange(activeTab, 'apiEndpoint', 'http://127.0.0.1:23816/api/llama');
-                              }}
-                            />
+                            {IS_MOBILE ? (
+                              <MobileModelSetup
+                                onModelReady={(modelId) => {
+                                  handleModelConfigChange(activeTab, 'id', modelId);
+                                }}
+                              />
+                            ) : (
+                              <EmbeddedModelSetup
+                                onModelReady={(modelId) => {
+                                  handleModelConfigChange(activeTab, 'id', modelId);
+                                  handleModelConfigChange(activeTab, 'apiEndpoint', 'http://127.0.0.1:23816/api/llama');
+                                }}
+                              />
+                            )}
                           </div>
                         )}
 
@@ -4047,10 +4054,10 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                           <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px' }}>Title Bar Format</label>
                           <input
                             type="text"
-                            value={advanced.titleFormat || '{filename} - {workspace} - Pointer'}
+                            value={advanced.titleFormat || '{filename} - {workspace} - Shadow'}
                             onChange={e => handleAdvancedSettingChange('titleFormat', e.target.value)}
                             style={{ width: '100%', padding: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '13px' }}
-                            placeholder="{filename} - {workspace} - Pointer"
+                            placeholder="{filename} - {workspace} - Shadow"
                           />
                           <p style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '4px' }}>
                             Placeholders: <code>{'{filename}'}</code> <code>{'{workspace}'}</code>
@@ -4172,7 +4179,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
                     <h3 style={{ margin: '0 0 8px 0', fontSize: '16px' }}>Discord Rich Presence Settings</h3>
                     <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
-                      Show your friends what you're working on in Pointer with Discord Rich Presence integration.
+                      Show your friends what you're working on in Shadow with Discord Rich Presence integration.
                     </p>
                     
                     <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
@@ -4295,7 +4302,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                             type="text"
                             value={discordRpcSettings.largeImageText}
                             onChange={(e) => handleDiscordRpcSettingChange('largeImageText', e.target.value)}
-                            placeholder="Pointer - Code Editor"
+                            placeholder="Shadow - Code Editor"
                             style={{
                               width: '100%',
                               padding: '8px',
@@ -4350,7 +4357,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                             type="text"
                             value={discordRpcSettings.button1Label || ''}
                             onChange={(e) => handleDiscordRpcSettingChange('button1Label', e.target.value)}
-                            placeholder="Download Pointer"
+                            placeholder="Download Shadow"
                             maxLength={32}
                             style={{
                               width: '100%',
@@ -4574,6 +4581,16 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                     </div>
                   </div>
                 )}
+
+                {/* Connections Tab Settings */}
+                {activeCategory === 'connections' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px' }}>
+                    <h3 style={{ margin: '0 0 8px 0', fontSize: '16px' }}>Connections</h3>
+                    <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                      Configure external service connections here.
+                    </p>
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -4619,6 +4636,94 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
           </button>
         </div>
       </div>
+
+      {showUnsavedChangesPrompt && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0, 0, 0, 0.75)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 99999,
+          backdropFilter: 'blur(6px)',
+        }}>
+          <div style={{
+            width: '420px',
+            background: 'var(--bg-primary)',
+            borderRadius: '12px',
+            border: '1px solid var(--border-primary)',
+            padding: '24px',
+            boxShadow: '0 24px 48px rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <span style={{ fontSize: '24px' }}>⚠️</span>
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                Unsaved Changes
+              </h3>
+            </div>
+            <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)', lineHeight: '1.5', textAlign: 'left' }}>
+              You have modified settings that have not been saved. What would you like to do?
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
+              <button
+                onClick={async () => {
+                  setShowUnsavedChangesPrompt(false);
+                  await saveAllSettings();
+                }}
+                style={{
+                  padding: '10px 16px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: 'var(--accent-color)',
+                  color: 'white',
+                  fontWeight: 600,
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                }}
+              >
+                Save & Close
+              </button>
+              <button
+                onClick={() => {
+                  setShowUnsavedChangesPrompt(false);
+                  setHasUnsavedChanges(false);
+                  onClose();
+                }}
+                style={{
+                  padding: '10px 16px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--border-primary)',
+                  background: 'rgba(248,81,73,0.08)',
+                  color: '#f85149',
+                  fontWeight: 600,
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                }}
+              >
+                Discard Changes
+              </button>
+              <button
+                onClick={() => setShowUnsavedChangesPrompt(false)}
+                style={{
+                  padding: '10px 16px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--border-primary)',
+                  background: 'var(--bg-secondary)',
+                  color: 'var(--text-secondary)',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                }}
+              >
+                Keep Editing
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

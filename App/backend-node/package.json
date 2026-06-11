@@ -1,7 +1,7 @@
 {
-  "name": "pointer-backend",
+  "name": "shadow-backend",
   "version": "1.0.0",
-  "description": "Pointer backend in Node.js - no Python required",
+  "description": "Shadow backend in Node.js - no Python required",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
