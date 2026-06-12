@@ -5,7 +5,7 @@ import { getLanguageFromFileName } from '../utils/languageUtils';
 import { AIFileService } from '../services/AIFileService';
 import { FileSystemService } from '../services/FileSystemService';
 import { showToast } from '../services/ToastService';
-import { FileViewer, isImageFile, isBinaryFile, isPdfFile, isDatabaseFile, isWorkspaceFile, isMarkdownFile } from './FileViewer';
+import { FileViewer, isImageFile, isBinaryFile, isPdfFile, isDatabaseFile, isWorkspaceFile, isSchemaFile, isMarkdownFile } from './FileViewer';
 import Modal from './Modal';
 import PreviewPane from './PreviewPane';
 import lmStudio from '../services/LMStudioService';
@@ -38,7 +38,7 @@ const EditorPane: React.FC<EditorPaneProps> = ({ fileId, file, onEditorReady, se
   const editor = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const contentRef = useRef<string>('');
   // Add state to track file type
-  const [fileType, setFileType] = useState<'text' | 'image' | 'binary' | 'pdf' | 'database' | 'workspace' | 'markdown'>('text');
+  const [fileType, setFileType] = useState<'text' | 'image' | 'binary' | 'pdf' | 'database' | 'workspace' | 'schema' | 'markdown'>('text');
   const [markdownMode, setMarkdownMode] = useState<'preview' | 'edit'>('preview');
   const [showPromptInput, setShowPromptInput] = useState(false);
   const [prompt, setPrompt] = useState('');
@@ -108,6 +108,8 @@ const EditorPane: React.FC<EditorPaneProps> = ({ fileId, file, onEditorReady, se
         setFileType('image');
       } else if (isWorkspaceFile(file.name)) {
         setFileType('workspace');
+      } else if (isSchemaFile(file.name)) {
+        setFileType('schema');
       } else if (isMarkdownFile(file.name)) {
         setFileType('markdown');
       } else if (isPdfFile(file.name)) {
@@ -1465,6 +1467,7 @@ DO NOT include the [CURSOR] marker in your response. Provide ONLY the completion
         if (result.success) {
           contentChangedRef.current = false;
           setSaveStatus?.('saved');
+          window.dispatchEvent(new CustomEvent('editor-file-saved', { detail: { filePath: fileId } }));
           console.log(`File auto-saved successfully: ${file.path}`);
           
           // Clear the saved status after 2 seconds
@@ -2078,7 +2081,7 @@ DO NOT include the [CURSOR] marker in your response. Provide ONLY the completion
   };
 
   // Render based on file type
-  if (fileType === 'image' || fileType === 'binary' || fileType === 'pdf' || fileType === 'database' || fileType === 'workspace') {
+  if (fileType === 'image' || fileType === 'binary' || fileType === 'pdf' || fileType === 'database' || fileType === 'workspace' || fileType === 'schema') {
     return <FileViewer file={file} fileId={fileId} />;
   }
 
@@ -2165,6 +2168,8 @@ DO NOT include the [CURSOR] marker in your response. Provide ONLY the completion
         setFileType('image');
       } else if (isWorkspaceFile(file.name)) {
         setFileType('workspace');
+      } else if (isSchemaFile(file.name)) {
+        setFileType('schema');
       } else if (isMarkdownFile(file.name)) {
         setFileType('markdown');
       } else if (isPdfFile(file.name)) {

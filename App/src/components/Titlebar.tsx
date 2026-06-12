@@ -10,9 +10,11 @@ interface TitlebarProps {
   onToggleSidebar?: () => void;
   onToggleAgent?: () => void;
   onTogglePanel?: () => void;
+  onToggleWebPreview?: () => void;
   isSidebarVisible?: boolean;
   isAgentVisible?: boolean;
   isPanelVisible?: boolean;
+  isWebPreviewVisible?: boolean;
   currentFileName?: string;
   workspaceName?: string;
   titleFormat?: string;
@@ -55,12 +57,14 @@ const Titlebar: React.FC<TitlebarProps> = ({
   onOpenFile,
   onCloneRepository,
   onOpenSettings,
-  onToggleSidebar,
+  onToggleSidebar, 
   onToggleAgent,
   onTogglePanel,
+  onToggleWebPreview,
   isSidebarVisible,
   isAgentVisible,
   isPanelVisible,
+  isWebPreviewVisible,
   currentFileName = "",
   workspaceName = "",
   titleFormat = "{filename} - {workspace} - Shadow"
@@ -277,6 +281,18 @@ const Titlebar: React.FC<TitlebarProps> = ({
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M8 1.5C4.41 1.5 1.5 4.41 1.5 8c0 1.05.26 2.04.72 2.91L1.5 14.5l3.59-0.72A6.47 6.47 0 0 0 8 14.5c3.59 0 6.5-2.91 6.5-6.5S11.59 1.5 8 1.5z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
               <path d="M5 8h6M5 10.5h3.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+            </svg>
+          </button>
+          {/* Toggle web preview */}
+          <button
+            className="titlebar-action-button"
+            onClick={onToggleWebPreview}
+            title="Toggle Local Web Preview"
+            style={{ opacity: isWebPreviewVisible ? 1 : 0.45 }}
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.2"/>
+              <path d="M1.5 8h13M8 1.5a12.5 12.5 0 0 1 0 13M8 1.5a12.5 12.5 0 0 0 0 13" stroke="currentColor" strokeWidth="1.2"/>
             </svg>
           </button>
         </div>

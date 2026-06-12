@@ -31,12 +31,13 @@ import { IS_MOBILE } from './platform/usePlatform';
 import { isPreviewableFile, getPreviewType } from './utils/previewUtils';
 import PreviewPane from './components/PreviewPane';
 import PanelLayout from './components/PanelLayout';
+import WebPreviewPane from './components/WebPreviewPane';
 import ActivityBar, { ActivityView } from './components/ActivityBar';
 import CommandPalette from './components/CommandPalette';
 import SplitEditor, { EditorGroup } from './components/SplitEditor';
 import StatusBar from './components/StatusBar';
 import { InlineDiffService } from './services/InlineDiffService';
-import { isImageFile, isPdfFile, isDatabaseFile, isWorkspaceFile, isBinaryFile } from './components/FileViewer';
+import { isImageFile, isPdfFile, isDatabaseFile, isWorkspaceFile, isSchemaFile, isBinaryFile } from './components/FileViewer';
 import { FileChangeEventService } from './services/FileChangeEventService';
 
 // Initialize language support
@@ -156,6 +157,7 @@ const App: React.FC = () => {
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'error' | null>(null);
 
   const [isTopBarCollapsed, setIsTopBarCollapsed] = useState(false);
+  const [isWebPreviewOpen, setIsWebPreviewOpen] = useState(false);
 
   // Add state for cursor position
   const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
@@ -738,6 +740,7 @@ const App: React.FC = () => {
                          !isPdfFile(file.name) && 
                          !isDatabaseFile(file.name) && 
                          !isWorkspaceFile(file.name) && 
+                         !isSchemaFile(file.name) && 
                          !isBinaryFile(file.name);
           if (isText && editor.current) {
             editor.current.setValue(content);
@@ -996,6 +999,7 @@ const App: React.FC = () => {
                                    !isPdfFile(result.items[currentId].name) && 
                                    !isDatabaseFile(result.items[currentId].name) && 
                                    !isWorkspaceFile(result.items[currentId].name) && 
+                                   !isSchemaFile(result.items[currentId].name) && 
                                    !isBinaryFile(result.items[currentId].name);
                     if (isText && editor.current) {
                       editor.current.setValue(content);
@@ -1182,6 +1186,7 @@ const App: React.FC = () => {
         }
 
         setSaveStatus('saved');
+        window.dispatchEvent(new CustomEvent('editor-file-saved', { detail: { filePath: fileSystem.currentFileId } }));
         setTimeout(() => setSaveStatus(null), 2000);
       } else {
         setSaveStatus('error');
@@ -1194,36 +1199,63 @@ const App: React.FC = () => {
 
   // Find the keyboard shortcut handler and add the LLMChat toggle
   useEffect(() => {
+    const keybindings = settingsData.advanced?.keybindings || {};
+    
+    const getBinding = (commandId: string, defaultVal: string): string => {
+      return keybindings[commandId] || defaultVal;
+    };
+
+    const matches = (e: KeyboardEvent, binding: string) => {
+      const parts = binding.toLowerCase().split('+');
+      const hasCtrl = parts.includes('ctrl');
+      const hasShift = parts.includes('shift');
+      const hasAlt = parts.includes('alt');
+      const key = parts.find(p => p !== 'ctrl' && p !== 'shift' && p !== 'alt');
+
+      if (!key) return false;
+
+      const ctrlMatch = hasCtrl ? (e.ctrlKey || e.metaKey) : (!e.ctrlKey && !e.metaKey);
+      const shiftMatch = hasShift ? e.shiftKey : !e.shiftKey;
+      const altMatch = hasAlt ? e.altKey : !e.altKey;
+
+      let keyMatch = false;
+      if (key === 'space') keyMatch = e.key === ' ';
+      else if (key === ',') keyMatch = e.key === ',';
+      else if (key === '\\') keyMatch = e.key === '\\';
+      else keyMatch = e.key.toLowerCase() === key;
+
+      return ctrlMatch && shiftMatch && altMatch && keyMatch;
+    };
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+      if (matches(e, getBinding('saveFile', 'Ctrl+S'))) {
         e.preventDefault();
         handleSave();
-      } else if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'b') {
+      } else if (matches(e, getBinding('toggleSidebar', 'Ctrl+B'))) {
         e.preventDefault();
-        setIsTopBarCollapsed(!isTopBarCollapsed);
-      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'w') {
+        setIsSidebarCollapsed(prev => !prev);
+      } else if (matches(e, getBinding('closeTab', 'Ctrl+W'))) {
         e.preventDefault();
         if (fileSystem.currentFileId) {
           handleTabClose(fileSystem.currentFileId);
         }
-      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'i') {
+      } else if (matches(e, getBinding('toggleLlmChat', 'Ctrl+I'))) {
         e.preventDefault();
         setIsLLMChatVisible(!isLLMChatVisible);
-      } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'p') {
+      } else if (matches(e, getBinding('splitEditor', 'Ctrl+\\'))) {
         e.preventDefault();
-        setIsCommandPaletteOpen(true);
-      } else if ((e.ctrlKey || e.metaKey) && e.key === '\\') {
-        e.preventDefault();
-        // Split active group
         const activeGroup = editorGroups.find(g => g.id === activeGroupId);
         if (activeGroup?.currentFileId) {
           const newGroup: EditorGroup = { id: `group-${Date.now()}`, openFiles: [activeGroup.currentFileId], currentFileId: activeGroup.currentFileId };
           setEditorGroups(prev => [...prev, newGroup]);
           setActiveGroupId(newGroup.id);
         }
-      } else if ((e.ctrlKey || e.metaKey) && e.key === ',') {
+      } else if (matches(e, getBinding('openSettings', 'Ctrl+,'))) {
         e.preventDefault();
         setIsSettingsModalOpen(true);
+      } else if (matches(e, getBinding('previewWeb', 'Ctrl+Shift+P'))) {
+        e.preventDefault();
+        setIsWebPreviewOpen(prev => !prev);
       } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'n') {
         e.preventDefault();
         window.electron?.window?.newWindow?.();
@@ -1232,7 +1264,7 @@ const App: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleSave, isTopBarCollapsed, fileSystem.currentFileId, handleTabClose, isLLMChatVisible]);
+  }, [handleSave, isSidebarCollapsed, fileSystem.currentFileId, handleTabClose, isLLMChatVisible, settingsData, editorGroups, activeGroupId]);
 
   // Modify the auto-save functionality
   useEffect(() => {
@@ -1701,6 +1733,7 @@ const App: React.FC = () => {
                                        !isPdfFile(result.items[currentId].name) && 
                                        !isDatabaseFile(result.items[currentId].name) && 
                                        !isWorkspaceFile(result.items[currentId].name) && 
+                                       !isSchemaFile(result.items[currentId].name) && 
                                        !isBinaryFile(result.items[currentId].name);
                         if (isText && editor.current) {
                           editor.current.setValue(content);
@@ -1998,9 +2031,11 @@ const App: React.FC = () => {
             onToggleSidebar={() => handleActivityViewChange(activeView ?? 'explorer')}
             onToggleAgent={() => setIsLLMChatVisible(v => !v)}
             onTogglePanel={toggleTerminal}
+            onToggleWebPreview={() => setIsWebPreviewOpen(prev => !prev)}
             isSidebarVisible={!isSidebarCollapsed}
             isAgentVisible={isLLMChatVisible}
             isPanelVisible={fileSystem.terminalOpen}
+            isWebPreviewVisible={isWebPreviewOpen}
             currentFileName={getCurrentFileName()}
             workspaceName={fileSystem.items[fileSystem.rootId]?.name || ''}
             titleFormat={dynamicTitleFormat || settingsData.advanced?.titleFormat || '{filename} - {workspace} - Shadow'}
@@ -2131,41 +2166,48 @@ const App: React.FC = () => {
               </Resizable>
             }
             editor={
-              <div className="editor-area" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
-                {(!fileSystem.items || Object.keys(fileSystem.items).length <= 1 || fileSystem.rootId === 'root') ? (
-                  <WelcomeDashboard
-                    onOpenFolder={handleOpenFolder}
-                    onCloneRepository={handleCloneRepository}
-                    onOpenSpecificFolder={handleOpenSpecificFolder}
-                    onOpenSettings={() => openSettingsModal('models')}
-                  />
-                ) : (
-                  <SplitEditor
-                    items={memoizedItems}
-                    groups={editorGroups}
-                    activeGroupId={activeGroupId}
-                    onGroupsChange={setEditorGroups}
-                    onActiveGroupChange={setActiveGroupId}
-                    onEditorChange={(newEditor) => {
-                      editor.current = newEditor;
-                    }}
-                    setSaveStatus={setSaveStatus}
-                    previewTabs={previewTabs}
-                    currentPreviewTabId={currentPreviewTabId}
-                    onPreviewToggle={handlePreviewToggle}
-                    onPreviewTabSelect={handlePreviewTabSelect}
-                    onPreviewTabClose={handlePreviewTabClose}
-                    isGridLayout={isGridLayout}
-                    onToggleGrid={handleToggleGrid}
-                  />
-                )}
-                {/* Terminal sits inside the editor column — between sidebar and chat */}
-                {fileSystem.terminalOpen && !IS_MOBILE && (
-                  <Terminal
-                    isVisible={fileSystem.terminalOpen}
-                    errorCount={diagnostics.errors}
-                    warningCount={diagnostics.warnings}
-                  />
+              <div className="editor-area" style={{ flex: 1, display: 'flex', flexDirection: 'row', overflow: 'hidden', minHeight: 0 }}>
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
+                  {(!fileSystem.items || Object.keys(fileSystem.items).length <= 1 || fileSystem.rootId === 'root') ? (
+                    <WelcomeDashboard
+                      onOpenFolder={handleOpenFolder}
+                      onCloneRepository={handleCloneRepository}
+                      onOpenSpecificFolder={handleOpenSpecificFolder}
+                      onOpenSettings={() => openSettingsModal('models')}
+                    />
+                  ) : (
+                    <SplitEditor
+                      items={memoizedItems}
+                      groups={editorGroups}
+                      activeGroupId={activeGroupId}
+                      onGroupsChange={setEditorGroups}
+                      onActiveGroupChange={setActiveGroupId}
+                      onEditorChange={(newEditor) => {
+                        editor.current = newEditor;
+                      }}
+                      setSaveStatus={setSaveStatus}
+                      previewTabs={previewTabs}
+                      currentPreviewTabId={currentPreviewTabId}
+                      onPreviewToggle={handlePreviewToggle}
+                      onPreviewTabSelect={handlePreviewTabSelect}
+                      onPreviewTabClose={handlePreviewTabClose}
+                      isGridLayout={isGridLayout}
+                      onToggleGrid={handleToggleGrid}
+                    />
+                  )}
+                  {/* Terminal sits inside the editor column — between sidebar and chat */}
+                  {fileSystem.terminalOpen && !IS_MOBILE && (
+                    <Terminal
+                      isVisible={fileSystem.terminalOpen}
+                      errorCount={diagnostics.errors}
+                      warningCount={diagnostics.warnings}
+                    />
+                  )}
+                </div>
+                {isWebPreviewOpen && (
+                  <div style={{ width: '45%', minWidth: 320, height: '100%' }}>
+                    <WebPreviewPane />
+                  </div>
                 )}
               </div>
             }

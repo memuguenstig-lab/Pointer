@@ -3799,57 +3799,17 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                 {/* Keybindings */}
                 {activeCategory === 'keybindings' && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <h3 style={{ margin: '0 0 16px 0', fontSize: '16px' }}>Keyboard Shortcuts</h3>
-                    
-                    <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
-                      Custom keyboard shortcuts will be available in a future update.
+                    <h3 style={{ margin: '0 0 8px 0', fontSize: '16px' }}>Keyboard Shortcuts</h3>
+                    <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: 0 }}>
+                      Customize key combinations for editor actions. Click edit to record a shortcut.
                     </p>
 
-                    <div style={{ marginTop: '16px' }}>
-                      <h4 style={{ margin: '0 0 8px 0', fontSize: '14px' }}>Default Shortcuts</h4>
-                      <table style={{ 
-                        width: '100%', 
-                        borderCollapse: 'collapse',
-                        fontSize: '13px',
-                      }}>
-                        <thead>
-                          <tr>
-                            <th style={{ 
-                              textAlign: 'left', 
-                              padding: '8px', 
-                              borderBottom: '1px solid var(--border-primary)',
-                            }}>Command</th>
-                            <th style={{ 
-                              textAlign: 'left', 
-                              padding: '8px', 
-                              borderBottom: '1px solid var(--border-primary)',
-                            }}>Shortcut</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr>
-                            <td style={{ padding: '8px', borderBottom: '1px solid var(--border-secondary)' }}>Save File</td>
-                            <td style={{ padding: '8px', borderBottom: '1px solid var(--border-secondary)' }}>Ctrl+S</td>
-                          </tr>
-                          <tr>
-                            <td style={{ padding: '8px', borderBottom: '1px solid var(--border-secondary)' }}>Toggle Sidebar</td>
-                            <td style={{ padding: '8px', borderBottom: '1px solid var(--border-secondary)' }}>Ctrl+B</td>
-                          </tr>
-                          <tr>
-                            <td style={{ padding: '8px', borderBottom: '1px solid var(--border-secondary)' }}>Close Tab</td>
-                            <td style={{ padding: '8px', borderBottom: '1px solid var(--border-secondary)' }}>Ctrl+W</td>
-                          </tr>
-                          <tr>
-                            <td style={{ padding: '8px', borderBottom: '1px solid var(--border-secondary)' }}>Toggle LLM Chat</td>
-                            <td style={{ padding: '8px', borderBottom: '1px solid var(--border-secondary)' }}>Ctrl+I</td>
-                          </tr>
-                          <tr>
-                            <td style={{ padding: '8px', borderBottom: '1px solid var(--border-secondary)' }}>Open Settings</td>
-                            <td style={{ padding: '8px', borderBottom: '1px solid var(--border-secondary)' }}>{navigator.platform.indexOf('Mac') > -1 ? '⌘,' : 'Ctrl+,'}</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
+                    {/* Customizer Sub-Component */}
+                    <KeymapCustomizer
+                      advanced={advanced}
+                      setAdvanced={setAdvanced}
+                      setHasUnsavedChanges={setHasUnsavedChanges}
+                    />
                   </div>
                 )}
 
@@ -5096,3 +5056,200 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
     </div>
   );
 }
+
+interface KeymapCustomizerProps {
+  advanced: Record<string, any>;
+  setAdvanced: React.Dispatch<React.SetStateAction<Record<string, any>>>;
+  setHasUnsavedChanges: React.Dispatch<React.SetStateAction<boolean>>;
+}
+
+const COMMAND_DETAILS = [
+  { id: 'saveFile', name: 'Save File', defaultVal: 'Ctrl+S' },
+  { id: 'toggleSidebar', name: 'Toggle Sidebar', defaultVal: 'Ctrl+B' },
+  { id: 'closeTab', name: 'Close Tab', defaultVal: 'Ctrl+W' },
+  { id: 'toggleLlmChat', name: 'Toggle LLM Chat', defaultVal: 'Ctrl+I' },
+  { id: 'openSettings', name: 'Open Settings', defaultVal: 'Ctrl+,' },
+  { id: 'splitEditor', name: 'Split Editor', defaultVal: 'Ctrl+\\' },
+  { id: 'previewWeb', name: 'Toggle Local Web Preview', defaultVal: 'Ctrl+Shift+P' }
+];
+
+export const KeymapCustomizer: React.FC<KeymapCustomizerProps> = ({ advanced, setAdvanced, setHasUnsavedChanges }) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [recordingId, setRecordingId] = useState<string | null>(null);
+  const [recordedCombo, setRecordedCombo] = useState<string>('');
+
+  const keybindings = advanced.keybindings || {};
+
+  const getBindingText = (id: string) => {
+    return keybindings[id] || COMMAND_DETAILS.find(c => c.id === id)?.defaultVal || '';
+  };
+
+  useEffect(() => {
+    if (!recordingId) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (e.key === 'Escape') {
+        setRecordingId(null);
+        setRecordedCombo('');
+        return;
+      }
+
+      if (e.key === 'Enter') {
+        if (recordedCombo) {
+          const updatedKeybindings = { ...keybindings, [recordingId]: recordedCombo };
+          setAdvanced(prev => ({ ...prev, keybindings: updatedKeybindings }));
+          setHasUnsavedChanges(true);
+        }
+        setRecordingId(null);
+        setRecordedCombo('');
+        return;
+      }
+
+      const keys: string[] = [];
+      if (e.ctrlKey || e.metaKey) keys.push('Ctrl');
+      if (e.shiftKey) keys.push('Shift');
+      if (e.altKey) keys.push('Alt');
+
+      const keyName = e.key;
+      if (!['Control', 'Shift', 'Alt', 'Meta'].includes(keyName)) {
+        let displayKey = keyName;
+        if (displayKey === ' ') displayKey = 'Space';
+        else if (displayKey.length === 1) displayKey = displayKey.toUpperCase();
+        keys.push(displayKey);
+      }
+
+      if (keys.length > 0) {
+        setRecordedCombo(keys.join('+'));
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [recordingId, recordedCombo, keybindings, setAdvanced, setHasUnsavedChanges]);
+
+  const clearBinding = (id: string) => {
+    const updatedKeybindings = { ...keybindings };
+    delete updatedKeybindings[id];
+    setAdvanced(prev => ({ ...prev, keybindings: updatedKeybindings }));
+    setHasUnsavedChanges(true);
+  };
+
+  const filteredCommands = COMMAND_DETAILS.filter(cmd =>
+    cmd.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    getBindingText(cmd.id).toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <input
+        type="text"
+        placeholder="Search keybindings..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        style={{
+          width: '100%',
+          padding: '8px 12px',
+          backgroundColor: 'var(--bg-primary)',
+          border: '1px solid var(--border-primary)',
+          borderRadius: 4,
+          color: 'var(--text-primary)',
+          fontSize: 13,
+          outline: 'none'
+        }}
+      />
+
+      {recordingId && (
+        <div style={{
+          padding: 16,
+          backgroundColor: 'rgba(0,0,0,0.4)',
+          border: '1px solid var(--accent-color)',
+          borderRadius: 6,
+          textAlign: 'center'
+        }}>
+          <div style={{ fontSize: 13, fontWeight: 'bold', marginBottom: 8 }}>
+            Recording binding for: {COMMAND_DETAILS.find(c => c.id === recordingId)?.name}
+          </div>
+          <div style={{ fontSize: 18, color: 'var(--accent-color)', minHeight: 28, fontWeight: 'bold', margin: '8px 0' }}>
+            {recordedCombo || 'Press key combination...'}
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+            Press <kbd style={{ padding: '2px 4px', background: '#333', borderRadius: 3 }}>Enter</kbd> to save, <kbd style={{ padding: '2px 4px', background: '#333', borderRadius: 3 }}>Esc</kbd> to cancel.
+          </div>
+        </div>
+      )}
+
+      <div style={{ overflowX: 'auto', border: '1px solid var(--border-primary)', borderRadius: 6 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, color: 'var(--text-primary)' }}>
+          <thead>
+            <tr style={{ backgroundColor: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--border-primary)' }}>
+              <th style={{ textAlign: 'left', padding: '10px 12px' }}>Action</th>
+              <th style={{ textAlign: 'left', padding: '10px 12px' }}>Key Combination</th>
+              <th style={{ textAlign: 'right', padding: '10px 12px' }}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredCommands.map(cmd => {
+              const currentBinding = getBindingText(cmd.id);
+              const isDefault = !keybindings[cmd.id];
+              return (
+                <tr key={cmd.id} style={{ borderBottom: '1px solid var(--border-secondary)' }}>
+                  <td style={{ padding: '10px 12px', fontWeight: 500 }}>{cmd.name}</td>
+                  <td style={{ padding: '10px 12px' }}>
+                    <span style={{
+                      padding: '2px 8px',
+                      background: 'rgba(255,255,255,0.06)',
+                      borderRadius: 4,
+                      fontSize: 12,
+                      fontFamily: 'var(--font-mono)'
+                    }}>
+                      {currentBinding}
+                    </span>
+                    {!isDefault && (
+                      <span style={{ fontSize: 10, color: 'var(--accent-color)', marginLeft: 8 }}>(custom)</span>
+                    )}
+                  </td>
+                  <td style={{ padding: '10px 12px', textAlign: 'right' }}>
+                    <button
+                      onClick={() => { setRecordingId(cmd.id); setRecordedCombo(''); }}
+                      style={{
+                        padding: '4px 10px',
+                        backgroundColor: 'var(--accent-color)',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: 4,
+                        fontSize: 11,
+                        cursor: 'pointer',
+                        marginRight: 6
+                      }}
+                    >
+                      Record
+                    </button>
+                    {!isDefault && (
+                      <button
+                        onClick={() => clearBinding(cmd.id)}
+                        style={{
+                          padding: '4px 10px',
+                          backgroundColor: 'rgba(248,81,73,0.1)',
+                          color: '#f85149',
+                          border: '1px solid rgba(248,81,73,0.2)',
+                          borderRadius: 4,
+                          fontSize: 11,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};

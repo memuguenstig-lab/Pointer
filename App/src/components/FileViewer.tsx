@@ -3,11 +3,18 @@ import { FileSystemItem } from '../types';
 import DatabaseViewer from './DatabaseViewer';
 import { isMarkdownFile } from '../utils/previewUtils';
 import WorkspaceCanvasViewer from './WorkspaceCanvasViewer';
+import SchemaDesigner from './SchemaDesigner';
 
 // Determine if the file is a workspace visual canvas
 const isWorkspaceFile = (filename: string): boolean => {
   const ext = filename.split('.').pop()?.toLowerCase() || '';
   return ext === 'workspace';
+};
+
+// Determine if the file is a DB schema designer canvas
+const isSchemaFile = (filename: string): boolean => {
+  const ext = filename.split('.').pop()?.toLowerCase() || '';
+  return ext === 'schema';
 };
 
 // Determine if the file is a binary type
@@ -170,6 +177,8 @@ const FileViewer: React.FC<FileViewerProps> = ({ file, fileId }) => {
     return <DatabaseViewer file={file} />;
   } else if (isWorkspaceFile(file.name)) {
     return <WorkspaceCanvasViewer file={file} />;
+  } else if (isSchemaFile(file.name)) {
+    return <SchemaDesigner file={file} />;
   } else if (isBinaryFile(file.name)) {
     return <BinaryFileViewer file={file} />;
   }
@@ -178,4 +187,4 @@ const FileViewer: React.FC<FileViewerProps> = ({ file, fileId }) => {
   return null;
 };
 
-export { FileViewer, isImageFile, isBinaryFile, isPdfFile, isDatabaseFile, isWorkspaceFile, isMarkdownFile }; 
+export { FileViewer, isImageFile, isBinaryFile, isPdfFile, isDatabaseFile, isWorkspaceFile, isSchemaFile, isMarkdownFile }; 

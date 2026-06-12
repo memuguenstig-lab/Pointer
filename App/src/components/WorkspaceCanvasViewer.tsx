@@ -29,6 +29,9 @@ export const WorkspaceCanvasViewer: React.FC<{ file: FileSystemItem }> = ({ file
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   
+  // Undo/Redo History state
+  const [history, setHistory] = useState<WorkspaceData[]>([]);
+
   // Node editor state
   const [editLabel, setEditLabel] = useState('');
   const [editColor, setEditColor] = useState('#0e639c');
@@ -38,6 +41,31 @@ export const WorkspaceCanvasViewer: React.FC<{ file: FileSystemItem }> = ({ file
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const pushHistory = (currentState: WorkspaceData) => {
+    setHistory(prev => [...prev.slice(-29), JSON.parse(JSON.stringify(currentState))]);
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+        const activeTag = document.activeElement?.tagName;
+        if (activeTag === 'INPUT' || activeTag === 'TEXTAREA') return;
+        
+        e.preventDefault();
+        setHistory(prev => {
+          if (prev.length === 0) return prev;
+          const newHistory = [...prev];
+          const previousState = newHistory.pop()!;
+          setData(previousState);
+          FileSystemService.saveFile(file.path, JSON.stringify(previousState, null, 2)).catch(console.error);
+          return newHistory;
+        });
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [history, data, file.path]);
 
   useEffect(() => {
     const loadWorkspace = async () => {
@@ -68,6 +96,12 @@ export const WorkspaceCanvasViewer: React.FC<{ file: FileSystemItem }> = ({ file
     }
   };
 
+  const updateWorkspaceData = (updated: WorkspaceData) => {
+    pushHistory(data);
+    setData(updated);
+    saveWorkspace(updated);
+  };
+
   const handleCanvasClick = (e: React.MouseEvent) => {
     if (e.target === canvasRef.current) {
       setSelectedNodeId(null);
@@ -95,8 +129,7 @@ export const WorkspaceCanvasViewer: React.FC<{ file: FileSystemItem }> = ({ file
       ...data,
       nodes: [...data.nodes, newNode]
     };
-    setData(updated);
-    saveWorkspace(updated);
+    updateWorkspaceData(updated);
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -123,8 +156,7 @@ export const WorkspaceCanvasViewer: React.FC<{ file: FileSystemItem }> = ({ file
         ...data,
         nodes: [...data.nodes, newNode]
       };
-      setData(updated);
-      saveWorkspace(updated);
+      updateWorkspaceData(updated);
     };
     reader.readAsDataURL(fileItem);
   };
@@ -134,14 +166,14 @@ export const WorkspaceCanvasViewer: React.FC<{ file: FileSystemItem }> = ({ file
       nodes: data.nodes.filter(n => n.id !== id),
       edges: data.edges.filter(e => e.from !== id && e.to !== id)
     };
-    setData(updated);
-    saveWorkspace(updated);
+    updateWorkspaceData(updated);
     if (selectedNodeId === id) setSelectedNodeId(null);
     if (edgeSourceId === id) setEdgeSourceId(null);
   };
 
   const handleMouseDown = (node: Node, e: React.MouseEvent) => {
     e.stopPropagation();
+    pushHistory(data); // Push history on drag start
     setDraggedNodeId(node.id);
     setSelectedNodeId(node.id);
     setEditLabel(node.label);
@@ -180,8 +212,7 @@ export const WorkspaceCanvasViewer: React.FC<{ file: FileSystemItem }> = ({ file
       ...data,
       nodes: data.nodes.map(n => n.id === selectedNodeId ? { ...n, label: editLabel, color: editColor } : n)
     };
-    setData(updated);
-    saveWorkspace(updated);
+    updateWorkspaceData(updated);
   };
 
   const startConnectEdge = (id: string) => {
@@ -205,8 +236,7 @@ export const WorkspaceCanvasViewer: React.FC<{ file: FileSystemItem }> = ({ file
       ...data,
       edges: [...data.edges, newEdge]
     };
-    setData(updated);
-    saveWorkspace(updated);
+    updateWorkspaceData(updated);
     setEdgeSourceId(null);
   };
 
@@ -215,8 +245,7 @@ export const WorkspaceCanvasViewer: React.FC<{ file: FileSystemItem }> = ({ file
       ...data,
       edges: data.edges.filter(e => e.id !== id)
     };
-    setData(updated);
-    saveWorkspace(updated);
+    updateWorkspaceData(updated);
   };
 
   if (loading) {
