@@ -796,7 +796,14 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
   const saveAllSettings = async () => {
     setIsLoading(true);
     try {
-      localStorage.setItem('modelConfig', JSON.stringify(modelConfigs.default));
+      const chatModelId = modelAssignments.chat || 'default';
+      const chatModelConfig = modelConfigs[chatModelId] || modelConfigs.default;
+      localStorage.setItem('modelConfig', JSON.stringify(chatModelConfig));
+
+      const insertModelId = modelAssignments.insert || 'default';
+      const insertModelConfig = modelConfigs[insertModelId] || modelConfigs.default;
+      localStorage.setItem('insertModelConfig', JSON.stringify(insertModelConfig));
+
       localStorage.setItem('modelAssignments', JSON.stringify(modelAssignments));
       applyThemeSettings();
       const settingsPath = PathConfig.getActiveSettingsPath();

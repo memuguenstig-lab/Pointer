@@ -1,6 +1,7 @@
 import React from 'react';
 import { FileSystemItem } from '../types';
 import DatabaseViewer from './DatabaseViewer';
+import { isMarkdownFile } from '../utils/previewUtils';
 import WorkspaceCanvasViewer from './WorkspaceCanvasViewer';
 
 // Determine if the file is a workspace visual canvas
@@ -177,4 +178,4 @@ const FileViewer: React.FC<FileViewerProps> = ({ file, fileId }) => {
   return null;
 };
 
-export { FileViewer, isImageFile, isBinaryFile, isPdfFile, isDatabaseFile, isWorkspaceFile }; 
+export { FileViewer, isImageFile, isBinaryFile, isPdfFile, isDatabaseFile, isWorkspaceFile, isMarkdownFile }; 

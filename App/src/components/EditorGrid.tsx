@@ -5,7 +5,7 @@ import { getLanguageFromFileName } from '../utils/languageUtils';
 import { AIFileService } from '../services/AIFileService';
 import { FileSystemService } from '../services/FileSystemService';
 import { showToast } from '../services/ToastService';
-import { FileViewer, isImageFile, isBinaryFile, isPdfFile, isDatabaseFile, isWorkspaceFile } from './FileViewer';
+import { FileViewer, isImageFile, isBinaryFile, isPdfFile, isDatabaseFile, isWorkspaceFile, isMarkdownFile } from './FileViewer';
 import Modal from './Modal';
 import PreviewPane from './PreviewPane';
 import lmStudio from '../services/LMStudioService';
@@ -38,7 +38,8 @@ const EditorPane: React.FC<EditorPaneProps> = ({ fileId, file, onEditorReady, se
   const editor = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const contentRef = useRef<string>('');
   // Add state to track file type
-  const [fileType, setFileType] = useState<'text' | 'image' | 'binary' | 'pdf' | 'database' | 'workspace'>('text');
+  const [fileType, setFileType] = useState<'text' | 'image' | 'binary' | 'pdf' | 'database' | 'workspace' | 'markdown'>('text');
+  const [markdownMode, setMarkdownMode] = useState<'preview' | 'edit'>('preview');
   const [showPromptInput, setShowPromptInput] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [aiResponse, setAiResponse] = useState('');
@@ -105,6 +106,10 @@ const EditorPane: React.FC<EditorPaneProps> = ({ fileId, file, onEditorReady, se
       // Determine file type based on extension
       if (isImageFile(file.name)) {
         setFileType('image');
+      } else if (isWorkspaceFile(file.name)) {
+        setFileType('workspace');
+      } else if (isMarkdownFile(file.name)) {
+        setFileType('markdown');
       } else if (isPdfFile(file.name)) {
         setFileType('pdf');
       } else if (isDatabaseFile(file.name)) {
@@ -2077,6 +2082,42 @@ DO NOT include the [CURSOR] marker in your response. Provide ONLY the completion
     return <FileViewer file={file} fileId={fileId} />;
   }
 
+  if (fileType === 'markdown' && markdownMode === 'preview') {
+    return (
+      <div style={{ position: 'relative', height: '100%', width: '100%', display: 'flex', flexDirection: 'column' }}>
+        <div style={{
+          padding: '8px 16px',
+          background: 'var(--bg-secondary)',
+          borderBottom: '1px solid var(--border-color)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          zIndex: 10,
+        }}>
+          <span style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: 600 }}>{file.name} (Preview)</span>
+          <button
+            onClick={() => setMarkdownMode('edit')}
+            style={{
+              padding: '4px 10px',
+              fontSize: '11px',
+              background: 'var(--accent-color)',
+              border: 'none',
+              borderRadius: 4,
+              color: '#fff',
+              cursor: 'pointer',
+              fontWeight: 600,
+            }}
+          >
+            ✏️ Edit Source
+          </button>
+        </div>
+        <div style={{ flex: 1, overflow: 'hidden' }}>
+          <PreviewPane file={file} content={file.content || ''} />
+        </div>
+      </div>
+    );
+  }
+
   // Render the explanation content for the modal
   const renderExplanationContent = () => {
     if (functionExplanationDialog.isLoading) {
@@ -2124,6 +2165,8 @@ DO NOT include the [CURSOR] marker in your response. Provide ONLY the completion
         setFileType('image');
       } else if (isWorkspaceFile(file.name)) {
         setFileType('workspace');
+      } else if (isMarkdownFile(file.name)) {
+        setFileType('markdown');
       } else if (isPdfFile(file.name)) {
         setFileType('pdf');
       } else if (isDatabaseFile(file.name)) {
@@ -2137,9 +2180,30 @@ DO NOT include the [CURSOR] marker in your response. Provide ONLY the completion
   }, [file?.name]);
 
   // Render the editor with save status indicator
-  if (fileType === 'text') {
+  if (fileType === 'text' || (fileType === 'markdown' && markdownMode === 'edit')) {
     return (
       <div style={{ position: 'relative', height: '100%', width: '100%' }}>
+        {fileType === 'markdown' && (
+          <button
+            onClick={() => setMarkdownMode('preview')}
+            style={{
+              position: 'absolute',
+              right: 20,
+              top: 10,
+              zIndex: 100,
+              padding: '6px 12px',
+              fontSize: '12px',
+              background: 'var(--accent-color)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontWeight: 600,
+            }}
+          >
+            👁️ View Preview
+          </button>
+        )}
         <div ref={editorRef} style={{ height: '100%', width: '100%' }} />
         
         {/* Add the spinner animation styles */}
