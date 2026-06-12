@@ -47,6 +47,7 @@ export const WorkspaceCanvasViewer: React.FC<{ file: FileSystemItem }> = ({ file
   };
 
   useEffect(() => {
+    if (!file?.path) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
         const activeTag = document.activeElement?.tagName;
@@ -65,9 +66,10 @@ export const WorkspaceCanvasViewer: React.FC<{ file: FileSystemItem }> = ({ file
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [history, data, file.path]);
+  }, [history, data, file?.path]);
 
   useEffect(() => {
+    if (!file?.path) return;
     const loadWorkspace = async () => {
       try {
         setLoading(true);
@@ -86,9 +88,10 @@ export const WorkspaceCanvasViewer: React.FC<{ file: FileSystemItem }> = ({ file
       }
     };
     loadWorkspace();
-  }, [file.path]);
+  }, [file?.path]);
 
   const saveWorkspace = async (updatedData: WorkspaceData) => {
+    if (!file?.path) return;
     try {
       await FileSystemService.saveFile(file.path, JSON.stringify(updatedData, null, 2));
     } catch (e) {
@@ -247,6 +250,10 @@ export const WorkspaceCanvasViewer: React.FC<{ file: FileSystemItem }> = ({ file
     };
     updateWorkspaceData(updated);
   };
+
+  if (!file) {
+    return <div style={{ padding: 20, color: 'var(--text-secondary)' }}>No workspace selected</div>;
+  }
 
   if (loading) {
     return (

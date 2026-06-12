@@ -51,8 +51,8 @@ export const SchemaDesigner: React.FC<{ file: FileSystemItem }> = ({ file }) => 
     setHistory(prev => [...prev.slice(-29), JSON.parse(JSON.stringify(currentState))]);
   };
 
-  // Ctrl+Z Undo handler
   useEffect(() => {
+    if (!file?.path) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
         const activeTag = document.activeElement?.tagName;
@@ -71,10 +71,11 @@ export const SchemaDesigner: React.FC<{ file: FileSystemItem }> = ({ file }) => 
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [history, data, file.path]);
+  }, [history, data, file?.path]);
 
   // Load schema file
   useEffect(() => {
+    if (!file?.path) return;
     const loadSchema = async () => {
       try {
         setLoading(true);
@@ -87,16 +88,16 @@ export const SchemaDesigner: React.FC<{ file: FileSystemItem }> = ({ file }) => 
         }
       } catch (e) {
         console.error('Failed to parse schema file', e);
-        // Initialize empty if parse fails or empty file
         setData({ tables: [] });
       } finally {
         setLoading(false);
       }
     };
     loadSchema();
-  }, [file.path]);
+  }, [file?.path]);
 
   const saveSchema = async (updatedData: SchemaData) => {
+    if (!file?.path) return;
     try {
       await FileSystemService.saveFile(file.path, JSON.stringify(updatedData, null, 2));
     } catch (e) {
@@ -418,6 +419,10 @@ export const SchemaDesigner: React.FC<{ file: FileSystemItem }> = ({ file }) => 
       default: return generateSQL();
     }
   };
+
+  if (!file) {
+    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: 'var(--text-secondary)' }}>No schema selected</div>;
+  }
 
   if (loading) {
     return (

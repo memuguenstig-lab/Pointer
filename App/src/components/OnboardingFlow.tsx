@@ -164,6 +164,38 @@ const ReadyStep = () => (
   </div>
 );
 
+const SpecialFilesStep = () => (
+  <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
+      Shadow includes unique <strong>Special Files</strong> that render interactive visual canvases inside your workspace instead of raw code:
+    </p>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {[
+        { icon: '🗺️', title: 'Visual Workspace (.workspace)', desc: 'A node-canvas notes board to layout tasks, connect notes, and pin images/designs.' },
+        { icon: '📐', title: 'Visual DB Schema Designer (.schema)', desc: 'Draw tables, specify PKs/FKs, connect relationships visually. Generates SQL, Prisma, or Knex code.' },
+        { icon: '🌐', title: 'Web Previewer (Globe icon)', desc: 'Side-by-side live browser for local servers (3000, 3001, etc.) with automatic hot-reload on save.' }
+      ].map(f => (
+        <div key={f.title} style={{ display: 'flex', gap: 10, padding: '8px 12px', borderRadius: 6, background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
+          <span style={{ fontSize: 20, flexShrink: 0 }}>{f.icon}</span>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{f.title}</div>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>{f.desc}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+    
+    <div style={{ marginTop: 8, padding: '8px 12px', background: 'rgba(92, 124, 250, 0.08)', borderLeft: '3px solid #58a6ff', borderRadius: 4 }}>
+      <div style={{ fontSize: 12, fontWeight: 'bold', color: 'var(--text-primary)', marginBottom: 4 }}>💡 Upcoming Special File Ideas:</div>
+      <ul style={{ margin: 0, paddingLeft: 18, fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+        <li><strong>Interactive API Playboard (.api):</strong> A visual canvas to build API requests (like Postman), map variable flows, and generate fetch code.</li>
+        <li><strong>Visual State Machine Flowchart (.flow):</strong> Draw workflow logic, specify states & transitions, and output XState config code.</li>
+        <li><strong>Prompt Blueprint (.prompt):</strong> Design prompt templates, mock inputs, and test AI answers side-by-side.</li>
+      </ul>
+    </div>
+  </div>
+);
+
 // ── Steps definition ───────────────────────────────────────────────────────
 
 const STEPS: Step[] = [
@@ -172,6 +204,7 @@ const STEPS: Step[] = [
   { id: 'ai',      title: 'AI Agent',            subtitle: 'Your autonomous coding partner', icon: '🤖', content: <AIStep />, accent: '#bc8cff' },
   { id: 'models',  title: 'Choose Your AI',      subtitle: 'Local, embedded, or cloud', icon: '⚙', content: <ModelsStep />, accent: '#f0883e' },
   { id: 'git',     title: 'Git Integration',     subtitle: 'Full workflow, AI-assisted', icon: '⎇', content: <GitStep />, accent: '#58a6ff' },
+  { id: 'special-files', title: 'Special Files', subtitle: 'Rich architectural visualizers', icon: '🎨', content: <SpecialFilesStep />, accent: '#bc8cff' },
   { id: 'ready',   title: "Let's Go",            subtitle: 'Start building something great', icon: '🚀', content: <ReadyStep />, accent: '#3fb950' },
 ];
 
