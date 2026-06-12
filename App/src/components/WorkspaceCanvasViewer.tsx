@@ -23,6 +23,11 @@ interface Node {
   label: string; // Card Title
   color?: string;
   image?: string; // Base64 data URL
+  video?: string; // Base64 data URL for video
+  showLabel?: boolean;
+  zoom?: number;
+  panX?: number;
+  panY?: number;
   type?: 'text' | 'stat' | 'tasklist' | 'link' | 'code';
   chartType?: 'bar' | 'column' | 'pie';
   metrics?: Metric[];
@@ -131,10 +136,39 @@ export const WorkspaceCanvasViewer: React.FC<{ file: FileSystemItem }> = ({ file
 
   const canvasRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
+
+  const [contextMenu, setContextMenu] = useState<{
+    visible: boolean;
+    x: number;
+    y: number;
+    nodeId: string | null;
+  } | null>(null);
+
+  const [uploadPos, setUploadPos] = useState<{ x: number; y: number } | null>(null);
 
   const pushHistory = (currentState: WorkspaceData) => {
     setHistory(prev => [...prev.slice(-29), JSON.parse(JSON.stringify(currentState))]);
   };
+
+  const handleContextMenu = (e: React.MouseEvent, nodeId: string | null) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!canvasRef.current) return;
+    const rect = canvasRef.current.getBoundingClientRect();
+    setContextMenu({
+      visible: true,
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+      nodeId
+    });
+  };
+
+  useEffect(() => {
+    const closeMenu = () => setContextMenu(null);
+    window.addEventListener('click', closeMenu);
+    return () => window.removeEventListener('click', closeMenu);
+  }, []);
 
   useEffect(() => {
     if (!file?.path) return;
@@ -283,16 +317,72 @@ export const WorkspaceCanvasViewer: React.FC<{ file: FileSystemItem }> = ({ file
     setIsModalOpen(false);
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const addNewCardAt = (type: 'text' | 'stat' | 'tasklist' | 'link' | 'code', x: number, y: number) => {
+    let defaultWidth = 140;
+    let defaultHeight = 90;
+    if (type === 'stat') {
+      defaultWidth = 180;
+      defaultHeight = 110;
+    } else if (type === 'code') {
+      defaultWidth = 200;
+      defaultHeight = 160;
+    } else if (type === 'tasklist') {
+      defaultWidth = 150;
+      defaultHeight = 130;
+    }
+
+    const newNode: Node = {
+      id: `node_${Date.now()}`,
+      x,
+      y,
+      width: defaultWidth,
+      height: defaultHeight,
+      label: type === 'text' ? 'New text card' : type === 'stat' ? 'New Statistik' : type === 'tasklist' ? 'New Checkliste' : type === 'link' ? 'New Bookmark' : 'New Code',
+      color: '#1e1d28',
+      type: type,
+      metrics: type === 'stat' ? [
+        { label: 'Metric A', value: 30 },
+        { label: 'Metric B', value: 70 }
+      ] : undefined,
+      tasks: type === 'tasklist' ? [
+        { id: `t_1`, text: 'Task A', done: false }
+      ] : undefined
+    };
+
+    updateWorkspaceData({
+      ...data,
+      nodes: [...data.nodes, newNode]
+    });
+  };
+
+  const handleMediaUpload = (type: 'image' | 'video', e: React.ChangeEvent<HTMLInputElement>) => {
     const fileItem = e.target.files?.[0];
     if (!fileItem) return;
+
+    if (selectedNodeId) {
+      const node = data.nodes.find(n => n.id === selectedNodeId);
+      if (node && (node.image || node.video)) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const dataUrl = reader.result as string;
+          const updated = data.nodes.map(n => n.id === selectedNodeId ? {
+            ...n,
+            image: type === 'image' ? dataUrl : undefined,
+            video: type === 'video' ? dataUrl : undefined,
+            label: fileItem.name
+          } : n);
+          updateWorkspaceData({ ...data, nodes: updated });
+        };
+        reader.readAsDataURL(fileItem);
+        return;
+      }
+    }
 
     const reader = new FileReader();
     reader.onload = () => {
       const dataUrl = reader.result as string;
-      const rect = canvasRef.current?.getBoundingClientRect();
-      const x = rect ? rect.width / 2 - 90 : 100;
-      const y = rect ? rect.height / 2 - 90 : 100;
+      const x = uploadPos ? uploadPos.x : 100;
+      const y = uploadPos ? uploadPos.y : 100;
 
       const newNode: Node = {
         id: `node_${Date.now()}`,
@@ -302,14 +392,19 @@ export const WorkspaceCanvasViewer: React.FC<{ file: FileSystemItem }> = ({ file
         height: 150,
         label: fileItem.name,
         color: 'transparent',
-        image: dataUrl
+        image: type === 'image' ? dataUrl : undefined,
+        video: type === 'video' ? dataUrl : undefined,
+        showLabel: false,
+        zoom: 1,
+        panX: 0,
+        panY: 0
       };
 
-      const updated = {
+      updateWorkspaceData({
         ...data,
         nodes: [...data.nodes, newNode]
-      };
-      updateWorkspaceData(updated);
+      });
+      setUploadPos(null);
     };
     reader.readAsDataURL(fileItem);
   };
@@ -609,8 +704,15 @@ export const WorkspaceCanvasViewer: React.FC<{ file: FileSystemItem }> = ({ file
         <input
           type="file"
           ref={fileInputRef}
-          onChange={handleImageUpload}
+          onChange={e => handleMediaUpload('image', e)}
           accept="image/*"
+          style={{ display: 'none' }}
+        />
+        <input
+          type="file"
+          ref={videoInputRef}
+          onChange={e => handleMediaUpload('video', e)}
+          accept="video/*"
           style={{ display: 'none' }}
         />
 
@@ -629,6 +731,7 @@ export const WorkspaceCanvasViewer: React.FC<{ file: FileSystemItem }> = ({ file
           onClick={handleCanvasClick}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
+          onContextMenu={(e) => handleContextMenu(e, null)}
           style={{
             flex: 1,
             position: 'relative',
@@ -814,6 +917,7 @@ export const WorkspaceCanvasViewer: React.FC<{ file: FileSystemItem }> = ({ file
               <div
                 key={node.id}
                 onMouseDown={(e) => handleMouseDown(node, e)}
+                onContextMenu={(e) => handleContextMenu(e, node.id)}
                 onClick={(e) => {
                   e.stopPropagation();
                   if (edgeSourceId) {
@@ -859,16 +963,51 @@ export const WorkspaceCanvasViewer: React.FC<{ file: FileSystemItem }> = ({ file
                 />
 
                 {node.image ? (
-                  <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
-                    <img
-                      src={node.image}
-                      alt={node.label}
-                      style={{ width: '100%', height: 'calc(100% - 20px)', borderRadius: 6, display: 'block', objectFit: 'cover' }}
-                      draggable={false}
-                    />
-                    <div style={{ fontSize: 10, color: textColor, textAlign: 'center', padding: '4px 2px 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {node.label}
+                  <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRadius: 6 }}>
+                    <div style={{ width: '100%', height: node.showLabel ? 'calc(100% - 20px)' : '100%', overflow: 'hidden', position: 'relative', borderRadius: 6 }}>
+                      <img
+                        src={node.image}
+                        alt={node.label}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          display: 'block',
+                          transform: `scale(${node.zoom ?? 1}) translate(${node.panX ?? 0}px, ${node.panY ?? 0}px)`,
+                          transformOrigin: 'center center'
+                        }}
+                        draggable={false}
+                      />
                     </div>
+                    {node.showLabel && (
+                      <div style={{ fontSize: 10, color: textColor, textAlign: 'center', padding: '4px 2px 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {node.label}
+                      </div>
+                    )}
+                  </div>
+                ) : node.video ? (
+                  <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRadius: 6 }}>
+                    <div style={{ width: '100%', height: node.showLabel ? 'calc(100% - 20px)' : '100%', overflow: 'hidden', position: 'relative', borderRadius: 6 }}>
+                      <video
+                        src={node.video}
+                        controls
+                        muted
+                        loop
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          display: 'block',
+                          transform: `scale(${node.zoom ?? 1}) translate(${node.panX ?? 0}px, ${node.panY ?? 0}px)`,
+                          transformOrigin: 'center center'
+                        }}
+                      />
+                    </div>
+                    {node.showLabel && (
+                      <div style={{ fontSize: 10, color: textColor, textAlign: 'center', padding: '4px 2px 0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {node.label}
+                      </div>
+                    )}
                   </div>
                 ) : isStat ? (
                   <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 6 }}>
@@ -1049,13 +1188,13 @@ export const WorkspaceCanvasViewer: React.FC<{ file: FileSystemItem }> = ({ file
         </div>
 
         {/* Sidebar Inspector Panel for Selected Node */}
-        {selectedNode && !selectedNode.image && (
+        {selectedNode && (
           <div style={{ width: 240, borderLeft: '1px solid var(--border-color)', background: 'var(--bg-secondary)', padding: 12, display: 'flex', flexDirection: 'column', gap: 12, zIndex: 5, overflowY: 'auto' }}>
-            <h5 style={{ margin: 0, fontSize: 12, color: 'var(--text-primary)' }}>Edit {selectedNode.type === 'stat' ? 'Statistik' : selectedNode.type === 'tasklist' ? 'Checkliste' : selectedNode.type === 'link' ? 'Link' : selectedNode.type === 'code' ? 'Code' : 'Text'} Card</h5>
+            <h5 style={{ margin: 0, fontSize: 12, color: 'var(--text-primary)' }}>Edit {selectedNode.image ? 'Image' : selectedNode.video ? 'Video' : selectedNode.type === 'stat' ? 'Statistik' : selectedNode.type === 'tasklist' ? 'Checkliste' : selectedNode.type === 'link' ? 'Link' : selectedNode.type === 'code' ? 'Code' : 'Text'} Card</h5>
             
             <div>
               <label style={{ display: 'block', fontSize: 10, color: 'var(--text-secondary)', marginBottom: 4 }}>
-                {selectedNode.type === 'stat' || selectedNode.type === 'tasklist' || selectedNode.type === 'code' ? 'Card Title' : 'Content / Label'}
+                {selectedNode.type === 'stat' || selectedNode.type === 'tasklist' || selectedNode.type === 'code' || selectedNode.image || selectedNode.video ? 'Card Title' : 'Content / Label'}
               </label>
               <textarea
                 value={editLabel}
@@ -1064,6 +1203,82 @@ export const WorkspaceCanvasViewer: React.FC<{ file: FileSystemItem }> = ({ file
                 style={{ width: '100%', height: 60, padding: 4, background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: 12, borderRadius: 4, outline: 'none', resize: 'none' }}
               />
             </div>
+
+            {(selectedNode.image || selectedNode.video) && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={selectedNode.showLabel ?? false}
+                    onChange={(e) => {
+                      const updated = data.nodes.map(n => n.id === selectedNodeId ? { ...n, showLabel: e.target.checked } : n);
+                      updateWorkspaceData({ ...data, nodes: updated });
+                    }}
+                  />
+                  <span style={{ color: 'var(--text-primary)' }}>Show title at bottom</span>
+                </label>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: 10, color: 'var(--text-secondary)', marginBottom: 4 }}>
+                    Zoom ({selectedNode.zoom ?? 1}x)
+                  </label>
+                  <input
+                    type="range"
+                    min="1"
+                    max="5"
+                    step="0.05"
+                    value={selectedNode.zoom ?? 1}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value);
+                      const updated = data.nodes.map(n => n.id === selectedNodeId ? { ...n, zoom: val } : n);
+                      setData({ ...data, nodes: updated });
+                    }}
+                    onMouseUp={() => saveWorkspace(data)}
+                    style={{ width: '100%' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: 10, color: 'var(--text-secondary)', marginBottom: 4 }}>
+                    Pan X (Cut Offset X: {selectedNode.panX ?? 0}px)
+                  </label>
+                  <input
+                    type="range"
+                    min="-200"
+                    max="200"
+                    step="1"
+                    value={selectedNode.panX ?? 0}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      const updated = data.nodes.map(n => n.id === selectedNodeId ? { ...n, panX: val } : n);
+                      setData({ ...data, nodes: updated });
+                    }}
+                    onMouseUp={() => saveWorkspace(data)}
+                    style={{ width: '100%' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: 10, color: 'var(--text-secondary)', marginBottom: 4 }}>
+                    Pan Y (Cut Offset Y: {selectedNode.panY ?? 0}px)
+                  </label>
+                  <input
+                    type="range"
+                    min="-200"
+                    max="200"
+                    step="1"
+                    value={selectedNode.panY ?? 0}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      const updated = data.nodes.map(n => n.id === selectedNodeId ? { ...n, panY: val } : n);
+                      setData({ ...data, nodes: updated });
+                    }}
+                    onMouseUp={() => saveWorkspace(data)}
+                    style={{ width: '100%' }}
+                  />
+                </div>
+              </div>
+            )}
 
             {selectedNode.type === 'link' && (
               <div>
@@ -1369,6 +1584,102 @@ export const WorkspaceCanvasViewer: React.FC<{ file: FileSystemItem }> = ({ file
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Custom Right-Click Context Menu */}
+      {contextMenu && contextMenu.visible && (
+        <div style={{
+          position: 'absolute',
+          left: contextMenu.x,
+          top: contextMenu.y,
+          background: 'var(--bg-secondary)',
+          border: '1px solid var(--border-color)',
+          borderRadius: 8,
+          boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+          padding: '4px 0',
+          minWidth: 160,
+          zIndex: 1000,
+          fontSize: 12,
+          color: 'var(--text-primary)',
+          pointerEvents: 'auto'
+        }}>
+          <style>{`
+            .ctx-menu-item {
+              padding: 6px 12px;
+              cursor: pointer;
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              transition: background 0.15s, color 0.15s;
+            }
+            .ctx-menu-item:hover {
+              background: var(--bg-hover);
+              color: var(--accent-color);
+            }
+          `}</style>
+          {contextMenu.nodeId ? (
+            <>
+              <div onClick={() => startConnectEdge(contextMenu.nodeId!)} className="ctx-menu-item">
+                🔗 Connect / Link Card
+              </div>
+              <div onClick={() => {
+                setSelectedNodeId(contextMenu.nodeId);
+                const node = data.nodes.find(n => n.id === contextMenu.nodeId);
+                if (node) {
+                  setEditLabel(node.label);
+                  setEditColor(node.color || '#0e639c');
+                  setEditLinkUrl(node.linkUrl || '');
+                  setEditCodeLanguage(node.codeLanguage || 'javascript');
+                  setEditCodeContent(node.codeContent || '');
+                  setEditChartType(node.chartType || 'bar');
+                }
+              }} className="ctx-menu-item">
+                📝 Edit Properties
+              </div>
+              {(() => {
+                const node = data.nodes.find(n => n.id === contextMenu.nodeId);
+                if (node && (node.image || node.video)) {
+                  return (
+                    <div onClick={() => {
+                      setSelectedNodeId(contextMenu.nodeId);
+                      if (node.image) {
+                        fileInputRef.current?.click();
+                      } else {
+                        videoInputRef.current?.click();
+                      }
+                    }} className="ctx-menu-item">
+                      🖼️ Change Picture/Video
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+              <div onClick={() => handleDeleteNode(contextMenu.nodeId!)} className="ctx-menu-item" style={{ color: 'var(--error-color)' }}>
+                🗑️ Delete Card
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ padding: '4px 10px', fontSize: 10, color: 'var(--text-secondary)', fontWeight: 'bold', borderBottom: '1px solid var(--border-color)', marginBottom: 4 }}>
+                Add New Card
+              </div>
+              <div onClick={() => addNewCardAt('text', contextMenu.x, contextMenu.y)} className="ctx-menu-item">📝 Text Card</div>
+              <div onClick={() => addNewCardAt('stat', contextMenu.x, contextMenu.y)} className="ctx-menu-item">📊 Statistik Card</div>
+              <div onClick={() => addNewCardAt('tasklist', contextMenu.x, contextMenu.y)} className="ctx-menu-item">✅ Checkliste Card</div>
+              <div onClick={() => addNewCardAt('link', contextMenu.x, contextMenu.y)} className="ctx-menu-item">🔗 Bookmark Card</div>
+              <div onClick={() => addNewCardAt('code', contextMenu.x, contextMenu.y)} className="ctx-menu-item">💻 Code Card</div>
+              <div style={{ height: 1, background: 'var(--border-color)', margin: '4px 0' }} />
+              <div onClick={() => {
+                setUploadPos({ x: contextMenu.x, y: contextMenu.y });
+                fileInputRef.current?.click();
+              }} className="ctx-menu-item">🖼️ Upload Photo</div>
+              <div onClick={() => {
+                setUploadPos({ x: contextMenu.x, y: contextMenu.y });
+                videoInputRef.current?.click();
+              }} className="ctx-menu-item">🎥 Upload Video</div>
+            </>
+          )}
         </div>
       )}
     </div>

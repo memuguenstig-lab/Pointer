@@ -2978,10 +2978,6 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
     return String(next);
   };
   const [input, setInput] = useState('');
-  const [useLocalRAG, setUseLocalRAG] = useState(() => localStorage.getItem('useLocalRAG') === 'true');
-  useEffect(() => {
-    localStorage.setItem('useLocalRAG', String(useLocalRAG));
-  }, [useLocalRAG]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [workingSteps, setWorkingSteps] = useState<string[]>([]);
   const [width, setWidth] = useState(380);
@@ -4061,9 +4057,9 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
       // Auto-accept any pending changes before sending new message
       await autoAcceptChanges();
       pushWorkingStep('Checking pending changes');
-
-      let resolvedAttachments = await resolveAutoAttachedFiles(content, attachments);
-      if (useLocalRAG && content.trim()) {
+       let resolvedAttachments = await resolveAutoAttachedFiles(content, attachments);
+      const isLocalRagEnabled = localStorage.getItem('useLocalRAG') !== 'false';
+      if (isLocalRagEnabled && content.trim()) {
         pushWorkingStep('Querying codebase (Local RAG)');
         try {
           const ragRes = await fetch('http://localhost:23816/api/codebase/context', {
@@ -8034,17 +8030,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
                   </svg>
                 </button>
               )}
-              {!editingMessageIndex && !isAnyProcessing && (
-                <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'var(--text-secondary)', cursor: 'pointer', userSelect: 'none', marginLeft: '6px' }}>
-                  <input
-                    type="checkbox"
-                    checked={useLocalRAG}
-                    onChange={e => setUseLocalRAG(e.target.checked)}
-                    style={{ cursor: 'pointer', margin: 0 }}
-                  />
-                  <span>Local RAG</span>
-                </label>
-              )}
+
               {editingMessageIndex !== null && (
                 <button
                   onClick={handleCancelEdit}

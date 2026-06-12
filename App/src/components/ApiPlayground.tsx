@@ -56,6 +56,53 @@ export const ApiPlayground: React.FC<{ file: FileSystemItem }> = ({ file }) => {
 
   const canvasRef = useRef<HTMLDivElement>(null);
 
+  const [contextMenu, setContextMenu] = useState<{
+    visible: boolean;
+    x: number;
+    y: number;
+    nodeId: string | null;
+  } | null>(null);
+
+  const handleContextMenu = (e: React.MouseEvent, nodeId: string | null) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!canvasRef.current) return;
+    const rect = canvasRef.current.getBoundingClientRect();
+    setContextMenu({
+      visible: true,
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+      nodeId
+    });
+  };
+
+  useEffect(() => {
+    const closeMenu = () => setContextMenu(null);
+    window.addEventListener('click', closeMenu);
+    return () => window.removeEventListener('click', closeMenu);
+  }, []);
+
+  const handleAddRequestAt = (x: number, y: number) => {
+    const newRequest: ApiRequestNode = {
+      id: `req_${Date.now()}`,
+      x,
+      y,
+      name: 'New Request',
+      method: 'GET',
+      url: 'https://api.github.com/users/octocat',
+      headers: [{ key: 'Content-Type', value: 'application/json' }],
+      body: '{}',
+      color: '#1e1d28'
+    };
+
+    const updated = {
+      ...data,
+      requests: [...data.requests, newRequest]
+    };
+    updateApiData(updated);
+    setSelectedNodeId(newRequest.id);
+  };
+
   // Load API data
   useEffect(() => {
     if (!file?.path) return;
@@ -387,6 +434,7 @@ export const ApiPlayground: React.FC<{ file: FileSystemItem }> = ({ file }) => {
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onClick={() => { setSequenceSourceId(null); setSelectedNodeId(null); }}
+          onContextMenu={(e) => handleContextMenu(e, null)}
           style={{
             flex: 1,
             position: 'relative',
@@ -477,6 +525,7 @@ export const ApiPlayground: React.FC<{ file: FileSystemItem }> = ({ file }) => {
               <div
                 key={node.id}
                 onMouseDown={(e) => handleMouseDown(node, e)}
+                onContextMenu={(e) => handleContextMenu(e, node.id)}
                 onClick={(e) => {
                   e.stopPropagation();
                   if (sequenceSourceId) {
@@ -572,6 +621,68 @@ export const ApiPlayground: React.FC<{ file: FileSystemItem }> = ({ file }) => {
               </div>
             );
           })}
+
+          {/* Custom Right-Click Context Menu */}
+          {contextMenu && contextMenu.visible && (
+            <div style={{
+              position: 'absolute',
+              left: contextMenu.x,
+              top: contextMenu.y,
+              background: 'var(--bg-secondary)',
+              border: '1px solid var(--border-color)',
+              borderRadius: 8,
+              boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+              padding: '4px 0',
+              minWidth: 160,
+              zIndex: 1000,
+              fontSize: 12,
+              color: 'var(--text-primary)',
+              pointerEvents: 'auto'
+            }}>
+              <style>{`
+                .ctx-menu-item {
+                  padding: 6px 12px;
+                  cursor: pointer;
+                  display: flex;
+                  align-items: center;
+                  gap: 8px;
+                  transition: background 0.15s, color 0.15s;
+                }
+                .ctx-menu-item:hover {
+                  background: var(--bg-hover);
+                  color: var(--accent-color);
+                }
+              `}</style>
+              {contextMenu.nodeId ? (
+                <>
+                  <div onClick={() => startConnectSequence(contextMenu.nodeId!, null as any)} className="ctx-menu-item">
+                    🔗 Connect Sequence Link
+                  </div>
+                  <div onClick={() => {
+                    setSelectedNodeId(contextMenu.nodeId);
+                  }} className="ctx-menu-item">
+                    📝 Edit Request
+                  </div>
+                  <div onClick={(e) => handleDeleteRequest(contextMenu.nodeId!, e as any)} className="ctx-menu-item" style={{ color: 'var(--error-color)' }}>
+                    🗑️ Delete Request
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div onClick={() => handleAddRequestAt(contextMenu.x, contextMenu.y)} className="ctx-menu-item">
+                    ➕ Add Request Card
+                  </div>
+                  <div onClick={() => {
+                    if (data.requests.length > 0) {
+                      handleRunSequence(data.requests[0].id, null as any);
+                    }
+                  }} className="ctx-menu-item">
+                    ▶ Run All Requests
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Sidebar request inspector */}

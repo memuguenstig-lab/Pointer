@@ -474,6 +474,7 @@ const ThemeLibraryModal: React.FC<{ isVisible: boolean; onClose: () => void; onS
 export function Settings({ isVisible, onClose, initialSettings, initialCategory, initialModelId }: SettingsProps) {
   const [activeCategory, setActiveCategory] = useState(initialCategory || 'models');
   const [activeTab, setActiveTab] = useState('default');
+  const [useLocalRAG, setUseLocalRAG] = useState(() => localStorage.getItem('useLocalRAG') !== 'false');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [modelConfigs, setModelConfigs] = useState<Record<string, ModelConfig>>({
     'default': { ...defaultConfig },
@@ -4010,6 +4011,25 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                           </div>
                         </div>
                       </div>
+                    </div>
+
+                    {/* Local RAG (Retrieval-Augmented Generation) */}
+                    <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-primary)' }}>
+                      <h4 style={{ margin: '0 0 14px 0', fontSize: '14px' }}>Local Codebase Context</h4>
+                      <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'pointer' }}>
+                        <input type="checkbox" style={{ marginTop: '2px' }}
+                          checked={useLocalRAG}
+                          onChange={e => {
+                            setUseLocalRAG(e.target.checked);
+                            localStorage.setItem('useLocalRAG', String(e.target.checked));
+                          }} />
+                        <div>
+                          <div style={{ fontWeight: 500 }}>Enable Local RAG (Retrieval-Augmented Generation)</div>
+                          <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                            Automatically query your codebase structure for relevant context before sending chat requests. This helps the AI understand references to your code without manually attaching files.
+                          </div>
+                        </div>
+                      </label>
                     </div>
 
                     {/* Agent Behavior */}
