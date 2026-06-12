@@ -1,4 +1,4 @@
-﻿import { ThemeSettings } from '../types';
+import { ThemeSettings } from '../types';
 
 export const presetThemes: Record<string, ThemeSettings> = {
 
@@ -58,7 +58,7 @@ export const presetThemes: Record<string, ThemeSettings> = {
   'Tokyo Night': {
     name: 'vs-dark',
     customColors: {
-      bgPrimary:'#1a1b26',bgSecondary:'#16161e',bgTertiary:'#1f2335',bgSelected:'#2f3549',bgHover:'#2e3c64',
+      bgPrimary:'rgba(26, 27, 38, 0.75)',bgSecondary:'#16161e',bgTertiary:'#1f2335',bgSelected:'#2f3549',bgHover:'#2e3c64',
       textPrimary:'#c0caf5',textSecondary:'#565f89',borderColor:'#1f2335',borderPrimary:'#1f2335',
       accentColor:'#7aa2f7',accentHover:'#89b4fa',errorColor:'#f7768e',successColor:'#9ece6a',warningColor:'#e0af68',
       titlebarBg:'#16161e',statusbarBg:'#16161e',statusbarFg:'#c0caf5',activityBarBg:'#16161e',activityBarFg:'#c0caf5',
@@ -82,7 +82,7 @@ export const presetThemes: Record<string, ThemeSettings> = {
   'Dracula': {
     name: 'vs-dark',
     customColors: {
-      bgPrimary:'#282a36',bgSecondary:'#21222c',bgTertiary:'#343746',bgSelected:'#44475a',bgHover:'#3d3f4e',
+      bgPrimary:'rgba(40, 42, 54, 0.75)',bgSecondary:'#21222c',bgTertiary:'#343746',bgSelected:'#44475a',bgHover:'#3d3f4e',
       textPrimary:'#f8f8f2',textSecondary:'#6272a4',borderColor:'#44475a',borderPrimary:'#44475a',
       accentColor:'#bd93f9',accentHover:'#caa9fa',errorColor:'#ff5555',successColor:'#50fa7b',warningColor:'#f1fa8c',
       titlebarBg:'#21222c',statusbarBg:'#21222c',statusbarFg:'#f8f8f2',activityBarBg:'#21222c',activityBarFg:'#f8f8f2',
@@ -107,7 +107,7 @@ export const presetThemes: Record<string, ThemeSettings> = {
   "Synthwave '84": {
     name: 'vs-dark',
     customColors: {
-      bgPrimary:'#241b2f',bgSecondary:'#1a1226',bgTertiary:'#34294f',bgSelected:'#453976',bgHover:'#4c3f78',
+      bgPrimary:'rgba(36, 27, 47, 0.7)',bgSecondary:'#1a1226',bgTertiary:'#34294f',bgSelected:'#453976',bgHover:'#4c3f78',
       textPrimary:'#f8f8f2',textSecondary:'#b6b1cb',borderColor:'#453976',borderPrimary:'#453976',
       accentColor:'#ff7edb',accentHover:'#ff9de8',errorColor:'#fe4450',successColor:'#72f1b8',warningColor:'#fede5d',
       titlebarBg:'#1a1226',statusbarBg:'#1a1226',statusbarFg:'#f8f8f2',activityBarBg:'#1a1226',activityBarFg:'#f8f8f2',
@@ -135,7 +135,7 @@ export const presetThemes: Record<string, ThemeSettings> = {
   'Cyberpunk': {
     name: 'vs-dark',
     customColors: {
-      bgPrimary:'#0d0d1a',bgSecondary:'#050510',bgTertiary:'#1a1a35',bgSelected:'#2a1a4a',bgHover:'#1f1f3a',
+      bgPrimary:'rgba(13, 13, 26, 0.65)',bgSecondary:'#050510',bgTertiary:'#1a1a35',bgSelected:'#2a1a4a',bgHover:'#1f1f3a',
       textPrimary:'#e0e0ff',textSecondary:'#7070aa',borderColor:'#2a1a4a',borderPrimary:'#2a1a4a',
       accentColor:'#ff00ff',accentHover:'#ff44ff',errorColor:'#ff0055',successColor:'#00ff9f',warningColor:'#ffff00',
       titlebarBg:'#050510',statusbarBg:'#050510',statusbarFg:'#00ffff',activityBarBg:'#050510',activityBarFg:'#ff00ff',

@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type ActivityView = 'explorer' | 'git' | null;
+export type ActivityView = 'explorer' | 'git' | 'extensions' | 'workspace' | null;
 
 interface ActivityBarProps {
   activeView: ActivityView;
@@ -122,6 +122,25 @@ const ActivityBar: React.FC<ActivityBarProps> = ({
           </svg>
         )}
 
+        {/* Extensions */}
+        {btn('extensions', 'Extensions',
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <rect x="4" y="4" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5" />
+            <rect x="14" y="4" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5" />
+            <rect x="4" y="14" width="6" height="6" rx="1" stroke="currentColor" strokeWidth="1.5" />
+            <path d="M14 17h6M17 14v6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+        )}
+
+        {/* Visual Workspace */}
+        {btn('workspace', 'Visual Workspace',
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.5" />
+            <circle cx="8" cy="8" r="2" fill="currentColor" />
+            <path d="M20 15l-5-5L5 20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            <circle cx="15" cy="15" r="2.5" stroke="currentColor" strokeWidth="1.5" />
+          </svg>
+        )}
 
         {/* Terminal */}
         {btn('terminal', 'Terminal (Ctrl+`)',

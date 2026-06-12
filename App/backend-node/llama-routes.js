@@ -198,7 +198,7 @@ function modelStatus() {
 }
 
 // ── Parallel chunk downloader ──────────────────────────────────────────────
-const PARALLEL_CHUNKS = 8;
+const PARALLEL_CHUNKS = 32;
 const CHUNK_SIZE = 16 * 1024 * 1024; // 16 MB per chunk
 
 /**

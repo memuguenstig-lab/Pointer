@@ -5,7 +5,7 @@ import { getLanguageFromFileName } from '../utils/languageUtils';
 import { AIFileService } from '../services/AIFileService';
 import { FileSystemService } from '../services/FileSystemService';
 import { showToast } from '../services/ToastService';
-import { FileViewer, isImageFile, isBinaryFile, isPdfFile, isDatabaseFile } from './FileViewer';
+import { FileViewer, isImageFile, isBinaryFile, isPdfFile, isDatabaseFile, isWorkspaceFile } from './FileViewer';
 import Modal from './Modal';
 import PreviewPane from './PreviewPane';
 import lmStudio from '../services/LMStudioService';
@@ -38,7 +38,7 @@ const EditorPane: React.FC<EditorPaneProps> = ({ fileId, file, onEditorReady, se
   const editor = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const contentRef = useRef<string>('');
   // Add state to track file type
-  const [fileType, setFileType] = useState<'text' | 'image' | 'binary' | 'pdf' | 'database'>('text');
+  const [fileType, setFileType] = useState<'text' | 'image' | 'binary' | 'pdf' | 'database' | 'workspace'>('text');
   const [showPromptInput, setShowPromptInput] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [aiResponse, setAiResponse] = useState('');
@@ -1184,7 +1184,7 @@ DO NOT include the [CURSOR] marker in your response. Provide ONLY the completion
         node.style.color = 'rgba(255, 255, 255, 0.5)'; // Semi-transparent white
         node.style.fontStyle = 'italic';
         node.style.display = 'inline-block';
-        node.style.shadowideEvents = 'none'; // Make it non-interactive
+        node.style.pointerEvents = 'none'; // Make it non-interactive
         node.textContent = displayText;
         return node;
       },
@@ -2073,7 +2073,7 @@ DO NOT include the [CURSOR] marker in your response. Provide ONLY the completion
   };
 
   // Render based on file type
-  if (fileType === 'image' || fileType === 'binary' || fileType === 'pdf' || fileType === 'database') {
+  if (fileType === 'image' || fileType === 'binary' || fileType === 'pdf' || fileType === 'database' || fileType === 'workspace') {
     return <FileViewer file={file} fileId={fileId} />;
   }
 
@@ -2122,6 +2122,8 @@ DO NOT include the [CURSOR] marker in your response. Provide ONLY the completion
       // Determine file type based on extension
       if (isImageFile(file.name)) {
         setFileType('image');
+      } else if (isWorkspaceFile(file.name)) {
+        setFileType('workspace');
       } else if (isPdfFile(file.name)) {
         setFileType('pdf');
       } else if (isDatabaseFile(file.name)) {

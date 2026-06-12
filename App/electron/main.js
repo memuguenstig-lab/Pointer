@@ -494,9 +494,40 @@ function createTray() {
   });
 }
 
-app.on('before-quit', () => {
+let isQuitting = false;
+app.on('before-quit', (event) => {
   forceQuit = true;
-  if (backendProcess) { try { backendProcess.kill(); } catch(e) {} }
+  if (backendProcess) { 
+    try { backendProcess.kill(); } catch(e) {} 
+  } else {
+    if (!isQuitting) {
+      event.preventDefault();
+      isQuitting = true;
+      try {
+        const http = require('http');
+        const req = http.request({
+          hostname: '127.0.0.1',
+          port: 23816,
+          path: '/api/shutdown',
+          method: 'POST',
+          headers: {
+            'Content-Length': 0
+          }
+        }, () => {
+          app.exit(0);
+        });
+        req.on('error', () => {
+          app.exit(0);
+        });
+        req.setTimeout(800, () => {
+          app.exit(0);
+        });
+        req.end();
+      } catch (_) {
+        app.exit(0);
+      }
+    }
+  }
 });
 
 async function createWindow() {
@@ -560,7 +591,7 @@ async function createWindow() {
     
     // Create the browser window.
     const mainWindow = new BrowserWindow({
-      width: 1200,
+      width: 1280,
       height: 800,
       show: false,
       icon: getIconPath(),
@@ -577,6 +608,9 @@ async function createWindow() {
         spellcheck: false,
       }
     });
+
+    // Start maximized
+    mainWindow.maximize();
 
     mainWindow.setMinimumSize(400, 300);
     mainWindow.setHasShadow(true);
@@ -812,6 +846,16 @@ ipcMain.on('window-force-close', (event) => {
 ipcMain.handle('window-is-maximized', (event) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   return win ? win.isMaximized() : false;
+});
+
+ipcMain.on('window-zen-enter', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (win) win.setFullScreen(true);
+});
+
+ipcMain.on('window-zen-exit', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (win) win.setFullScreen(false);
 });
 
 ipcMain.on('discord-settings-update', (event, settings) => {

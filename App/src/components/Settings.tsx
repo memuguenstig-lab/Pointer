@@ -53,7 +53,7 @@ const PasswordInput: React.FC<{
           transform: 'translateY(-50%)',
           background: 'none',
           border: 'none',
-          cursor: 'shadowide',
+          cursor: 'pointer',
           color: 'var(--text-secondary)',
           padding: '0',
         }}
@@ -158,7 +158,7 @@ const GPGSettings: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'shadowide' }}>
+      <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer' }}>
         <input type="checkbox" checked={config.gpgSign} onChange={e => setConfig(c => ({ ...c, gpgSign: e.target.checked }))} />
         Sign commits with GPG
       </label>
@@ -176,7 +176,7 @@ const GPGSettings: React.FC = () => {
           )}
         </div>
       )}
-      <button onClick={save} disabled={saving} style={{ alignSelf: 'flex-start', padding: '6px 14px', fontSize: 12, borderRadius: 4, border: 'none', background: 'var(--accent-color)', color: '#fff', cursor: 'shadowide' }}>
+      <button onClick={save} disabled={saving} style={{ alignSelf: 'flex-start', padding: '6px 14px', fontSize: 12, borderRadius: 4, border: 'none', background: 'var(--accent-color)', color: '#fff', cursor: 'pointer' }}>
         {saving ? 'Saving…' : 'Save'}
       </button>
     </div>
@@ -236,7 +236,7 @@ const SubmoduleManager: React.FC = () => {
       <div style={{ display: 'flex', gap: 6 }}>
         <input value={addUrl} onChange={e => setAddUrl(e.target.value)} placeholder="Repository URL" style={{ flex: 2, padding: '6px 8px', fontSize: 12, background: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 4, color: 'var(--text-primary)' }} />
         <input value={addPath} onChange={e => setAddPath(e.target.value)} placeholder="Path (optional)" style={{ flex: 1, padding: '6px 8px', fontSize: 12, background: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: 4, color: 'var(--text-primary)' }} />
-        <button onClick={handleAdd} disabled={adding || !addUrl.trim()} style={{ padding: '6px 12px', fontSize: 12, borderRadius: 4, border: 'none', background: 'var(--accent-color)', color: '#fff', cursor: 'shadowide' }}>
+        <button onClick={handleAdd} disabled={adding || !addUrl.trim()} style={{ padding: '6px 12px', fontSize: 12, borderRadius: 4, border: 'none', background: 'var(--accent-color)', color: '#fff', cursor: 'pointer' }}>
           {adding ? '…' : 'Add'}
         </button>
       </div>
@@ -251,11 +251,11 @@ const SubmoduleManager: React.FC = () => {
               <span style={{ fontSize: 10, color: s.status === '+' ? '#f0883e' : s.status === '-' ? '#f85149' : '#3fb950', fontWeight: 700 }}>{s.status || '✓'}</span>
               <span style={{ flex: 1, fontSize: 12, fontFamily: 'monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.path}</span>
               <span style={{ fontSize: 10, color: 'var(--text-secondary)', fontFamily: 'monospace' }}>{s.hash?.slice(0, 7)}</span>
-              <button onClick={() => handleUpdate(s.path)} style={{ fontSize: 10, padding: '2px 7px', borderRadius: 3, border: '1px solid var(--border-primary)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'shadowide' }}>Update</button>
-              <button onClick={() => setConfirmDeletePath(s.path)} style={{ fontSize: 10, padding: '2px 7px', borderRadius: 3, border: '1px solid rgba(248,81,73,0.4)', background: 'rgba(248,81,73,0.08)', color: '#f85149', cursor: 'shadowide' }}>Remove</button>
+              <button onClick={() => handleUpdate(s.path)} style={{ fontSize: 10, padding: '2px 7px', borderRadius: 3, border: '1px solid var(--border-primary)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }}>Update</button>
+              <button onClick={() => setConfirmDeletePath(s.path)} style={{ fontSize: 10, padding: '2px 7px', borderRadius: 3, border: '1px solid rgba(248,81,73,0.4)', background: 'rgba(248,81,73,0.08)', color: '#f85149', cursor: 'pointer' }}>Remove</button>
             </div>
           ))}
-          <button onClick={() => handleUpdate()} style={{ alignSelf: 'flex-start', fontSize: 11, padding: '4px 10px', borderRadius: 4, border: '1px solid var(--border-primary)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'shadowide' }}>
+          <button onClick={() => handleUpdate()} style={{ alignSelf: 'flex-start', fontSize: 11, padding: '4px 10px', borderRadius: 4, border: '1px solid var(--border-primary)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }}>
             ↻ Update All
           </button>
         </div>
@@ -303,7 +303,7 @@ const SubmoduleManager: React.FC = () => {
                   background: 'var(--bg-secondary)',
                   color: 'var(--text-secondary)',
                   fontSize: '13px',
-                  cursor: 'shadowide',
+                  cursor: 'pointer',
                 }}
               >
                 Cancel
@@ -322,7 +322,7 @@ const SubmoduleManager: React.FC = () => {
                   color: 'white',
                   fontWeight: 600,
                   fontSize: '13px',
-                  cursor: 'shadowide',
+                  cursor: 'pointer',
                 }}
               >
                 Remove
@@ -394,7 +394,7 @@ const ThemePreview: React.FC<{ theme: ThemeSettings; name: string; onSelect: () 
   return (
     <div onClick={onSelect} style={{
       width: '100%', height: '160px', borderRadius: '8px', overflow: 'hidden',
-      cursor: 'shadowide', position: 'relative',
+      cursor: 'pointer', position: 'relative',
       border: `1px solid ${isAnimated ? neon+'55' : (c.borderPrimary||'#333')}`,
       boxShadow: isAnimated ? `0 2px 12px ${neon}30` : '0 2px 8px rgba(0,0,0,.2)',
       transition: 'transform .18s ease, box-shadow .18s ease',
@@ -404,7 +404,7 @@ const ThemePreview: React.FC<{ theme: ThemeSettings; name: string; onSelect: () 
       onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px) scale(1.01)'; e.currentTarget.style.boxShadow = isAnimated ? `0 8px 24px ${neon}50` : '0 8px 20px rgba(0,0,0,.35)'; }}
       onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0) scale(1)'; e.currentTarget.style.boxShadow = isAnimated ? `0 2px 12px ${neon}30` : '0 2px 8px rgba(0,0,0,.2)'; }}
     >
-      {isAnimated && preset !== 'neon-pulse' && <div style={{ position: 'absolute', inset: 0, shadowideEvents: 'none', zIndex: 2, ...overlayStyle }} />}
+      {isAnimated && preset !== 'neon-pulse' && <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 2, ...overlayStyle }} />}
       {/* Titlebar */}
       <div style={{ height: 22, background: c.titlebarGradient && c.titlebarGradient !== 'none' ? c.titlebarGradient : (c.titlebarBg||c.bgPrimary||'#1e1e1e'), borderBottom: `1px solid ${preset==='neon-pulse'?neon:(c.borderPrimary||'#333')}`, display: 'flex', alignItems: 'center', padding: '0 8px', gap: 5, boxShadow: preset==='neon-pulse'?`0 1px 10px ${neon}70`:'none', position: 'relative', zIndex: 3 }}>
         <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#ff5f57' }} />
@@ -451,10 +451,10 @@ const ThemeLibraryModal: React.FC<{ isVisible: boolean; onClose: () => void; onS
           </div>
           <div style={{ display: 'flex', gap: 6 }}>
             {(['all','dark','light','animated'] as const).map(f => (
-              <button key={f} onClick={() => setFilter(f)} style={{ padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600, border: '1px solid var(--border-primary)', cursor: 'shadowide', background: filter===f?'var(--accent-color)':'var(--bg-secondary)', color: filter===f?'#fff':'var(--text-secondary)', textTransform: 'capitalize' }}>{f}</button>
+              <button key={f} onClick={() => setFilter(f)} style={{ padding: '4px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600, border: '1px solid var(--border-primary)', cursor: 'pointer', background: filter===f?'var(--accent-color)':'var(--bg-secondary)', color: filter===f?'#fff':'var(--text-secondary)', textTransform: 'capitalize' }}>{f}</button>
             ))}
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'shadowide', color: 'var(--text-secondary)', padding: 4, borderRadius: 4, display: 'flex', alignItems: 'center' }}>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: 4, borderRadius: 4, display: 'flex', alignItems: 'center' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
         </div>
@@ -465,7 +465,7 @@ const ThemeLibraryModal: React.FC<{ isVisible: boolean; onClose: () => void; onS
         </div>
         <div style={{ padding: '12px 20px', borderTop: '1px solid var(--border-primary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>✦ animated = has live animation effects</span>
-          <button onClick={onClose} style={{ padding: '6px 16px', borderRadius: 6, border: '1px solid var(--border-primary)', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', fontSize: 13, cursor: 'shadowide' }}>Close</button>
+          <button onClick={onClose} style={{ padding: '6px 16px', borderRadius: 6, border: '1px solid var(--border-primary)', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', fontSize: 13, cursor: 'pointer' }}>Close</button>
         </div>
       </div>
     </div>
@@ -540,7 +540,8 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
   const [editingPrompt, setEditingPrompt] = useState<string | null>(null);
   const [editingRule, setEditingRule] = useState<string | null>(null);
   const [advanced, setAdvanced] = useState<Record<string, any>>({
-    titleFormat: '{filename} - {workspace} - Shadow'
+    titleFormat: '{filename} - {workspace} - Shadow',
+    showSystemUsage: true
   });
   const [isLoading, setIsLoading] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -551,6 +552,8 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
 
   const [isThemeLibraryVisible, setIsThemeLibraryVisible] = useState(false);
   const [isThemeEditorVisible, setIsThemeEditorVisible] = useState(false);
+  const [generatorBaseColor, setGeneratorBaseColor] = useState('#0078d4');
+  const [generatorOpacity, setGeneratorOpacity] = useState(100);
   const [showPassword, setShowPassword] = useState(false);
   const [availableModels, setAvailableModels] = useState<ModelInfo[]>([]);
   const [availableModelsError, setAvailableModelsError] = useState<string | null>(null);
@@ -809,6 +812,8 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
       const result = await FileSystemService.saveSettingsFiles(settingsPath, settings);
       if (result.success) {
         console.log('Settings saved successfully');
+        localStorage.setItem('appSettings', JSON.stringify(settings));
+        window.dispatchEvent(new Event('settings-changed'));
         
         // Auto-discover models for configurations with empty model IDs after saving
         for (const [key, modelConfig] of Object.entries(modelConfigs)) {
@@ -1226,6 +1231,59 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
     window.dispatchEvent(new Event('theme-changed'));
   };
 
+  const applyAutoPaletteFromColor = (colorHex: string, opacityPercent: number) => {
+    const parsed = tinycolor(colorHex);
+    if (!parsed.isValid()) return;
+
+    const alpha = opacityPercent / 100;
+    
+    const bgPrimary = parsed.clone().darken(15).setAlpha(alpha).toRgbString();
+    const bgSecondary = parsed.clone().darken(10).setAlpha(alpha).toRgbString();
+    const bgTertiary = parsed.clone().lighten(20).setAlpha(alpha).toRgbString();
+    
+    const bgSelected = parsed.clone().lighten(5).setAlpha(Math.min(1, alpha + 0.15)).toRgbString();
+    const bgHover = parsed.clone().lighten(10).setAlpha(Math.min(1, alpha + 0.1)).toRgbString();
+
+    const titlebarBg = parsed.clone().darken(20).setAlpha(alpha).toRgbString();
+    const statusbarBg = parsed.clone().darken(20).setAlpha(alpha).toRgbString();
+    
+    const accentColor = parsed.clone().setAlpha(1).toHexString();
+    const accentHover = parsed.clone().desaturate(10).setAlpha(1).toHexString();
+    
+    const isLight = parsed.isLight();
+    const textPrimary = isLight ? '#0d0d0d' : '#ffffff';
+    const textSecondary = isLight ? '#2e2e2e' : '#cccccc';
+    
+    const borderColor = parsed.clone().lighten(10).setAlpha(Math.min(1, alpha + 0.2)).toRgbString();
+    const borderPrimary = parsed.clone().lighten(5).setAlpha(Math.min(1, alpha + 0.1)).toRgbString();
+
+    setThemeSettings(prev => ({
+      ...prev,
+      customColors: {
+        ...prev.customColors,
+        bgPrimary,
+        bgSecondary,
+        bgTertiary,
+        bgSelected,
+        bgHover,
+        titlebarBg,
+        statusbarBg,
+        accentColor,
+        accentHover,
+        textPrimary,
+        textSecondary,
+        borderColor,
+        borderPrimary,
+        statusbarFg: isLight ? '#000000' : '#f5f5f5',
+        activityBarBg: parsed.clone().darken(18).setAlpha(alpha).toRgbString(),
+        activityBarFg: isLight ? '#000000' : '#ffffff',
+      }
+    }));
+
+    setHasUnsavedChanges(true);
+    window.dispatchEvent(new Event('theme-changed'));
+  };
+
 
   const handleDiscordRpcSettingChange = (field: keyof DiscordRpcSettings, value: any) => {
     setDiscordRpcSettings((prev) => {
@@ -1543,6 +1601,34 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
         throw new Error('No autocompletion model configured');
       }
       
+      if (autocompletionConfig.modelProvider === 'ollama-embedded') {
+        setAutocompletionConnectionStatus({
+          connected: true,
+          error: null,
+          testing: false,
+          url: 'Embedded'
+        });
+        return;
+      }
+
+      if (autocompletionConfig.modelProvider === 'anthropic') {
+        if (!autocompletionConfig.apiKey) {
+          throw new Error('Anthropic API Key is required');
+        }
+        setAutocompletionConnectionStatus({
+          connected: true,
+          error: null,
+          testing: false,
+          url: 'https://api.anthropic.com/v1'
+        });
+        return;
+      }
+
+      const isCloud = ['openai', 'grok'].includes(autocompletionConfig.modelProvider);
+      if (isCloud && !autocompletionConfig.apiKey) {
+        throw new Error(`${autocompletionConfig.modelProvider === 'openai' ? 'OpenAI' : 'Grok'} API Key is required`);
+      }
+      
       if (!autocompletionConfig.apiEndpoint) {
         throw new Error('No API endpoint configured for autocompletion model');
       }
@@ -1578,8 +1664,8 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
       const message = error instanceof Error ? error.message : String(error);
       console.warn(`Autocompletion connection test failed (endpoint: ${testEndpoint}):`, message);
 
-      const userMessage = message.includes('Unable to reach model endpoint')
-        ? `${message} Ensure Shadow backend or local AI adapter is running.`
+      const userMessage = message.includes('Failed to fetch')
+        ? `${message}. Ensure the endpoint is reachable and CORS is enabled.`
         : message;
 
       setAutocompletionConnectionStatus({
@@ -1650,6 +1736,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
         maxWidth: '95vw',
         maxHeight: '90vh',
         background: 'var(--bg-primary)',
+        backdropFilter: 'var(--backdrop-blur, none)',
         borderRadius: '8px',
         boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
         display: 'flex',
@@ -1685,7 +1772,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
               color: 'var(--text-secondary)',
               fontSize: '18px',
               padding: '4px',
-              cursor: 'shadowide',
+              cursor: 'pointer',
             }}
           >
             ✕
@@ -1736,7 +1823,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                         ? '2px solid var(--accent-color)'
                         : '2px solid transparent',
                       color: activeCategory === category.id ? 'var(--text-primary)' : 'var(--text-secondary)',
-                      cursor: 'shadowide',
+                      cursor: 'pointer',
                       fontSize: '13px',
                       width: '100%',
                       transition: 'background 0.1s, color 0.1s',
@@ -1793,7 +1880,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                             border: 'none',
                             borderBottom: activeTab === modelId ? '2px solid var(--accent-color)' : 'none',
                             color: 'var(--text-primary)',
-                            cursor: 'shadowide',
+                            cursor: 'pointer',
                             fontSize: '13px',
                             whiteSpace: 'nowrap',
                           }}
@@ -1808,7 +1895,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                           background: 'transparent',
                           border: 'none',
                           color: 'var(--text-secondary)',
-                          cursor: 'shadowide',
+                          cursor: 'pointer',
                           fontSize: '13px',
                         }}
                       >
@@ -1976,7 +2063,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                                 border: 'none',
                                 borderRadius: '4px',
                                 color: 'white',
-                                cursor: 'shadowide',
+                                cursor: 'pointer',
                                 fontSize: '12px',
                               }}
                             >
@@ -2041,7 +2128,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                                       border: '1px solid var(--border-primary)',
                                       borderRadius: '4px',
                                       color: 'var(--text-secondary)',
-                                      cursor: 'shadowide',
+                                      cursor: 'pointer',
                                       fontSize: '13px',
                                     }}
                                   >
@@ -2108,7 +2195,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                                           key={model.id}
                                           onClick={() => selectModelSuggestion(activeTab, model)}
                                           style={{
-                                            padding: '8px 12px', cursor: 'shadowide',
+                                            padding: '8px 12px', cursor: 'pointer',
                                             borderBottom: index < filteredModels.length - 1 ? '1px solid var(--border-primary)' : 'none',
                                           }}
                                           onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-hover)'; }}
@@ -2126,7 +2213,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                                 {isLoadingModels && <span>Discovering models…</span>}
                                 {!isLoadingModels && availableModels.length === 0 && modelConfigs[activeTab].apiEndpoint && modelConfigs[activeTab].modelProvider !== 'openai' && (
                                   <span
-                                    style={{ cursor: 'shadowide', textDecoration: 'underline', opacity: 0.7 }}
+                                    style={{ cursor: 'pointer', textDecoration: 'underline', opacity: 0.7 }}
                                     onClick={() => fetchAvailableModels(modelConfigs[activeTab].apiEndpoint, modelConfigs[activeTab].apiKey)}
                                   >
                                     Click to discover models from endpoint
@@ -2143,112 +2230,146 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                           )}
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: modelConfigs[activeTab]?.modelProvider === 'ollama-embedded' ? '1fr' : '1fr 1fr', gap: '16px' }}>
-                          <div>
-                            <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px' }}>
-                              Model Provider
-                            </label>
-                            <select
-                              value={modelConfigs[activeTab].modelProvider || 'local'}
-                              onChange={async (e) => {
-                                const newProvider = e.target.value;
-                                handleModelConfigChange(activeTab, 'modelProvider', newProvider);
-                                setAvailableModels([]); // reset so dropdown re-fetches
+                        {/* Model Provider and Cloud Service selection */}
+                        {(() => {
+                          const currentMainProvider = 
+                            modelConfigs[activeTab]?.modelProvider === 'ollama-embedded' ? 'ollama-embedded' :
+                            ['openai', 'anthropic', 'grok'].includes(modelConfigs[activeTab]?.modelProvider) ? 'cloud' :
+                            'local';
 
-                                if (newProvider === 'openai') {
-                                  // OpenAI: fetch with known endpoint + key
-                                  const endpoint = modelConfigs[activeTab].apiEndpoint || 'https://api.openai.com/v1';
-                                  handleModelConfigChange(activeTab, 'apiEndpoint', 'https://api.openai.com/v1');
-                                  if (modelConfigs[activeTab].apiKey) {
-                                    await fetchAvailableModels(endpoint, modelConfigs[activeTab].apiKey);
-                                  }
-                                } else if (newProvider === 'anthropic') {
-                                  handleModelConfigChange(activeTab, 'apiEndpoint', 'https://api.anthropic.com/v1');
-                                  // Anthropic doesn't support /models listing — set known models
-                                  setAvailableModels([
-                                    { id: 'claude-opus-4-5', object: 'model', created: 0, owned_by: 'anthropic' },
-                                    { id: 'claude-sonnet-4-5', object: 'model', created: 0, owned_by: 'anthropic' },
-                                    { id: 'claude-haiku-4-5', object: 'model', created: 0, owned_by: 'anthropic' },
-                                    { id: 'claude-3-7-sonnet-20250219', object: 'model', created: 0, owned_by: 'anthropic' },
-                                    { id: 'claude-3-5-sonnet-20241022', object: 'model', created: 0, owned_by: 'anthropic' },
-                                    { id: 'claude-3-5-haiku-20241022', object: 'model', created: 0, owned_by: 'anthropic' },
-                                    { id: 'claude-3-opus-20240229', object: 'model', created: 0, owned_by: 'anthropic' },
-                                    { id: 'claude-3-sonnet-20240229', object: 'model', created: 0, owned_by: 'anthropic' },
-                                    { id: 'claude-3-haiku-20240307', object: 'model', created: 0, owned_by: 'anthropic' },
-                                  ]);
-                                } else if (newProvider === 'grok') {
-                                  handleModelConfigChange(activeTab, 'apiEndpoint', 'https://api.x.ai/v1');
-                                  // xAI supports OpenAI-compatible /models — fetch if key available
-                                  if (modelConfigs[activeTab].apiKey) {
-                                    await fetchAvailableModels('https://api.x.ai/v1', modelConfigs[activeTab].apiKey);
-                                  } else {
-                                    setAvailableModels([
-                                      { id: 'grok-3', object: 'model', created: 0, owned_by: 'xai' },
-                                      { id: 'grok-3-fast', object: 'model', created: 0, owned_by: 'xai' },
-                                      { id: 'grok-3-mini', object: 'model', created: 0, owned_by: 'xai' },
-                                      { id: 'grok-3-mini-fast', object: 'model', created: 0, owned_by: 'xai' },
-                                      { id: 'grok-2-1212', object: 'model', created: 0, owned_by: 'xai' },
-                                      { id: 'grok-2-vision-1212', object: 'model', created: 0, owned_by: 'xai' },
-                                      { id: 'grok-vision-beta', object: 'model', created: 0, owned_by: 'xai' },
-                                    ]);
-                                  }
-                                } else if (newProvider !== 'ollama-embedded' && modelConfigs[activeTab].apiEndpoint) {
-                                  await fetchAvailableModels(modelConfigs[activeTab].apiEndpoint, modelConfigs[activeTab].apiKey);
-                                }
-                              }}
-                              style={{
-                                width: '100%',
-                                padding: '8px',
-                                background: 'var(--bg-primary)',
-                                border: '1px solid var(--border-primary)',
-                                borderRadius: '4px',
-                                color: 'var(--text-primary)',
-                              }}
-                            >
-                              <option value="local">Local (LMStudio/Ollama)</option>
-                              <option value="ollama-embedded">Embedded (no install needed)</option>
-                              <option value="openai">OpenAI</option>
-                              <option value="anthropic">Anthropic (Claude)</option>
-                              <option value="grok">xAI (Grok)</option>
-                            </select>
-                          </div>
+                          return (
+                            <>
+                              <div style={{ display: 'grid', gridTemplateColumns: currentMainProvider === 'cloud' ? '1fr 1fr' : '1fr', gap: '16px', marginBottom: '16px' }}>
+                                <div>
+                                  <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px' }}>
+                                    Model Provider
+                                  </label>
+                                  <select
+                                    value={currentMainProvider}
+                                    onChange={async (e) => {
+                                      const val = e.target.value;
+                                      if (val === 'cloud') {
+                                        handleModelConfigChange(activeTab, 'modelProvider', 'openai');
+                                        handleModelConfigChange(activeTab, 'apiEndpoint', 'https://api.openai.com/v1');
+                                        setAvailableModels([]);
+                                      } else if (val === 'ollama-embedded') {
+                                        handleModelConfigChange(activeTab, 'modelProvider', 'ollama-embedded');
+                                        setAvailableModels([]);
+                                      } else {
+                                        handleModelConfigChange(activeTab, 'modelProvider', 'local');
+                                        handleModelConfigChange(activeTab, 'apiEndpoint', 'http://localhost:11434');
+                                        setAvailableModels([]);
+                                      }
+                                    }}
+                                    style={{
+                                      width: '100%',
+                                      padding: '8px',
+                                      background: 'var(--bg-primary)',
+                                      border: '1px solid var(--border-primary)',
+                                      borderRadius: '4px',
+                                      color: 'var(--text-primary)',
+                                    }}
+                                  >
+                                    <option value="local">Local</option>
+                                    <option value="ollama-embedded">Embedded</option>
+                                    <option value="cloud">Cloud API</option>
+                                  </select>
+                                </div>
 
-                          {modelConfigs[activeTab]?.modelProvider !== 'ollama-embedded' && (
-                          <div>
-                            <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px' }}>
-                              API Endpoint
-                            </label>
-                            <input
-                              type="text"
-                              value={modelConfigs[activeTab].apiEndpoint || ''}
-                              onChange={async (e) => {
-                                const newEndpoint = e.target.value;
-                                handleModelConfigChange(activeTab, 'apiEndpoint', newEndpoint);
-                                
-                                // Auto-discover models when endpoint changes (if no model ID is set)
-                                if (newEndpoint && (!modelConfigs[activeTab].id || modelConfigs[activeTab].id.trim() === '')) {
-                                  await fetchAvailableModels(newEndpoint, modelConfigs[activeTab].apiKey);
-                                }
-                              }}
-                              style={{
-                                width: '100%',
-                                padding: '8px',
-                                background: 'var(--bg-secondary)',
-                                border: '1px solid var(--border-primary)',
-                                borderRadius: '4px',
-                                color: 'var(--text-primary)',
-                              }}
-                              placeholder={
-                                modelConfigs[activeTab].modelProvider === 'openai' ? 'https://api.openai.com/v1'
-                                : modelConfigs[activeTab].modelProvider === 'anthropic' ? 'https://api.anthropic.com/v1'
-                                : modelConfigs[activeTab].modelProvider === 'grok' ? 'https://api.x.ai/v1'
-                                : 'http://localhost:1234/v1'
-                              }
-                            />
-                          </div>
-                          )}
-                          {modelConfigs[activeTab]?.modelProvider === 'ollama-embedded' && <div />}
-                        </div>
+                                {currentMainProvider === 'cloud' && (
+                                  <div>
+                                    <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px' }}>
+                                      Cloud Service
+                                    </label>
+                                    <select
+                                      value={modelConfigs[activeTab]?.modelProvider || 'openai'}
+                                      onChange={async (e) => {
+                                        const newProvider = e.target.value;
+                                        handleModelConfigChange(activeTab, 'modelProvider', newProvider);
+                                        setAvailableModels([]);
+
+                                        if (newProvider === 'openai') {
+                                          handleModelConfigChange(activeTab, 'apiEndpoint', 'https://api.openai.com/v1');
+                                          if (modelConfigs[activeTab].apiKey) {
+                                            await fetchAvailableModels('https://api.openai.com/v1', modelConfigs[activeTab].apiKey);
+                                          }
+                                        } else if (newProvider === 'anthropic') {
+                                          handleModelConfigChange(activeTab, 'apiEndpoint', 'https://api.anthropic.com/v1');
+                                          setAvailableModels([
+                                            { id: 'claude-opus-4-5', object: 'model', created: 0, owned_by: 'anthropic' },
+                                            { id: 'claude-sonnet-4-5', object: 'model', created: 0, owned_by: 'anthropic' },
+                                            { id: 'claude-haiku-4-5', object: 'model', created: 0, owned_by: 'anthropic' },
+                                            { id: 'claude-3-7-sonnet-20250219', object: 'model', created: 0, owned_by: 'anthropic' },
+                                            { id: 'claude-3-5-sonnet-20241022', object: 'model', created: 0, owned_by: 'anthropic' },
+                                            { id: 'claude-3-5-haiku-20241022', object: 'model', created: 0, owned_by: 'anthropic' },
+                                            { id: 'claude-3-opus-20240229', object: 'model', created: 0, owned_by: 'anthropic' },
+                                            { id: 'claude-3-sonnet-20240229', object: 'model', created: 0, owned_by: 'anthropic' },
+                                            { id: 'claude-3-haiku-20240307', object: 'model', created: 0, owned_by: 'anthropic' },
+                                          ]);
+                                        } else if (newProvider === 'grok') {
+                                          handleModelConfigChange(activeTab, 'apiEndpoint', 'https://api.x.ai/v1');
+                                          if (modelConfigs[activeTab].apiKey) {
+                                            await fetchAvailableModels('https://api.x.ai/v1', modelConfigs[activeTab].apiKey);
+                                          } else {
+                                            setAvailableModels([
+                                              { id: 'grok-3', object: 'model', created: 0, owned_by: 'xai' },
+                                              { id: 'grok-3-fast', object: 'model', created: 0, owned_by: 'xai' },
+                                              { id: 'grok-3-mini', object: 'model', created: 0, owned_by: 'xai' },
+                                              { id: 'grok-3-mini-fast', object: 'model', created: 0, owned_by: 'xai' },
+                                              { id: 'grok-2-1212', object: 'model', created: 0, owned_by: 'xai' },
+                                              { id: 'grok-2-vision-1212', object: 'model', created: 0, owned_by: 'xai' },
+                                              { id: 'grok-vision-beta', object: 'model', created: 0, owned_by: 'xai' },
+                                            ]);
+                                          }
+                                        }
+                                      }}
+                                      style={{
+                                        width: '100%',
+                                        padding: '8px',
+                                        background: 'var(--bg-primary)',
+                                        border: '1px solid var(--border-primary)',
+                                        borderRadius: '4px',
+                                        color: 'var(--text-primary)',
+                                      }}
+                                    >
+                                      <option value="openai">OpenAI</option>
+                                      <option value="anthropic">Anthropic (Claude)</option>
+                                      <option value="grok">xAI (Grok)</option>
+                                    </select>
+                                  </div>
+                                )}
+                              </div>
+
+                              {currentMainProvider === 'local' && (
+                                <div style={{ marginBottom: '16px' }}>
+                                  <label style={{ display: 'block', marginBottom: '4px', fontSize: '13px' }}>
+                                    API Endpoint
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={modelConfigs[activeTab].apiEndpoint || ''}
+                                    onChange={async (e) => {
+                                      const newEndpoint = e.target.value;
+                                      handleModelConfigChange(activeTab, 'apiEndpoint', newEndpoint);
+                                      if (newEndpoint && (!modelConfigs[activeTab].id || modelConfigs[activeTab].id.trim() === '')) {
+                                        await fetchAvailableModels(newEndpoint, modelConfigs[activeTab].apiKey);
+                                      }
+                                    }}
+                                    style={{
+                                      width: '100%',
+                                      padding: '8px',
+                                      background: 'var(--bg-secondary)',
+                                      border: '1px solid var(--border-primary)',
+                                      borderRadius: '4px',
+                                      color: 'var(--text-primary)',
+                                    }}
+                                    placeholder="http://localhost:1234/v1"
+                                  />
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
 
                         {(modelConfigs[activeTab].modelProvider === 'openai' ||
                           modelConfigs[activeTab].modelProvider === 'anthropic' ||
@@ -2375,7 +2496,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                                 background: 'none', 
                                 border: 'none', 
                                 color: 'var(--text-secondary)', 
-                                cursor: 'shadowide',
+                                cursor: 'pointer',
                                 padding: '4px',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -2408,7 +2529,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                                 background: 'none', 
                                 border: 'none', 
                                 color: 'var(--text-secondary)', 
-                                cursor: 'shadowide',
+                                cursor: 'pointer',
                                 padding: '4px',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -2441,7 +2562,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                                 background: 'none', 
                                 border: 'none', 
                                 color: 'var(--text-secondary)', 
-                                cursor: 'shadowide',
+                                cursor: 'pointer',
                                 padding: '4px',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -2474,7 +2595,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                                 background: 'none', 
                                 border: 'none', 
                                 color: 'var(--text-secondary)', 
-                                cursor: 'shadowide',
+                                cursor: 'pointer',
                                 padding: '4px',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -2507,7 +2628,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                                 background: 'none', 
                                 border: 'none', 
                                 color: 'var(--text-secondary)', 
-                                cursor: 'shadowide',
+                                cursor: 'pointer',
                                 padding: '4px',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -2540,7 +2661,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                                 background: 'none', 
                                 border: 'none', 
                                 color: 'var(--text-secondary)', 
-                                cursor: 'shadowide',
+                                cursor: 'pointer',
                                 padding: '4px',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -2573,7 +2694,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                                 background: 'none', 
                                 border: 'none', 
                                 color: 'var(--text-secondary)', 
-                                cursor: 'shadowide',
+                                cursor: 'pointer',
                                 padding: '4px',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -2606,7 +2727,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                                 background: 'none', 
                                 border: 'none', 
                                 color: 'var(--text-secondary)', 
-                                cursor: 'shadowide',
+                                cursor: 'pointer',
                                 padding: '4px',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -2639,7 +2760,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                                 background: 'none', 
                                 border: 'none', 
                                 color: 'var(--text-secondary)', 
-                                cursor: 'shadowide',
+                                cursor: 'pointer',
                                 padding: '4px',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -2679,7 +2800,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                             border: 'none',
                             borderRadius: '4px',
                             fontSize: '12px',
-                            cursor: 'shadowide',
+                            cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
                             gap: '4px'
@@ -2732,7 +2853,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                                       background: 'none', 
                                       border: 'none', 
                                       color: 'var(--text-secondary)', 
-                                      cursor: 'shadowide',
+                                      cursor: 'pointer',
                                       padding: '4px',
                                       display: 'flex',
                                       alignItems: 'center',
@@ -2758,7 +2879,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                                       background: 'none', 
                                       border: 'none', 
                                       color: 'var(--error-color)', 
-                                      cursor: 'shadowide',
+                                      cursor: 'pointer',
                                       padding: '4px',
                                       display: 'flex',
                                       alignItems: 'center',
@@ -2854,7 +2975,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                             color: 'var(--text-primary)',
                             border: '1px solid var(--border-primary)',
                             borderRadius: '4px',
-                            cursor: 'shadowide'
+                            cursor: 'pointer'
                           }}
                         >
                           Cancel
@@ -2867,7 +2988,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                             color: 'white',
                             border: 'none',
                             borderRadius: '4px',
-                            cursor: 'shadowide'
+                            cursor: 'pointer'
                           }}
                         >
                           Save
@@ -2935,7 +3056,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                             color: 'var(--text-primary)',
                             border: '1px solid var(--border-primary)',
                             borderRadius: '4px',
-                            cursor: 'shadowide'
+                            cursor: 'pointer'
                           }}
                         >
                           Cancel
@@ -2948,7 +3069,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                             color: 'white',
                             border: 'none',
                             borderRadius: '4px',
-                            cursor: 'shadowide'
+                            cursor: 'pointer'
                           }}
                         >
                           Save
@@ -2968,11 +3089,11 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                         <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 600 }}>Theme & Editor</h3>
                         <p style={{ margin: '2px 0 0', fontSize: '12px', color: 'var(--text-secondary)' }}>Colors, animations, fonts and editor behavior</p>
                       </div>
-                      <button onClick={() => setIsThemeLibraryVisible(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: '6px', border: '1px solid var(--accent-color)', background: 'transparent', color: 'var(--accent-color)', fontSize: '12px', fontWeight: 600, cursor: 'shadowide' }}>
+                      <button onClick={() => setIsThemeLibraryVisible(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: '6px', border: '1px solid var(--accent-color)', background: 'transparent', color: 'var(--accent-color)', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="2" width="7" height="7" rx="1"/><rect x="15" y="2" width="7" height="7" rx="1"/><rect x="2" y="15" width="7" height="7" rx="1"/><rect x="15" y="15" width="7" height="7" rx="1"/></svg>
                         Browse Themes
                       </button>
-                      <button onClick={() => setIsThemeEditorVisible(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: '6px', border: '1px solid var(--border-primary)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontSize: '12px', fontWeight: 600, cursor: 'shadowide' }}>
+                      <button onClick={() => setIsThemeEditorVisible(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: '6px', border: '1px solid var(--border-primary)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
                         Edit Theme
                       </button>
@@ -2990,12 +3111,12 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
 
                     {/* Quick preset + export/import */}
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                      <select onChange={(e) => { const t = presetThemes[e.target.value]; if (t) { setThemeSettings(t); setHasUnsavedChanges(true); } }} style={{ flex: 1, padding: '7px 10px', background: 'var(--bg-secondary)', border: '1px solid var(--border-primary)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '13px', cursor: 'shadowide' }}>
+                      <select onChange={(e) => { const t = presetThemes[e.target.value]; if (t) { setThemeSettings(t); setHasUnsavedChanges(true); } }} style={{ flex: 1, padding: '7px 10px', background: 'var(--bg-secondary)', border: '1px solid var(--border-primary)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '13px', cursor: 'pointer' }}>
                         <option value="">Quick-select preset…</option>
                         {Object.keys(presetThemes).map(n => <option key={n} value={n}>{n}</option>)}
                       </select>
-                      <button onClick={() => { const blob = new Blob([JSON.stringify({ theme: themeSettings, editor: editorSettings }, null, 2)], { type: 'application/json' }); const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: 'shadowide-theme.json' }); document.body.appendChild(a); a.click(); document.body.removeChild(a); }} style={{ padding: '7px 12px', borderRadius: '6px', border: '1px solid var(--border-primary)', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', fontSize: '12px', cursor: 'shadowide', whiteSpace: 'nowrap' }}>Export</button>
-                      <label style={{ padding: '7px 12px', borderRadius: '6px', border: '1px solid var(--border-primary)', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', fontSize: '12px', cursor: 'shadowide', whiteSpace: 'nowrap' }}>
+                      <button onClick={() => { const blob = new Blob([JSON.stringify({ theme: themeSettings, editor: editorSettings }, null, 2)], { type: 'application/json' }); const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: 'shadowide-theme.json' }); document.body.appendChild(a); a.click(); document.body.removeChild(a); }} style={{ padding: '7px 12px', borderRadius: '6px', border: '1px solid var(--border-primary)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>Export</button>
+                      <label style={{ padding: '7px 12px', borderRadius: '6px', border: '1px solid var(--border-primary)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontSize: '12px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                         Import
                         <input type="file" accept=".json" style={{ display: 'none' }} onChange={(e) => { const file = e.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = (ev) => { try { const imp = JSON.parse(ev.target?.result as string); if (!imp.theme) throw new Error(); setThemeSettings(imp.theme); if (imp.editor) setEditorSettings((p: any) => ({ ...p, ...imp.editor })); setHasUnsavedChanges(true); } catch { alert('Invalid theme file'); } e.target.value = ''; }; reader.readAsText(file); }} />
                       </label>
@@ -3027,9 +3148,79 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                           {([['explorerFolderFg','Folder','--explorer-folder-fg'],['explorerFolderExpandedFg','Folder (open)','--explorer-folder-expanded-fg'],['explorerFileFg','File','--explorer-file-fg']] as const).map(([k,l,v]) => (
                             <ColorInput key={k} label={l} value={themeSettings.customColors[k] || ''} onChange={val => handleCustomColorChange(k, val)} variable={v} />
                           ))}
-                          <div style={{ marginTop: 10, padding: '8px 10px', borderRadius: 6, border: '1px dashed var(--border-primary)', background: 'var(--bg-secondary)' }}>
-                            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '0 0 6px' }}>Generate palette from accent color</p>
-                            <button onClick={applyAutoPaletteFromAccent} style={{ padding: '4px 10px', borderRadius: 4, border: 'none', background: 'var(--accent-color)', color: '#fff', fontSize: '11px', cursor: 'shadowide' }}>Auto-generate</button>
+                          <div style={{ marginTop: 10, padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border-primary)', background: 'var(--bg-secondary)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            <h6 style={{ margin: 0, fontSize: '11px', fontWeight: 600, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Color to Theme</h6>
+                            
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <input 
+                                type="color" 
+                                value={generatorBaseColor} 
+                                onChange={e => setGeneratorBaseColor(e.target.value)} 
+                                style={{ width: '28px', height: '28px', padding: 0, border: '1px solid var(--border-primary)', borderRadius: '4px', background: 'transparent', cursor: 'pointer' }} 
+                              />
+                              <input 
+                                type="text" 
+                                value={generatorBaseColor} 
+                                onChange={e => {
+                                  if (e.target.value.startsWith('#') && e.target.value.length <= 7) {
+                                    setGeneratorBaseColor(e.target.value);
+                                  }
+                                }} 
+                                style={{ flex: 1, padding: '4px 8px', fontSize: '11px', background: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: '4px', color: 'var(--text-primary)', fontFamily: 'monospace' }} 
+                              />
+                            </div>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', color: 'var(--text-secondary)' }}>
+                                <span>Opacity</span>
+                                <span>{generatorOpacity}%</span>
+                              </div>
+                              <input 
+                                type="range" 
+                                min="10" 
+                                max="100" 
+                                value={generatorOpacity} 
+                                onChange={e => setGeneratorOpacity(Number(e.target.value))} 
+                                style={{ width: '100%', accentColor: 'var(--accent-color)', cursor: 'pointer' }}
+                              />
+                            </div>
+
+                            <button 
+                              onClick={() => applyAutoPaletteFromColor(generatorBaseColor, generatorOpacity)} 
+                              style={{ 
+                                marginTop: '4px',
+                                padding: '6px 12px', 
+                                borderRadius: '4px', 
+                                border: 'none', 
+                                background: 'var(--accent-color)', 
+                                color: '#fff', 
+                                fontSize: '11px', 
+                                fontWeight: 500,
+                                cursor: 'pointer'
+                              }}
+                            >
+                              Generate Theme
+                            </button>
+
+                            <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <input
+                                type="checkbox"
+                                id="toggle-frosted-glass"
+                                checked={themeSettings.customColors.backdropBlur === 'blur(16px)'}
+                                onChange={e => {
+                                  const newBlur = e.target.checked ? 'blur(16px)' : 'none';
+                                  handleThemeSettingChange('customColors', {
+                                    ...themeSettings.customColors,
+                                    backdropBlur: newBlur
+                                  });
+                                  document.documentElement.style.setProperty('--backdrop-blur', newBlur);
+                                }}
+                                style={{ width: '15px', height: '15px', cursor: 'pointer' }}
+                              />
+                              <label htmlFor="toggle-frosted-glass" style={{ fontSize: '11px', color: 'var(--text-primary)', cursor: 'pointer', userSelect: 'none' }}>
+                                Frosted Glass (Backdrop Blur)
+                              </label>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -3042,13 +3233,13 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                         {Object.entries(themeSettings.customColors.customFileExtensions || {}).map(([ext, color], i) => (
                           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--bg-secondary)', padding: '4px 8px', borderRadius: 4 }}>
                             <input type="text" value={ext} onChange={e => { const ne = e.target.value.toLowerCase().trim(); if (!ne || ne === ext) return; const exts = { ...(themeSettings.customColors.customFileExtensions || {}) }; const col = exts[ext]; delete exts[ext]; exts[ne] = col; handleThemeSettingChange('customColors', { ...themeSettings.customColors, customFileExtensions: exts }); }} style={{ width: 60, padding: '2px 6px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: 3, color: 'var(--text-primary)', fontSize: 11 }} />
-                            <input type="color" value={color} onChange={e => { const exts = { ...(themeSettings.customColors.customFileExtensions || {}), [ext]: e.target.value }; handleThemeSettingChange('customColors', { ...themeSettings.customColors, customFileExtensions: exts }); }} style={{ width: 24, height: 24, padding: 0, border: 'none', background: 'transparent', cursor: 'shadowide' }} />
+                            <input type="color" value={color} onChange={e => { const exts = { ...(themeSettings.customColors.customFileExtensions || {}), [ext]: e.target.value }; handleThemeSettingChange('customColors', { ...themeSettings.customColors, customFileExtensions: exts }); }} style={{ width: 24, height: 24, padding: 0, border: 'none', background: 'transparent', cursor: 'pointer' }} />
                             <span style={{ flex: 1, fontSize: 11, color, fontFamily: 'monospace' }}>.{ext}</span>
-                            <button onClick={() => { const exts = { ...(themeSettings.customColors.customFileExtensions || {}) }; delete exts[ext]; handleThemeSettingChange('customColors', { ...themeSettings.customColors, customFileExtensions: exts }); }} style={{ background: 'none', border: 'none', color: 'var(--error-color)', cursor: 'shadowide', fontSize: 14, padding: '0 2px' }}>×</button>
+                            <button onClick={() => { const exts = { ...(themeSettings.customColors.customFileExtensions || {}) }; delete exts[ext]; handleThemeSettingChange('customColors', { ...themeSettings.customColors, customFileExtensions: exts }); }} style={{ background: 'none', border: 'none', color: 'var(--error-color)', cursor: 'pointer', fontSize: 14, padding: '0 2px' }}>×</button>
                           </div>
                         ))}
                       </div>
-                      <button onClick={() => { const exts = { ...(themeSettings.customColors.customFileExtensions || {}), 'ext': '#ffffff' }; handleThemeSettingChange('customColors', { ...themeSettings.customColors, customFileExtensions: exts }); }} style={{ padding: '5px 10px', borderRadius: 4, border: '1px solid var(--border-primary)', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', fontSize: 12, cursor: 'shadowide' }}>+ Add Extension</button>
+                      <button onClick={() => { const exts = { ...(themeSettings.customColors.customFileExtensions || {}), 'ext': '#ffffff' }; handleThemeSettingChange('customColors', { ...themeSettings.customColors, customFileExtensions: exts }); }} style={{ padding: '5px 10px', borderRadius: 4, border: '1px solid var(--border-primary)', background: 'var(--bg-secondary)', color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer' }}>+ Add Extension</button>
                     </CollapsibleSection>
 
                     {/* ── Terminal Colors ── */}
@@ -3486,7 +3677,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                                     padding: '0',
                                     border: '1px solid var(--border-primary)',
                                     borderRadius: '4px',
-                                    cursor: 'shadowide',
+                                    cursor: 'pointer',
                                   }}
                                 />
                                 <input
@@ -3546,7 +3737,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                                   alignItems: 'center',
                                   justifyContent: 'center',
                                   color: 'white',
-                                  cursor: 'shadowide',
+                                  cursor: 'pointer',
                                   fontSize: '14px'
                                 }}
                               >
@@ -3564,7 +3755,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                             border: 'none',
                             borderRadius: '4px',
                             color: 'white',
-                            cursor: 'shadowide',
+                            cursor: 'pointer',
                             fontSize: '13px',
                             width: 'fit-content',
                             marginTop: '8px'
@@ -3585,7 +3776,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                             border: 'none',
                             borderRadius: '4px',
                             color: 'white',
-                            cursor: 'shadowide',
+                            cursor: 'pointer',
                             fontSize: '13px',
                           display: 'flex',
                           alignItems: 'center',
@@ -3705,7 +3896,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                         </div>
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginTop: '12px' }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'shadowide' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
                           <input type="checkbox" checked={advanced.terminalCursorBlink ?? true} onChange={e => handleAdvancedSettingChange('terminalCursorBlink', e.target.checked)} />
                           Cursor Blink
                         </label>
@@ -3751,11 +3942,11 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                         </div>
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '12px' }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'shadowide' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
                           <input type="checkbox" checked={advanced.terminalCopyOnSelect ?? false} onChange={e => handleAdvancedSettingChange('terminalCopyOnSelect', e.target.checked)} />
                           Copy on Select
                         </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'shadowide' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
                           <input type="checkbox" checked={advanced.terminalRightClickPaste ?? true} onChange={e => handleAdvancedSettingChange('terminalRightClickPaste', e.target.checked)} />
                           Right-click to Paste
                         </label>
@@ -3765,7 +3956,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                     {/* Colors */}
                     <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-primary)' }}>
                       <h4 style={{ margin: '0 0 14px 0', fontSize: '14px' }}>Terminal Colors</h4>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                         {[
                           { key: 'terminalBg', label: 'Background', default: '#141414' },
                           { key: 'terminalFg', label: 'Foreground', default: '#cccccc' },
@@ -3777,23 +3968,13 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                           { key: 'terminalMagenta', label: 'Magenta', default: '#bc8cff' },
                           { key: 'terminalCyan', label: 'Cyan', default: '#39c5cf' },
                         ].map(({ key, label, default: def }) => (
-                          <div key={key}>
-                            <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'var(--text-secondary)' }}>{label}</label>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <input
-                                type="color"
-                                value={advanced[key] ?? def}
-                                onChange={e => handleAdvancedSettingChange(key, e.target.value)}
-                                style={{ width: '28px', height: '28px', padding: 0, border: '1px solid var(--border-primary)', borderRadius: '4px', cursor: 'shadowide', background: 'transparent' }}
-                              />
-                              <input
-                                type="text"
-                                value={advanced[key] ?? def}
-                                onChange={e => handleAdvancedSettingChange(key, e.target.value)}
-                                style={{ flex: 1, padding: '5px 8px', background: 'var(--bg-primary)', border: '1px solid var(--border-primary)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '12px', fontFamily: 'monospace' }}
-                              />
-                            </div>
-                          </div>
+                          <ColorInput
+                            key={key}
+                            label={label}
+                            value={advanced[key] ?? def}
+                            onChange={v => handleAdvancedSettingChange(key, v)}
+                            variable=""
+                          />
                         ))}
                       </div>
                       <button
@@ -3801,7 +3982,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                           const defaults: Record<string, string> = { terminalBg: '#141414', terminalFg: '#cccccc', terminalCursor: '#ffffff', terminalRed: '#f85149', terminalGreen: '#3fb950', terminalYellow: '#d29922', terminalBlue: '#58a6ff', terminalMagenta: '#bc8cff', terminalCyan: '#39c5cf' };
                           Object.entries(defaults).forEach(([k, v]) => handleAdvancedSettingChange(k, v));
                         }}
-                        style={{ marginTop: '12px', padding: '6px 12px', background: 'var(--bg-accent)', border: '1px solid var(--border-primary)', borderRadius: '4px', color: 'var(--text-primary)', cursor: 'shadowide', fontSize: '12px' }}
+                        style={{ marginTop: '12px', padding: '6px 12px', background: 'var(--bg-accent)', border: '1px solid var(--border-primary)', borderRadius: '4px', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '12px' }}
                       >
                         Reset to Defaults
                       </button>
@@ -3818,7 +3999,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                     <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-primary)' }}>
                       <h4 style={{ margin: '0 0 14px 0', fontSize: '14px' }}>Background & Resume</h4>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'shadowide' }}>
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'pointer' }}>
                           <input type="checkbox" style={{ marginTop: '2px' }}
                             checked={advanced.aiContinueInBackground ?? true}
                             onChange={e => handleAdvancedSettingChange('aiContinueInBackground', e.target.checked)} />
@@ -3829,7 +4010,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                             </div>
                           </div>
                         </label>
-                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'shadowide' }}>
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'pointer' }}>
                           <input type="checkbox" style={{ marginTop: '2px' }}
                             checked={advanced.aiAutoResume ?? true}
                             onChange={e => handleAdvancedSettingChange('aiAutoResume', e.target.checked)} />
@@ -3840,7 +4021,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                             </div>
                           </div>
                         </label>
-                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'shadowide' }}>
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'pointer' }}>
                           <input type="checkbox" style={{ marginTop: '2px' }}
                             checked={advanced.aiNotifyOnComplete ?? true}
                             onChange={e => handleAdvancedSettingChange('aiNotifyOnComplete', e.target.checked)} />
@@ -3868,7 +4049,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                     <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-primary)' }}>
                       <h4 style={{ margin: '0 0 14px 0', fontSize: '14px' }}>Agent Behavior</h4>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'shadowide' }}>
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'pointer' }}>
                           <input type="checkbox" style={{ marginTop: '2px' }}
                             checked={advanced.aiAutoRunTerminal ?? true}
                             onChange={e => handleAdvancedSettingChange('aiAutoRunTerminal', e.target.checked)} />
@@ -3879,7 +4060,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                             </div>
                           </div>
                         </label>
-                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'shadowide' }}>
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'pointer' }}>
                           <input type="checkbox" style={{ marginTop: '2px' }}
                             checked={advanced.aiAutoAcceptEdits ?? false}
                             onChange={e => handleAdvancedSettingChange('aiAutoAcceptEdits', e.target.checked)} />
@@ -3890,7 +4071,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                             </div>
                           </div>
                         </label>
-                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'shadowide' }}>
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'pointer' }}>
                           <input type="checkbox" style={{ marginTop: '2px' }}
                             checked={advanced.aiExploreBeforeEdit ?? true}
                             onChange={e => handleAdvancedSettingChange('aiExploreBeforeEdit', e.target.checked)} />
@@ -3928,7 +4109,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                     <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-primary)' }}>
                       <h4 style={{ margin: '0 0 14px 0', fontSize: '14px' }}>Chat & Context</h4>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'shadowide' }}>
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'pointer' }}>
                           <input type="checkbox" style={{ marginTop: '2px' }}
                             checked={advanced.aiIncludeOpenFiles ?? true}
                             onChange={e => handleAdvancedSettingChange('aiIncludeOpenFiles', e.target.checked)} />
@@ -3939,7 +4120,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                             </div>
                           </div>
                         </label>
-                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'shadowide' }}>
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'pointer' }}>
                           <input type="checkbox" style={{ marginTop: '2px' }}
                             checked={advanced.aiStreamResponses ?? true}
                             onChange={e => handleAdvancedSettingChange('aiStreamResponses', e.target.checked)} />
@@ -3950,7 +4131,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                             </div>
                           </div>
                         </label>
-                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'shadowide' }}>
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'pointer' }}>
                           <input type="checkbox" style={{ marginTop: '2px' }}
                             checked={advanced.aiSaveHistory ?? true}
                             onChange={e => handleAdvancedSettingChange('aiSaveHistory', e.target.checked)} />
@@ -3978,7 +4159,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                     <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-primary)' }}>
                       <h4 style={{ margin: '0 0 14px 0', fontSize: '14px' }}>Inline AI (Editor)</h4>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'shadowide' }}>
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'pointer' }}>
                           <input type="checkbox" style={{ marginTop: '2px' }}
                             checked={advanced.aiInlineCompletion ?? true}
                             onChange={e => handleAdvancedSettingChange('aiInlineCompletion', e.target.checked)} />
@@ -3989,7 +4170,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                             </div>
                           </div>
                         </label>
-                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'shadowide' }}>
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', fontSize: '13px', cursor: 'pointer' }}>
                           <input type="checkbox" style={{ marginTop: '2px' }}
                             checked={advanced.aiBlameOnOpen ?? false}
                             onChange={e => handleAdvancedSettingChange('aiBlameOnOpen', e.target.checked)} />
@@ -4088,27 +4269,31 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                           </p>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'shadowide' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
                             <input type="checkbox" checked={advanced.smoothScrolling ?? true} onChange={e => handleAdvancedSettingChange('smoothScrolling', e.target.checked)} />
                             Smooth Scrolling
                           </label>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'shadowide' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
                             <input type="checkbox" checked={advanced.showStatusBar ?? true} onChange={e => handleAdvancedSettingChange('showStatusBar', e.target.checked)} />
                             Show Status Bar
                           </label>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'shadowide' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
+                            <input type="checkbox" checked={advanced.showSystemUsage ?? true} onChange={e => handleAdvancedSettingChange('showSystemUsage', e.target.checked)} />
+                            Show System Resource Usage (CPU/RAM)
+                          </label>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
                             <input type="checkbox" checked={advanced.showBreadcrumbs ?? true} onChange={e => handleAdvancedSettingChange('showBreadcrumbs', e.target.checked)} />
                             Show Breadcrumbs
                           </label>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'shadowide' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
                             <input type="checkbox" checked={advanced.showMinimap ?? false} onChange={e => handleAdvancedSettingChange('showMinimap', e.target.checked)} />
                             Show Minimap
                           </label>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'shadowide' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
                             <input type="checkbox" checked={advanced.confirmOnClose ?? false} onChange={e => handleAdvancedSettingChange('confirmOnClose', e.target.checked)} />
                             Confirm on Close
                           </label>
-                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'shadowide' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
                             <input type="checkbox" checked={advanced.restoreLastSession ?? true} onChange={e => handleAdvancedSettingChange('restoreLastSession', e.target.checked)} />
                             Restore Last Session
                           </label>
@@ -4120,19 +4305,19 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                     <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-primary)' }}>
                       <h4 style={{ margin: '0 0 14px 0', fontSize: '14px' }}>File Handling</h4>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'shadowide' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
                           <input type="checkbox" checked={advanced.trimTrailingWhitespace ?? false} onChange={e => handleAdvancedSettingChange('trimTrailingWhitespace', e.target.checked)} />
                           Trim Trailing Whitespace on Save
                         </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'shadowide' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
                           <input type="checkbox" checked={advanced.insertFinalNewline ?? true} onChange={e => handleAdvancedSettingChange('insertFinalNewline', e.target.checked)} />
                           Insert Final Newline
                         </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'shadowide' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
                           <input type="checkbox" checked={advanced.detectIndentation ?? true} onChange={e => handleAdvancedSettingChange('detectIndentation', e.target.checked)} />
                           Auto-detect Indentation
                         </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'shadowide' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
                           <input type="checkbox" checked={advanced.showHiddenFiles ?? false} onChange={e => handleAdvancedSettingChange('showHiddenFiles', e.target.checked)} />
                           Show Hidden Files
                         </label>
@@ -4154,11 +4339,11 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                     <div style={{ padding: '16px', background: 'var(--bg-secondary)', borderRadius: '8px', border: '1px solid var(--border-primary)' }}>
                       <h4 style={{ margin: '0 0 14px 0', fontSize: '14px' }}>Performance</h4>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'shadowide' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
                           <input type="checkbox" checked={advanced.hardwareAcceleration ?? true} onChange={e => handleAdvancedSettingChange('hardwareAcceleration', e.target.checked)} />
                           Hardware Acceleration
                         </label>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'shadowide' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', cursor: 'pointer' }}>
                           <input type="checkbox" checked={advanced.backgroundThrottling ?? false} onChange={e => handleAdvancedSettingChange('backgroundThrottling', e.target.checked)} />
                           Background Throttling
                         </label>
@@ -4180,7 +4365,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                       <h4 style={{ margin: '0 0 12px 0', fontSize: '14px', color: '#f85149' }}>Danger Zone</h4>
                       <button
                         onClick={() => setConfirmResetType('all')}
-                        style={{ padding: '8px 16px', background: '#f85149', border: 'none', borderRadius: '4px', color: 'white', cursor: 'shadowide', fontSize: '13px' }}
+                        style={{ padding: '8px 16px', background: '#f85149', border: 'none', borderRadius: '4px', color: 'white', cursor: 'pointer', fontSize: '13px' }}
                       >
                         Reset All Settings to Defaults
                       </button>
@@ -4534,22 +4719,48 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                       Connect your GitHub account to enable repository cloning and other GitHub features.
                     </p>
                     
-                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '16px' }}>
-                      <label style={{ display: 'flex', alignItems: 'center', fontSize: '14px', fontWeight: 'bold' }}>
-                        <input
-                          type="checkbox"
-                          checked={isAuthenticated}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              handleLogin();
-                            } else {
-                              handleLogout();
-                            }
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                      {isAuthenticated ? (
+                        <button
+                          onClick={handleLogout}
+                          style={{
+                            padding: '8px 16px',
+                            background: 'var(--bg-hover)',
+                            border: '1px solid var(--error-color)',
+                            borderRadius: '6px',
+                            color: 'var(--error-color)',
+                            fontSize: '13px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            transition: 'all 0.2s'
                           }}
-                          style={{ marginRight: '8px' }}
-                        />
-                        Connect GitHub Account
-                      </label>
+                        >
+                          Disconnect GitHub Account
+                        </button>
+                      ) : (
+                        <button
+                          onClick={handleLogin}
+                          style={{
+                            padding: '8px 16px',
+                            background: 'var(--accent-color)',
+                            border: 'none',
+                            borderRadius: '6px',
+                            color: '#fff',
+                            fontSize: '13px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            transition: 'opacity 0.2s'
+                          }}
+                        >
+                          Connect GitHub Account
+                        </button>
+                      )}
                     </div>
                     
                     <div style={{ padding: '16px', background: 'var(--bg-primary)', borderRadius: '8px', border: '1px solid var(--border-primary)' }}>
@@ -4627,7 +4838,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
               background: 'var(--bg-secondary)',
               color: 'var(--text-secondary)',
               fontSize: '13px',
-              cursor: 'shadowide',
+              cursor: 'pointer',
             }}
           >
             Cancel
@@ -4642,7 +4853,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
               background: isLoading ? 'var(--bg-secondary)' : 
                         hasUnsavedChanges ? 'var(--accent-color)' : 'var(--bg-hover)',
               color: isLoading ? 'var(--text-secondary)' : 'white',
-              cursor: isLoading ? 'not-allowed' : 'shadowide',
+              cursor: isLoading ? 'not-allowed' : 'pointer',
               fontSize: '13px',
             }}
           >
@@ -4696,7 +4907,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                   color: 'white',
                   fontWeight: 600,
                   fontSize: '13px',
-                  cursor: 'shadowide',
+                  cursor: 'pointer',
                 }}
               >
                 Save & Close
@@ -4715,7 +4926,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                   color: '#f85149',
                   fontWeight: 600,
                   fontSize: '13px',
-                  cursor: 'shadowide',
+                  cursor: 'pointer',
                 }}
               >
                 Discard Changes
@@ -4729,7 +4940,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                   background: 'var(--bg-secondary)',
                   color: 'var(--text-secondary)',
                   fontSize: '13px',
-                  cursor: 'shadowide',
+                  cursor: 'pointer',
                 }}
               >
                 Keep Editing
@@ -4782,7 +4993,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                   background: 'var(--bg-secondary)',
                   color: 'var(--text-secondary)',
                   fontSize: '13px',
-                  cursor: 'shadowide',
+                  cursor: 'pointer',
                 }}
               >
                 Cancel
@@ -4866,7 +5077,7 @@ export function Settings({ isVisible, onClose, initialSettings, initialCategory,
                   color: 'white',
                   fontWeight: 600,
                   fontSize: '13px',
-                  cursor: 'shadowide',
+                  cursor: 'pointer',
                 }}
               >
                 Reset

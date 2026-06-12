@@ -74,7 +74,7 @@ const MobileModelSetup: React.FC<Props> = ({ onModelReady }) => {
             key={m.id}
             onClick={() => !loading && setSelected(m.id)}
             style={{
-              padding: '10px 12px', borderRadius: 6, cursor: 'shadowide',
+              padding: '10px 12px', borderRadius: 6, cursor: 'pointer',
               border: `1px solid ${selected === m.id ? 'var(--accent-color)' : 'var(--border-color)'}`,
               background: selected === m.id ? 'rgba(14,99,156,0.08)' : 'var(--bg-secondary)',
               transition: 'all 0.12s',
@@ -124,7 +124,7 @@ const MobileModelSetup: React.FC<Props> = ({ onModelReady }) => {
           disabled={loading}
           style={{
             padding: '7px 14px', background: 'var(--accent-color)', color: '#fff',
-            border: 'none', borderRadius: 4, cursor: loading ? 'not-allowed' : 'shadowide',
+            border: 'none', borderRadius: 4, cursor: loading ? 'not-allowed' : 'pointer',
             opacity: loading ? 0.7 : 1, fontSize: 12, fontWeight: 500,
           }}
         >

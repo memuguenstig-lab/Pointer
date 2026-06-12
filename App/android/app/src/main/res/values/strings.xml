@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">ShadowIDE</string>
+    <string name="title_activity_main">ShadowIDE</string>
+    <string name="package_name">com.shadowide.mobile</string>
+    <string name="custom_url_scheme">com.shadowide.mobile</string>
+</resources>

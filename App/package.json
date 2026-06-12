@@ -5,26 +5,27 @@
   "main": "electron/main.js",
   "scripts": {
     "env": "npx dotenv-wizard",
-    "start": "vite --config ./vite.config.ts",
+    "start": "vite --config ./vite.config.mts",
     "build": "tsc && vite build",
     "serve": "vite preview",
-    "dev:server": "vite --config ./vite.config.ts",
+    "dev:server": "vite --config ./vite.config.mts",
     "dev:electron": "electron .",
     "dev": "node start-shadowide.js",
     "electron:dev": "concurrently \"yarn start\" \"wait-on http://localhost:3000 && electron .\"",
     "electron:start": "electron .",
     "postinstall": "electron-builder install-app-deps",
-
     "build:desktop": "tsc && vite build --mode desktop",
     "build:mobile": "tsc && vite build --mode mobile",
     "build:web": "tsc && vite build --mode web",
-
     "mobile:sync": "npm run build:mobile && npx cap sync",
     "mobile:ios": "npm run build:mobile && npx cap sync ios && npx cap open ios",
     "mobile:android": "npm run build:mobile && npx cap sync android && npx cap open android",
-    "mobile:dev": "CAPACITOR_DEV=true npx cap run android --livereload --external"
+    "mobile:dev": "CAPACITOR_DEV=true npx cap run android --livereload --external",
+    "build:win-installer": "npm run build:desktop && electron-builder --win --x64",
+    "build:android": "npm run build:mobile && npx cap sync android && npx cap build android"
   },
   "dependencies": {
+    "@capacitor/android": "^8.4.0",
     "@emotion/react": "^11.14.0",
     "@types/diff": "^7.0.1",
     "@types/react-syntax-highlighter": "^15.5.13",
@@ -57,11 +58,11 @@
     "zustand": "^5.0.3"
   },
   "optionalDependencies": {
-    "@capacitor/core": "^6.0.0",
-    "@capacitor/cli": "^6.0.0",
+    "@capacitor/browser": "^6.0.0",
+    "@capacitor/cli": "^8.4.0",
+    "@capacitor/core": "^8.4.0",
     "@capacitor/filesystem": "^6.0.0",
     "@capacitor/preferences": "^6.0.0",
-    "@capacitor/browser": "^6.0.0",
     "@capacitor/splash-screen": "^6.0.0",
     "@capacitor/status-bar": "^6.0.0",
     "@mlc-ai/web-llm": "^0.2.73"

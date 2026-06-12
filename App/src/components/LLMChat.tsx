@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
+import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import lmStudio from '../services/LMStudioService';
@@ -682,7 +682,7 @@ const CollapsibleCodeBlock: React.FC<{
             right: 0,
             height: '40px',
             background: 'linear-gradient(transparent, var(--bg-code))',
-            shadowideEvents: 'none'
+            pointerEvents: 'none'
           }}
         />
       )}
@@ -797,7 +797,7 @@ const LongMessageWrapper: React.FC<{
               right: 0,
               height: '40px',
               background: 'linear-gradient(transparent, var(--bg-primary))',
-              shadowideEvents: 'none',
+              pointerEvents: 'none',
             }}
           />
         </div>
@@ -2978,9 +2978,13 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
     return String(next);
   };
   const [input, setInput] = useState('');
+  const [useLocalRAG, setUseLocalRAG] = useState(() => localStorage.getItem('useLocalRAG') === 'true');
+  useEffect(() => {
+    localStorage.setItem('useLocalRAG', String(useLocalRAG));
+  }, [useLocalRAG]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [workingSteps, setWorkingSteps] = useState<string[]>([]);
-  const [width, setWidth] = useState(700);
+  const [width, setWidth] = useState(380);
   const [isResizing, setIsResizing] = useState(false);
   const [chats, setChats] = useState<ChatSession[]>([]);
   const [isChatListVisible, setIsChatListVisible] = useState(false);
@@ -4058,7 +4062,42 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
       await autoAcceptChanges();
       pushWorkingStep('Checking pending changes');
 
-      const resolvedAttachments = await resolveAutoAttachedFiles(content, attachments);
+      let resolvedAttachments = await resolveAutoAttachedFiles(content, attachments);
+      if (useLocalRAG && content.trim()) {
+        pushWorkingStep('Querying codebase (Local RAG)');
+        try {
+          const ragRes = await fetch('http://localhost:23816/api/codebase/context', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: content, max_files: 5 })
+          });
+          if (ragRes.ok) {
+            const ragData = await ragRes.json();
+            const ragFiles = ragData.relevant_files || [];
+            const seenPaths = new Set(resolvedAttachments.map(f => f.path));
+            for (const filePath of ragFiles) {
+              if (seenPaths.has(filePath)) continue;
+              try {
+                const fileRes = await fetch(`http://localhost:23816/read-file?path=${encodeURIComponent(filePath)}`);
+                if (fileRes.ok) {
+                  const fileData = await fileRes.json();
+                  resolvedAttachments.push({
+                    name: filePath.split(/[/\\]/).pop() || filePath,
+                    path: filePath,
+                    content: fileData.content || '',
+                    isAutoContext: true
+                  });
+                  seenPaths.add(filePath);
+                }
+              } catch (e) {
+                console.warn('RAG: Failed to read file content for', filePath, e);
+              }
+            }
+          }
+        } catch (e) {
+          console.error('Local RAG query failed:', e);
+        }
+      }
       if (resolvedAttachments.length > attachments.length) {
         pushWorkingStep('Gathering relevant files');
       }
@@ -4336,6 +4375,31 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
                     }
                   },
                   required: ["file_path"]
+                }
+              }
+            },
+            {
+              type: "function",
+              function: {
+                name: "set_theme",
+                description: "Set the editor and UI color theme dynamically. Use this when the user asks you to create, generate, modify, or apply a theme (e.g. 'make a dark cyber theme', 'change the theme to match Portal', 'make the theme fit my project'). Provide custom colors and/or editor colors.",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    theme_name: {
+                      type: "string",
+                      description: "A descriptive name for the theme (e.g., 'Cyberpunk Neon', 'Portal Aperture', 'Ocean Breeze')"
+                    },
+                    custom_colors: {
+                      type: "object",
+                      description: "Custom UI colors to apply. Supported keys: bgPrimary, bgSecondary, bgTertiary, bgSelected, bgHover, textPrimary, textSecondary, borderColor, borderPrimary, accentColor, accentHover, errorColor, titlebarBg, statusbarBg, statusbarFg, activityBarBg, activityBarFg, inlineCodeColor, backdropBlur (either 'blur(16px)' or 'none')"
+                    },
+                    editor_colors: {
+                      type: "object",
+                      description: "Monaco editor color overrides (e.g. {'editor.background': '#1e1e1e', 'editor.foreground': '#d4d4d4', 'editorCursor.foreground': '#ffffff'})"
+                    }
+                  },
+                  required: ["custom_colors"]
                 }
               }
             }
@@ -5005,6 +5069,58 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
       // Backend now handles relative path resolution automatically
       // No need for frontend path manipulation
       
+      if (name === 'set_theme') {
+        const { theme_name, custom_colors, editor_colors } = parsedArgs;
+        const settingsPath = 'settings';
+        
+        const readRes = await FileSystemService.readSettingsFiles(settingsPath);
+        const currentSettings = readRes?.settings || {};
+        
+        const updatedTheme = {
+          name: theme_name || 'AI Generated Theme',
+          customColors: {
+            ...(currentSettings.theme?.customColors || {}),
+            ...(custom_colors || {})
+          },
+          editorColors: {
+            ...(currentSettings.theme?.editorColors || {}),
+            ...(editor_colors || {})
+          },
+          tokenColors: currentSettings.theme?.tokenColors || [
+            { token: 'keyword', foreground: '#569CD6', fontStyle: 'bold' },
+            { token: 'comment', foreground: '#6A9955', fontStyle: 'italic' },
+            { token: 'string', foreground: '#CE9178' },
+            { token: 'number', foreground: '#B5CEA8' },
+            { token: 'operator', foreground: '#D4D4D4' },
+            { token: 'type', foreground: '#4EC9B0' },
+            { token: 'function', foreground: '#DCDCAA' },
+            { token: 'variable', foreground: '#9CDCFE' }
+          ]
+        };
+
+        const newSettings = {
+          ...currentSettings,
+          theme: updatedTheme
+        };
+
+        const saveRes = await FileSystemService.saveSettingsFiles(settingsPath, newSettings);
+        
+        if (saveRes?.success) {
+          if (typeof window.loadSettings === 'function') {
+            await window.loadSettings();
+          }
+          
+          return {
+            role: 'tool' as 'tool',
+            content: `Theme successfully updated to "${updatedTheme.name}". The theme has been loaded into the workspace.`,
+            tool_call_id: toolCallId,
+            messageId: getNextMessageId()
+          };
+        } else {
+          throw new Error('Failed to save settings file containing the new theme');
+        }
+      }
+
       // Call the ToolService to get real results
       const result = await ToolService.callTool(name, parsedArgs);
       
@@ -5233,13 +5349,13 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
             }
             
             // Validate tool name (prevent phantom tools)
-            const validToolNames = ['list_directory', 'list_dir', 'read_file', 'write_file', 'delete_file', 'move_file', 'copy_file', 'get_file_overview', 'get_codebase_overview', 'grep_search', 'web_search', 'fetch_webpage', 'run_terminal_cmd', 'search_codebase', 'query_codebase_natural_language', 'get_relevant_codebase_context', 'get_ai_codebase_context'];
+            const validToolNames = ['list_directory', 'list_dir', 'read_file', 'write_file', 'delete_file', 'move_file', 'copy_file', 'get_file_overview', 'get_codebase_overview', 'grep_search', 'web_search', 'fetch_webpage', 'run_terminal_cmd', 'search_codebase', 'query_codebase_natural_language', 'get_relevant_codebase_context', 'get_ai_codebase_context', 'set_theme'];
             
             if (!validToolNames.includes(functionCall.name)) {
               console.warn(`Invalid tool name: ${functionCall.name}. This might be due to multiple tool calls being concatenated.`);
               
               // Check if this looks like concatenated tool names (more comprehensive detection)
-              const allValidToolNames = ['list_directory', 'list_dir', 'read_file', 'write_file', 'delete_file', 'move_file', 'copy_file', 'get_file_overview', 'get_codebase_overview', 'grep_search', 'web_search', 'fetch_webpage', 'run_terminal_cmd', 'search_codebase', 'query_codebase_natural_language', 'get_relevant_codebase_context', 'get_ai_codebase_context'];
+              const allValidToolNames = ['list_directory', 'list_dir', 'read_file', 'write_file', 'delete_file', 'move_file', 'copy_file', 'get_file_overview', 'get_codebase_overview', 'grep_search', 'web_search', 'fetch_webpage', 'run_terminal_cmd', 'search_codebase', 'query_codebase_natural_language', 'get_relevant_codebase_context', 'get_ai_codebase_context', 'set_theme'];
               
               // Check if the name contains multiple valid tool names (indicating concatenation)
               const detectedTools = allValidToolNames.filter(toolName => 
@@ -5984,6 +6100,31 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
                   }
                 },
                 required: ["file_path"]
+              }
+            }
+          },
+          {
+            type: "function",
+            function: {
+              name: "set_theme",
+              description: "Set the editor and UI color theme dynamically. Use this when the user asks you to create, generate, modify, or apply a theme (e.g. 'make a dark cyber theme', 'change the theme to match Portal', 'make the theme fit my project'). Provide custom colors and/or editor colors.",
+              parameters: {
+                type: "object",
+                properties: {
+                  theme_name: {
+                    type: "string",
+                    description: "A descriptive name for the theme (e.g., 'Cyberpunk Neon', 'Portal Aperture', 'Ocean Breeze')"
+                  },
+                  custom_colors: {
+                    type: "object",
+                    description: "Custom UI colors to apply. Supported keys: bgPrimary, bgSecondary, bgTertiary, bgSelected, bgHover, textPrimary, textSecondary, borderColor, borderPrimary, accentColor, accentHover, errorColor, titlebarBg, statusbarBg, statusbarFg, activityBarBg, activityBarFg, inlineCodeColor, backdropBlur (either 'blur(16px)' or 'none')"
+                  },
+                  editor_colors: {
+                    type: "object",
+                    description: "Monaco editor color overrides (e.g. {'editor.background': '#1e1e1e', 'editor.foreground': '#d4d4d4', 'editorCursor.foreground': '#ffffff'})"
+                  }
+                },
+                required: ["custom_colors"]
               }
             }
           }
@@ -7012,7 +7153,7 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
                 fontSize: '11px',
                 transition: 'all 0.2s ease',
                 opacity: shouldBeFaded ? 0.3 : 0.7,
-                shadowideEvents: shouldBeFaded ? 'none' : 'auto',
+                pointerEvents: shouldBeFaded ? 'none' : 'auto',
               }}
               onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
                 if (!shouldBeFaded) {
@@ -7892,6 +8033,17 @@ export function LLMChat({ isVisible, onClose, onResize, currentChatId, onSelectC
                     <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
                   </svg>
                 </button>
+              )}
+              {!editingMessageIndex && !isAnyProcessing && (
+                <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'var(--text-secondary)', cursor: 'pointer', userSelect: 'none', marginLeft: '6px' }}>
+                  <input
+                    type="checkbox"
+                    checked={useLocalRAG}
+                    onChange={e => setUseLocalRAG(e.target.checked)}
+                    style={{ cursor: 'pointer', margin: 0 }}
+                  />
+                  <span>Local RAG</span>
+                </label>
               )}
               {editingMessageIndex !== null && (
                 <button

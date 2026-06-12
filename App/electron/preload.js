@@ -12,6 +12,10 @@ contextBridge.exposeInMainWorld(
       forceClose: () => ipcRenderer.send('window-force-close'),
       newWindow: () => ipcRenderer.send('window-new'),
       isMaximized: () => ipcRenderer.invoke('window-is-maximized'),
+      zenMode: {
+        enter: () => ipcRenderer.send('window-zen-enter'),
+        exit: () => ipcRenderer.send('window-zen-exit')
+      }
     },
     send: (channel, data) => {
       // whitelist channels

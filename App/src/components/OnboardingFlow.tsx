@@ -207,7 +207,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onDone }) => {
       display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
       <div style={{
-        width: 560, maxWidth: '92vw',
+        width: 720, maxWidth: '92vw',
         background: 'var(--bg-primary)',
         borderRadius: 12,
         border: `1px solid ${current.accent}44`,
@@ -256,7 +256,8 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onDone }) => {
           opacity: animating ? 0 : 1,
           transform: animating ? 'translateY(6px)' : 'translateY(0)',
           transition: 'opacity 0.18s, transform 0.18s',
-          minHeight: 220,
+          height: 380,
+          overflowY: 'auto',
         }}>
           {current.content}
         </div>

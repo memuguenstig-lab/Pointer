@@ -1,4 +1,4 @@
-﻿import { cleanAIResponse } from '../utils/textUtils';
+import { cleanAIResponse } from '../utils/textUtils';
 import { Message } from '../types';
 import { AIFileService } from './AIFileService';
 import { ToolService } from './ToolService';
@@ -108,14 +108,14 @@ class LMStudioService {
       // Get full model configuration including fallbacks
       const modelConfig = await AIFileService.getModelConfigForPurpose(purpose);
 
-      // â”€â”€ Embedded LLM â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      // ── Embedded LLM ───────────────────────────────────────────────────
       if (modelConfig.modelProvider === 'ollama-embedded') {
         // On mobile: use WebLLM (runs in-browser via WebGPU/WASM)
         // On desktop: use node-llama-cpp via backend
         const { IS_MOBILE } = await import('../platform/usePlatform');
         if (IS_MOBILE) {
           const { mobileLLM } = await import('../platform/mobileLLM');
-          if (!mobileLLM.isLoaded()) throw new Error('No local model loaded. Go to Settings â†’ Models to load one.');
+          if (!mobileLLM.isLoaded()) throw new Error('No local model loaded. Go to Settings → Models to load one.');
           let full = '';
           await mobileLLM.chat(options.messages as any, {
             temperature: options.temperature ?? 0.7,
@@ -133,7 +133,7 @@ class LMStudioService {
         });
         return { choices: [{ message: { content: cleanAIResponse(full) } }] };
       }
-      // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      // ───────────────────────────────────────────────────────────────────
       console.log(`Attempting to connect to API at: ${modelConfig.apiEndpoint}`);
 
       // Use fallback endpoints if available
@@ -316,7 +316,7 @@ class LMStudioService {
         throw new Error('Messages array is required and cannot be empty');
       }
 
-      // ── Embedded LLM ───────────────────────────────────────────────────
+      // -- Embedded LLM ---------------------------------------------------
       if (modelConfig.modelProvider === 'ollama-embedded') {
         const { IS_MOBILE } = await import('../platform/usePlatform');
         if (IS_MOBILE) {
@@ -345,9 +345,9 @@ class LMStudioService {
         });
         return;
       }
-      // ───────────────────────────────────────────────────────────────────
+      // -------------------------------------------------------------------
       
-      // ── External API (LM Studio, OpenAI-compatible) ──────────────────────
+      // -- External API (LM Studio, OpenAI-compatible) ----------------------
       console.log(`Attempting to connect to API at: ${modelConfig.apiEndpoint}`);
 
       // Use fallback endpoints if available
@@ -450,6 +450,71 @@ class LMStudioService {
       }
     } catch (error) {
       console.error('Error in createStreamingChatCompletion:', error);
+      throw error;
+    }
+  }
+
+  async createCompletion(options: CompletionOptions): Promise<CompletionResponse> {
+    try {
+      const modelConfig = await AIFileService.getModelConfigForPurpose(options.purpose || 'chat');
+      
+      if (modelConfig.modelProvider === 'ollama-embedded') {
+        const { IS_MOBILE } = await import('../platform/usePlatform');
+        if (IS_MOBILE) {
+          const { mobileLLM } = await import('../platform/mobileLLM');
+          if (!mobileLLM.isLoaded()) throw new Error('No local model loaded.');
+          let full = '';
+          await mobileLLM.chat([{ role: 'user', content: options.prompt }], {
+            temperature: options.temperature ?? 0.7,
+            maxTokens: options.max_tokens ?? undefined,
+            onChunk: (token) => { full += token; },
+          });
+          return { choices: [{ text: cleanAIResponse(full), index: 0, finish_reason: 'stop' }] };
+        }
+        let full = '';
+        await llamaService.chat([{ role: 'user', content: options.prompt }], {
+          temperature: options.temperature ?? 0.7,
+          max_tokens: options.max_tokens ?? undefined,
+          onChunk: (token) => { full += token; },
+        });
+        return { choices: [{ text: cleanAIResponse(full), index: 0, finish_reason: 'stop' }] };
+      }
+
+      let baseUrl = modelConfig.apiEndpoint;
+      if (!baseUrl.endsWith('/v1')) {
+        baseUrl = baseUrl.endsWith('/') ? `${baseUrl}v1` : `${baseUrl}/v1`;
+      }
+      
+      const response = await fetch(`${baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(modelConfig.apiKey && { 'Authorization': `Bearer ${modelConfig.apiKey}` })
+        },
+        body: JSON.stringify({
+          model: options.model,
+          messages: [{ role: 'user', content: options.prompt }],
+          temperature: options.temperature ?? 0.7,
+          ...(options.max_tokens !== null && options.max_tokens !== undefined && options.max_tokens > 0 ? { max_tokens: options.max_tokens } : {}),
+        })
+      });
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(`API error (${response.status}): ${text}`);
+      }
+
+      const data = await response.json();
+      const text = data.choices[0]?.message?.content || '';
+      return {
+        choices: [{
+          text: cleanAIResponse(text),
+          index: 0,
+          finish_reason: 'stop'
+        }]
+      };
+    } catch (error) {
+      console.error('Error in createCompletion:', error);
       throw error;
     }
   }

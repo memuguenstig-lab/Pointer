@@ -121,6 +121,50 @@ app.get('/health', (req, res) => res.json({
   base_directory: baseDirectory
 }));
 
+app.post('/api/shutdown', async (req, res) => {
+  res.json({ success: true, message: 'Shutting down backend and dev server...' });
+  console.log('Shutdown request received. Stopping server...');
+  
+  try {
+    const isWin = process.platform === 'win32';
+    const cmd = isWin
+      ? 'netstat -ano -p TCP'
+      : 'ss -tlnp 2>/dev/null || netstat -tlnp 2>/dev/null';
+    
+    const { stdout } = await execAsync(cmd, { timeout: 3000 }).catch(() => ({ stdout: '' }));
+    
+    let serverPid = null;
+    if (isWin) {
+      for (const line of stdout.split('\n')) {
+        const m = line.match(/TCP\s+[\d.:]+:300[0-9]\s+[\d.:]+\s+LISTENING\s+(\d+)/i);
+        if (m) {
+          serverPid = m[1];
+          break;
+        }
+      }
+    } else {
+      for (const line of stdout.split('\n')) {
+        const m = line.match(/:300[0-9]\s+.*LISTEN.*pid=(\d+)/);
+        if (m) {
+          serverPid = m[1];
+          break;
+        }
+      }
+    }
+    
+    if (serverPid) {
+      console.log(`Killing dev server process on PID ${serverPid}...`);
+      process.kill(serverPid, 'SIGTERM');
+    }
+  } catch (e) {
+    console.error('Failed to kill dev server process:', e.message);
+  }
+  
+  setTimeout(() => {
+    process.exit(0);
+  }, 1000);
+});
+
 // ── Directory / File ops ───────────────────────────────────────────────────
 app.post('/open-specific-directory', (req, res) => {
   const { path: p } = req.body;
@@ -650,6 +694,52 @@ app.use('/git', gitRoutes);
 const githubRoutes = require('./github-routes');
 app.use('/', githubRoutes);
 
+// ── Extensions ──────────────────────────────────────────────────────────────
+const extensionsRoutes = require('./extensions-routes');
+app.use('/api', extensionsRoutes);
+
+// ── System Metrics ──────────────────────────────────────────────────────────
+let lastCpuInfo = getCpuUsage();
+
+function getCpuUsage() {
+  const cpus = os.cpus();
+  let user = 0, nice = 0, sys = 0, idle = 0, irq = 0;
+  for (const cpu of cpus) {
+    user += cpu.times.user;
+    nice += cpu.times.nice;
+    sys += cpu.times.sys;
+    idle += cpu.times.idle;
+    irq += cpu.times.irq;
+  }
+  const total = user + nice + sys + idle + irq;
+  return { idle, total };
+}
+
+function calculateCpuLoad() {
+  const current = getCpuUsage();
+  const idleDiff = current.idle - lastCpuInfo.idle;
+  const totalDiff = current.total - lastCpuInfo.total;
+  lastCpuInfo = current;
+  if (totalDiff === 0) return 0;
+  return Math.min(100, Math.max(0, Math.round((1 - (idleDiff / totalDiff)) * 100)));
+}
+
+app.get('/api/system/metrics', (req, res) => {
+  try {
+    const freeMem = os.freemem();
+    const totalMem = os.totalmem();
+    const ramUsage = ((totalMem - freeMem) / totalMem) * 100;
+    res.json({
+      cpu: calculateCpuLoad(),
+      ram: Math.round(ramUsage),
+      freeMem: Math.round(freeMem / (1024 * 1024 * 1024) * 10) / 10,
+      totalMem: Math.round(totalMem / (1024 * 1024 * 1024) * 10) / 10
+    });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ── Embedded LLM (node-llama-cpp) ──────────────────────────────────────────
 const llamaRoutes = require('./llama-routes');
 app.use('/api/llama', llamaRoutes);
@@ -784,6 +874,7 @@ wss.on('connection', (ws) => {
     proc.stderr.on('data', d => { if (ws.readyState === WebSocket.OPEN) ws.send(enc.write(d)); });
     proc.on('close', () => { if (ws.readyState === WebSocket.OPEN) ws.close(); });
 
+    let lineBuffer = '';
     ws.on('message', data => {
       try {
         const str = data.toString();
@@ -794,7 +885,26 @@ wss.on('connection', (ws) => {
             return;
           } catch {}
         }
-        proc.stdin.write(str);
+        
+        if (ws.readyState === WebSocket.OPEN) {
+          if (str === '\r' || str === '\n') {
+            ws.send('\r\n');
+            proc.stdin.write(lineBuffer + '\r\n');
+            lineBuffer = '';
+          } else if (str === '\x7f' || str === '\x08') { // Backspace
+            if (lineBuffer.length > 0) {
+              lineBuffer = lineBuffer.slice(0, -1);
+              ws.send('\b \b');
+            }
+          } else if (str === '\x03') { // Ctrl+C
+            ws.send('^C\r\n');
+            proc.kill('SIGINT');
+            lineBuffer = '';
+          } else {
+            ws.send(str);
+            lineBuffer += str;
+          }
+        }
       } catch (_) {}
     });
     ws.on('close', () => { try { proc.kill('SIGTERM'); } catch (_) {} });

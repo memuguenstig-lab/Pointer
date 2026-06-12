@@ -207,9 +207,9 @@ const GitGraphView: React.FC = () => {
                   }}
                   onMouseLeave={() => setTooltip(null)}
                 />
-                <circle cx={cx} cy={cy} r={DOT_R} fill={color} stroke="var(--bg-primary)" strokeWidth={1.5} style={{ shadowideEvents: 'none' }} />
+                <circle cx={cx} cy={cy} r={DOT_R} fill={color} stroke="var(--bg-primary)" strokeWidth={1.5} style={{ pointerEvents: 'none' }} />
                 {c.isCurrent && (
-                  <circle cx={cx} cy={cy} r={DOT_R + 3} fill="none" stroke={color} strokeWidth={1} opacity={0.5} style={{ shadowideEvents: 'none' }} />
+                  <circle cx={cx} cy={cy} r={DOT_R + 3} fill="none" stroke={color} strokeWidth={1} opacity={0.5} style={{ pointerEvents: 'none' }} />
                 )}
               </g>
             );
@@ -290,7 +290,7 @@ const GitGraphView: React.FC = () => {
           zIndex: 100,
           boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
           maxWidth: 320,
-          shadowideEvents: 'none',
+          pointerEvents: 'none',
         }}>
           <div style={{ fontFamily: 'monospace', color: '#58a6ff', marginBottom: 4 }}>{tooltip.commit.hash}</div>
           <div style={{ fontWeight: 600, marginBottom: 4, color: 'var(--text-primary)' }}>{tooltip.commit.message}</div>

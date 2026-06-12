@@ -155,7 +155,7 @@ const LinksView: React.FC = () => {
               top: '50%',
               transform: 'translateY(-50%)',
               color: 'var(--text-secondary)',
-              shadowideEvents: 'none',
+              pointerEvents: 'none',
             }}
           >
             <SearchIcon />
@@ -290,7 +290,7 @@ const LinksView: React.FC = () => {
                   top: '50%',
                   transform: 'translateY(-50%)',
                   color: 'var(--text-secondary)',
-                  shadowideEvents: 'none',
+                  pointerEvents: 'none',
                 }}
               >
                 <SearchIcon />

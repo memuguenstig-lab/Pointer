@@ -173,7 +173,7 @@ export const useEditorStore = create<EditorState>()(
         cursorPosition: { line: 1, column: 1 },
         setCursorPosition: (line, column) =>
           set({ cursorPosition: { line, column } }),
-        chatWidth: 700,
+        chatWidth: 380,
         setChatWidth: (width) => set({ chatWidth: width }),
       }),
       { name: 'editor-store' }

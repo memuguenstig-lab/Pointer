@@ -22,6 +22,10 @@ import MobileHeader from './components/MobileHeader';
 import GitView from './components/Git/GitView';
 import { GitService } from './services/gitService';
 import CloneRepositoryModal from './components/CloneRepositoryModal';
+import ExtensionsView from './components/ExtensionsView';
+import VisualWorkspaceSidebar from './components/VisualWorkspaceSidebar';
+import WelcomeDashboard from './components/WelcomeDashboard';
+import { RecentProjectsService } from './services/RecentProjectsService';
 import { PathConfig } from './config/paths';
 import { IS_MOBILE } from './platform/usePlatform';
 import { isPreviewableFile, getPreviewType } from './utils/previewUtils';
@@ -32,6 +36,7 @@ import CommandPalette from './components/CommandPalette';
 import SplitEditor, { EditorGroup } from './components/SplitEditor';
 import StatusBar from './components/StatusBar';
 import { InlineDiffService } from './services/InlineDiffService';
+import { isImageFile, isPdfFile, isDatabaseFile, isWorkspaceFile, isBinaryFile } from './components/FileViewer';
 import { FileChangeEventService } from './services/FileChangeEventService';
 
 // Initialize language support
@@ -126,6 +131,7 @@ const App: React.FC = () => {
 
   const [openFiles, setOpenFiles] = useState<string[]>([]);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
 
   const [modalState, setModalState] = useState<{
     isOpen: boolean;
@@ -229,6 +235,8 @@ const App: React.FC = () => {
     });
   }, []);
 
+
+
   // Add state for chat visibility
   const [isLLMChatVisible, setIsLLMChatVisible] = useState(true);
   // Activity bar view state — replaces isGitViewActive / isExplorerViewActive
@@ -259,6 +267,28 @@ const App: React.FC = () => {
   // Add this for settings modal
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [settingsData, setSettingsData] = useState<Record<string, any>>({});
+  
+  // Save editor session files on changes
+  useEffect(() => {
+    const lastDir = localStorage.getItem('lastDirectory');
+    if (!lastDir) return;
+
+    const restoreEnabled = settingsData.advanced?.restoreLastSession ?? true;
+    if (!restoreEnabled) return;
+
+    if (openFiles && openFiles.length > 0) {
+      localStorage.setItem(`session-open-files-${lastDir}`, JSON.stringify(openFiles));
+    } else {
+      localStorage.removeItem(`session-open-files-${lastDir}`);
+    }
+
+    if (fileSystem.currentFileId) {
+      localStorage.setItem(`session-current-file-${lastDir}`, fileSystem.currentFileId);
+    } else {
+      localStorage.removeItem(`session-current-file-${lastDir}`);
+    }
+  }, [openFiles, fileSystem.currentFileId, settingsData.advanced?.restoreLastSession]);
+
   const [settingsInitialCategory, setSettingsInitialCategory] = useState<string | undefined>(undefined);
   const [settingsInitialModelId, setSettingsInitialModelId] = useState<string | undefined>(undefined);
 
@@ -307,6 +337,10 @@ const App: React.FC = () => {
       const result = await FileSystemService.readSettingsFiles(PathConfig.getActiveSettingsPath());
       if (result && result.success) {
         setSettingsData(result.settings);
+        
+        if (result.settings.advanced?.onboardingDone) {
+          setShowOnboarding(false);
+        }
         
         // Apply editor settings if they exist
         if (result.settings.editor && editor.current) {
@@ -700,7 +734,12 @@ const App: React.FC = () => {
               },
             },
           }));
-          if (editor.current) {
+          const isText = !isImageFile(file.name) && 
+                         !isPdfFile(file.name) && 
+                         !isDatabaseFile(file.name) && 
+                         !isWorkspaceFile(file.name) && 
+                         !isBinaryFile(file.name);
+          if (isText && editor.current) {
             editor.current.setValue(content);
             // Reapply the custom theme after setting editor content
             applyCustomTheme();
@@ -880,6 +919,7 @@ const App: React.FC = () => {
 
         // Save the directory path
         localStorage.setItem('lastDirectory', result.path);
+        RecentProjectsService.addProject(result.path);
 
         if (result.errors?.length > 0) {
           console.warn('Some files could not be accessed:', result.errors);
@@ -888,6 +928,96 @@ const App: React.FC = () => {
       }
     } catch (error) {
       console.error('Failed to open folder:', error);
+      setLoadingError(error instanceof Error ? error.message : 'Failed to open folder');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleOpenSpecificFolder = async (path: string) => {
+    try {
+      setIsLoading(true);
+      setLoadingError(null);
+
+      FileSystemService.clearLoadedFolders();
+
+      const result = await FileSystemService.openSpecificDirectory(path);
+      
+      if (result) {
+        if (editor.current) {
+          editor.current.setValue('');
+        }
+
+        setFileSystem({
+          items: result.items,
+          rootId: result.rootId,
+          currentFileId: null,
+          terminalOpen: false,
+        });
+
+        setOpenFiles([]);
+        setIsSidebarCollapsed(false);
+
+        localStorage.setItem('lastDirectory', path);
+        RecentProjectsService.addProject(path);
+
+        // Restore session for this folder if enabled
+        const restoreEnabled = settingsData.advanced?.restoreLastSession ?? true;
+        if (restoreEnabled) {
+          const savedOpenFilesStr = localStorage.getItem(`session-open-files-${path}`);
+          const savedCurrentFileId = localStorage.getItem(`session-current-file-${path}`);
+          if (savedOpenFilesStr) {
+            try {
+              const savedOpenFiles = JSON.parse(savedOpenFilesStr) as string[];
+              const validOpenFiles = savedOpenFiles.filter(id => result.items[id]);
+              if (validOpenFiles.length > 0) {
+                setOpenFiles(validOpenFiles);
+                const currentId = (savedCurrentFileId && result.items[savedCurrentFileId]) ? savedCurrentFileId : validOpenFiles[validOpenFiles.length - 1];
+                setEditorGroups([{ id: 'group-1', openFiles: validOpenFiles, currentFileId: currentId }]);
+                setFileSystem(prev => ({
+                  ...prev,
+                  currentFileId: currentId
+                }));
+                
+                try {
+                  const content = await FileSystemService.readFile(currentId);
+                  if (content !== null) {
+                    setFileSystem(prev => ({
+                      ...prev,
+                      items: {
+                        ...prev.items,
+                        [currentId]: {
+                          ...prev.items[currentId],
+                          content: content
+                        }
+                      }
+                    }));
+                    const isText = !isImageFile(result.items[currentId].name) && 
+                                   !isPdfFile(result.items[currentId].name) && 
+                                   !isDatabaseFile(result.items[currentId].name) && 
+                                   !isWorkspaceFile(result.items[currentId].name) && 
+                                   !isBinaryFile(result.items[currentId].name);
+                    if (isText && editor.current) {
+                      editor.current.setValue(content);
+                    }
+                  }
+                } catch (err) {
+                  console.error('Error loading file on folder switch restore:', err);
+                }
+              }
+            } catch (e) {
+              console.error('Error parsing folder switch session:', e);
+            }
+          }
+        }
+
+        if (result.errors?.length > 0) {
+          console.warn('Some files could not be accessed:', result.errors);
+          setLoadingError('Some files could not be accessed');
+        }
+      }
+    } catch (error) {
+      console.error('Failed to open specific folder:', error);
       setLoadingError(error instanceof Error ? error.message : 'Failed to open folder');
     } finally {
       setIsLoading(false);
@@ -1495,6 +1625,8 @@ const App: React.FC = () => {
   // Add this state for Explorer and Git view toggle (derived from activeView)
   const isGitViewActive = activeView === 'git';
   const isExplorerViewActive = activeView === 'explorer';
+  const isExtensionsViewActive = activeView === 'extensions';
+  const isWorkspaceViewActive = activeView === 'workspace';
 
   useEffect(() => {
     let mounted = true;
@@ -1529,6 +1661,60 @@ const App: React.FC = () => {
               currentFileId: null, // Don't open the welcome tab
               terminalOpen: false,
             }));
+            RecentProjectsService.addProject(lastDir);
+
+            // Restore last session if enabled
+            const restoreEnabled = settingsData.advanced?.restoreLastSession ?? true;
+            if (restoreEnabled) {
+              const savedOpenFilesStr = localStorage.getItem(`session-open-files-${lastDir}`);
+              const savedCurrentFileId = localStorage.getItem(`session-current-file-${lastDir}`);
+              if (savedOpenFilesStr) {
+                try {
+                  const savedOpenFiles = JSON.parse(savedOpenFilesStr) as string[];
+                  const validOpenFiles = savedOpenFiles.filter(id => result.items[id]);
+                  if (validOpenFiles.length > 0) {
+                    setOpenFiles(validOpenFiles);
+                    const currentId = (savedCurrentFileId && result.items[savedCurrentFileId]) ? savedCurrentFileId : validOpenFiles[validOpenFiles.length - 1];
+                    setEditorGroups([{ id: 'group-1', openFiles: validOpenFiles, currentFileId: currentId }]);
+                    setFileSystem(prevState => ({
+                      ...prevState,
+                      items: result.items,
+                      rootId: result.rootId,
+                      currentFileId: currentId,
+                      terminalOpen: false,
+                    }));
+                    
+                    try {
+                      const content = await FileSystemService.readFile(currentId);
+                      if (content !== null) {
+                        setFileSystem(prev => ({
+                          ...prev,
+                          items: {
+                            ...prev.items,
+                            [currentId]: {
+                              ...prev.items[currentId],
+                              content: content,
+                            },
+                          },
+                        }));
+                        const isText = !isImageFile(result.items[currentId].name) && 
+                                       !isPdfFile(result.items[currentId].name) && 
+                                       !isDatabaseFile(result.items[currentId].name) && 
+                                       !isWorkspaceFile(result.items[currentId].name) && 
+                                       !isBinaryFile(result.items[currentId].name);
+                        if (isText && editor.current) {
+                          editor.current.setValue(content);
+                        }
+                      }
+                    } catch (err) {
+                      console.error('Error restoring active file content:', err);
+                    }
+                  }
+                } catch (e) {
+                  console.error('Error parsing restored session files:', e);
+                }
+              }
+            }
           }
         }
         
@@ -1742,19 +1928,57 @@ const App: React.FC = () => {
     }
   };
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (!IS_MOBILE) return;
+    const touch = e.touches[0];
+    setTouchStart({ x: touch.clientX, y: touch.clientY });
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!IS_MOBILE || !touchStart) return;
+    const touch = e.changedTouches[0];
+    const diffX = touch.clientX - touchStart.x;
+    const diffY = touch.clientY - touchStart.y;
+    const screenWidth = window.innerWidth;
+    
+    // Check if primarily a horizontal swipe and meets threshold
+    if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 60) {
+      if (diffX > 0) {
+        // Swipe Right (Left to Right)
+        if (isLLMChatVisible && screenWidth - touchStart.x < 120) {
+          setIsLLMChatVisible(false);
+        } else if (touchStart.x < 50 && isSidebarCollapsed) {
+          setIsSidebarCollapsed(false);
+        }
+      } else {
+        // Swipe Left (Right to Left)
+        if (!isSidebarCollapsed && touchStart.x < 320) {
+          setIsSidebarCollapsed(true);
+        } else if (screenWidth - touchStart.x < 50 && !isLLMChatVisible) {
+          setIsLLMChatVisible(true);
+        }
+      }
+    }
+    setTouchStart(null);
+  };
+
   return (
     <div className="app-container">
       {isConnecting && (
         <LoadingScreen message={connectionMessage} />
       )}
       
-      <div style={{ 
-        display: 'flex', 
-        flexDirection: 'column', 
-        height: '100vh', 
-        overflow: 'hidden',
-        background: 'var(--bg-primary)',
-      }}>
+      <div 
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          height: '100vh', 
+          overflow: 'hidden',
+          background: 'var(--bg-primary)',
+        }}
+      >
         {IS_MOBILE ? (
           <MobileHeader
             currentFileName={getCurrentFileName()}
@@ -1806,7 +2030,7 @@ const App: React.FC = () => {
               >
                 {/* VSCode-style panel header */}
                 <div className="sidebar-panel-header">
-                  {isGitViewActive ? 'Source Control' : 'Explorer'}
+                  {isGitViewActive ? 'Source Control' : isExplorerViewActive ? 'Explorer' : isExtensionsViewActive ? 'Extensions' : isWorkspaceViewActive ? 'Workspace' : 'Sidebar'}
                 </div>
                 {isLoading ? (
                   <div style={{ padding: '16px', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -1816,16 +2040,88 @@ const App: React.FC = () => {
                 ) : isGitViewActive ? (
                   <GitView onBack={handleToggleExplorerView} />
                 ) : isExplorerViewActive ? (
-                  <FileExplorer
-                    items={memoizedItems}
+                  fileSystem.rootId === 'root' ? (
+                    <div style={{
+                      padding: '24px 16px',
+                      color: 'var(--text-secondary)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '16px',
+                      height: '100%',
+                      background: 'var(--bg-secondary)',
+                    }}>
+                      <div style={{ fontSize: '13px', lineHeight: '1.5', color: 'var(--text-primary)' }}>
+                        You have not opened a folder yet.
+                      </div>
+                      <button
+                        onClick={handleOpenFolder}
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          background: 'var(--accent-color)',
+                          color: 'var(--bg-primary)',
+                          border: 'none',
+                          borderRadius: '4px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          fontSize: '13px',
+                          textAlign: 'center',
+                          transition: 'opacity 0.2s',
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.opacity = '0.9'}
+                        onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                      >
+                        Open Folder
+                      </button>
+                      <button
+                        onClick={handleCloneRepository}
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          background: 'var(--bg-hover)',
+                          color: 'var(--text-primary)',
+                          border: '1px solid var(--border-primary)',
+                          borderRadius: '4px',
+                          fontWeight: 500,
+                          cursor: 'pointer',
+                          fontSize: '13px',
+                          textAlign: 'center',
+                          transition: 'background 0.2s',
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-selected)'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
+                      >
+                        Clone Repository
+                      </button>
+                    </div>
+                  ) : (
+                    <FileExplorer
+                      items={memoizedItems}
+                      rootId={fileSystem.rootId}
+                      currentFileId={memoizedCurrentFileId}
+                      onFileSelect={handleFileSelect}
+                      onCreateFile={createFile}
+                      onCreateFolder={createFolder}
+                      onFolderContentsLoaded={handleFolderContentsLoaded}
+                      onDeleteItem={handleDeleteItem}
+                      onRenameItem={handleRenameItem}
+                    />
+                  )
+                ) : isExtensionsViewActive ? (
+                  <ExtensionsView />
+                ) : isWorkspaceViewActive ? (
+                  <VisualWorkspaceSidebar
                     rootId={fileSystem.rootId}
-                    currentFileId={memoizedCurrentFileId}
                     onFileSelect={handleFileSelect}
-                    onCreateFile={createFile}
-                    onCreateFolder={createFolder}
-                    onFolderContentsLoaded={handleFolderContentsLoaded}
-                    onDeleteItem={handleDeleteItem}
-                    onRenameItem={handleRenameItem}
+                    onFileCreated={(id, file) => {
+                      setFileSystem(prev => ({
+                        ...prev,
+                        items: {
+                          ...prev.items,
+                          [id]: file,
+                        },
+                      }));
+                    }}
                   />
                 ) : (
                   <div style={{ padding: '16px', color: 'var(--text-secondary)', fontSize: 13 }}>
@@ -1836,24 +2132,33 @@ const App: React.FC = () => {
             }
             editor={
               <div className="editor-area" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
-                <SplitEditor
-                  items={memoizedItems}
-                  groups={editorGroups}
-                  activeGroupId={activeGroupId}
-                  onGroupsChange={setEditorGroups}
-                  onActiveGroupChange={setActiveGroupId}
-                  onEditorChange={(newEditor) => {
-                    editor.current = newEditor;
-                  }}
-                  setSaveStatus={setSaveStatus}
-                  previewTabs={previewTabs}
-                  currentPreviewTabId={currentPreviewTabId}
-                  onPreviewToggle={handlePreviewToggle}
-                  onPreviewTabSelect={handlePreviewTabSelect}
-                  onPreviewTabClose={handlePreviewTabClose}
-                  isGridLayout={isGridLayout}
-                  onToggleGrid={handleToggleGrid}
-                />
+                {(!fileSystem.items || Object.keys(fileSystem.items).length <= 1 || fileSystem.rootId === 'root') ? (
+                  <WelcomeDashboard
+                    onOpenFolder={handleOpenFolder}
+                    onCloneRepository={handleCloneRepository}
+                    onOpenSpecificFolder={handleOpenSpecificFolder}
+                    onOpenSettings={() => openSettingsModal('models')}
+                  />
+                ) : (
+                  <SplitEditor
+                    items={memoizedItems}
+                    groups={editorGroups}
+                    activeGroupId={activeGroupId}
+                    onGroupsChange={setEditorGroups}
+                    onActiveGroupChange={setActiveGroupId}
+                    onEditorChange={(newEditor) => {
+                      editor.current = newEditor;
+                    }}
+                    setSaveStatus={setSaveStatus}
+                    previewTabs={previewTabs}
+                    currentPreviewTabId={currentPreviewTabId}
+                    onPreviewToggle={handlePreviewToggle}
+                    onPreviewTabSelect={handlePreviewTabSelect}
+                    onPreviewTabClose={handlePreviewTabClose}
+                    isGridLayout={isGridLayout}
+                    onToggleGrid={handleToggleGrid}
+                  />
+                )}
                 {/* Terminal sits inside the editor column — between sidebar and chat */}
                 {fileSystem.terminalOpen && !IS_MOBILE && (
                   <Terminal
@@ -2074,7 +2379,23 @@ const App: React.FC = () => {
 
         {/* Onboarding Flow */}
         {showOnboarding && (
-          <OnboardingFlow onDone={() => setShowOnboarding(false)} />
+          <OnboardingFlow onDone={async () => {
+            setShowOnboarding(false);
+            try {
+              const currentSettings = await FileSystemService.readSettingsFiles(PathConfig.getActiveSettingsPath());
+              const settings = currentSettings?.success ? currentSettings.settings : {};
+              const updated = {
+                ...settings,
+                advanced: {
+                  ...(settings.advanced || {}),
+                  onboardingDone: true
+                }
+              };
+              await FileSystemService.saveSettingsFiles(PathConfig.getActiveSettingsPath(), updated);
+            } catch (err) {
+              console.error('Failed to save onboarding done status in settings:', err);
+            }
+          }} />
         )}
       </div>
     </div>

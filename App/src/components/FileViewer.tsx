@@ -1,6 +1,13 @@
 import React from 'react';
 import { FileSystemItem } from '../types';
 import DatabaseViewer from './DatabaseViewer';
+import WorkspaceCanvasViewer from './WorkspaceCanvasViewer';
+
+// Determine if the file is a workspace visual canvas
+const isWorkspaceFile = (filename: string): boolean => {
+  const ext = filename.split('.').pop()?.toLowerCase() || '';
+  return ext === 'workspace';
+};
 
 // Determine if the file is a binary type
 const isBinaryFile = (filename: string): boolean => {
@@ -160,6 +167,8 @@ const FileViewer: React.FC<FileViewerProps> = ({ file, fileId }) => {
     return <PdfViewer file={file} />;
   } else if (isDatabaseFile(file.name)) {
     return <DatabaseViewer file={file} />;
+  } else if (isWorkspaceFile(file.name)) {
+    return <WorkspaceCanvasViewer file={file} />;
   } else if (isBinaryFile(file.name)) {
     return <BinaryFileViewer file={file} />;
   }
@@ -168,4 +177,4 @@ const FileViewer: React.FC<FileViewerProps> = ({ file, fileId }) => {
   return null;
 };
 
-export { FileViewer, isImageFile, isBinaryFile, isPdfFile, isDatabaseFile }; 
+export { FileViewer, isImageFile, isBinaryFile, isPdfFile, isDatabaseFile, isWorkspaceFile }; 

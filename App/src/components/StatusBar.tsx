@@ -45,6 +45,43 @@ const StatusBar: React.FC<StatusBarProps> = ({
 }) => {
   const [gitBranch, setGitBranch] = useState<string | null>(null);
   const [time, setTime] = useState(() => new Date());
+  const [metrics, setMetrics] = useState<{ cpu: number; ram: number } | null>(null);
+  const [showSystemUsage, setShowSystemUsage] = useState(true);
+
+  useEffect(() => {
+    const checkSettings = () => {
+      try {
+        const settings = localStorage.getItem('appSettings');
+        if (settings) {
+          const parsed = JSON.parse(settings);
+          setShowSystemUsage(parsed.showSystemUsage !== false);
+        }
+      } catch (e) {}
+    };
+    checkSettings();
+    window.addEventListener('storage', checkSettings);
+    window.addEventListener('settings-changed', checkSettings);
+    return () => {
+      window.removeEventListener('storage', checkSettings);
+      window.removeEventListener('settings-changed', checkSettings);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!showSystemUsage) return;
+    const fetchMetrics = async () => {
+      try {
+        const res = await fetch('http://localhost:23816/api/system/metrics');
+        if (res.ok) {
+          const data = await res.json();
+          setMetrics(data);
+        }
+      } catch (e) {}
+    };
+    fetchMetrics();
+    const id = setInterval(fetchMetrics, 3000);
+    return () => clearInterval(id);
+  }, [showSystemUsage]);
 
   // Fetch git branch + status
   useEffect(() => {
@@ -178,6 +215,15 @@ const StatusBar: React.FC<StatusBarProps> = ({
             <span className="status-bar__divider" />
             <span className="status-bar__item" title="Encoding">
               UTF-8
+            </span>
+            <span className="status-bar__divider" />
+          </>
+        )}
+        {showSystemUsage && metrics && (
+          <>
+            <span className="status-bar__item" title="CPU / RAM Usage" style={{ display: 'flex', gap: 8 }}>
+              <span>CPU: {metrics.cpu}%</span>
+              <span>RAM: {metrics.ram}%</span>
             </span>
             <span className="status-bar__divider" />
           </>

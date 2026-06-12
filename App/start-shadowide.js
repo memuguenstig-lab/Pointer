@@ -411,24 +411,43 @@ async function main() {
         process.exit(0);
       }, 5000);
     } else {
+      const { execSync } = require('child_process');
+      const killTree = (proc) => {
+        if (!proc) return;
+        try {
+          if (process.platform === 'win32') {
+            execSync(`taskkill /pid ${proc.pid} /T /F`, { stdio: 'ignore' });
+          } else {
+            proc.kill('SIGTERM');
+          }
+        } catch (_) {
+          try { proc.kill('SIGKILL'); } catch (_) {}
+        }
+      };
+
       // Handle graceful shutdown for interactive mode
       const cleanup = () => {
         console.log(chalk.red('\n\n🛑 Shutting down ShadowIDE...'));
         
         if (backendProcess) {
           console.log(chalk.yellow('  • Stopping backend...'));
-          backendProcess.kill();
+          killTree(backendProcess);
         }
         console.log(chalk.yellow('  • Stopping dev server...'));
-        serverProcess.kill();
+        killTree(serverProcess);
         console.log(chalk.yellow('  • Stopping electron...'));
-        electronProcess.kill();
+        killTree(electronProcess);
         
         setTimeout(() => {
           console.log(chalk.green('✅ All services stopped'));
           process.exit(0);
         }, 1000);
       };
+      
+      electronProcess.on('exit', () => {
+        console.log(chalk.yellow('\n💻 Electron exited. Shutting down other services...'));
+        cleanup();
+      });
       
       process.on('SIGINT', cleanup);
       process.on('SIGTERM', cleanup);

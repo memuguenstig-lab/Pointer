@@ -167,7 +167,7 @@ export const PanelLayout: React.FC<Props> = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          shadowideEvents: 'all',
+          pointerEvents: 'all',
         }}
       >
         {isActive && (
