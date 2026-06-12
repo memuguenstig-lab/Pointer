@@ -466,23 +466,23 @@ export const WelcomeDashboard: React.FC<WelcomeDashboardProps> = ({
             lineHeight: 1.5,
           }}>
             <div style={{ fontWeight: 600, color: 'var(--accent-color)', fontSize: '13px', marginBottom: '8px' }}>
-              pointer Release Notes (v1.5.1)
+              pointer Release Notes (v1.6.0)
             </div>
             <ul style={{ margin: 0, paddingLeft: '16px', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
               <li>
+                <strong>Chained API Playground (.api):</strong> Link cards visually to execute API requests sequentially, feeding headers/params downstream automatically.
+              </li>
+              <li>
+                <strong>Workspace Handle Mathematics (.workspace):</strong> Corrected line handles to sit exactly on Bezier curves, and added YIQ color contrast text calculations for flawless legibility on any card background.
+              </li>
+              <li>
+                <strong>DB Column Settings (.schema):</strong> Table drag coordinates fixed from viewport shifts. Columns now support nullable, unique, auto-increment, and default values inside DDL, Prisma, and Knex.js code generators.
+              </li>
+              <li>
+                <strong>New Canvas Blueprints:</strong> Brainstorming upcoming `.mind` (Mind Maps), `.ui` (UI Prototyper), and `.regex` (Visual regular expression engine) file engines!
+              </li>
+              <li>
                 <strong>AI Chat Theme Control:</strong> The assistant can now generate, customize, and apply UI/editor themes dynamically when requested in the chat interface.
-              </li>
-              <li>
-                <strong>Frosted Glass Mode:</strong> Toggle frosted glass backdrop blur overlays directly within the Theme customizer panel.
-              </li>
-              <li>
-                <strong>Unified Terminal Pickers:</strong> Upgraded the terminal color settings to use standard, premium color inputs with interactive slider consistency.
-              </li>
-              <li>
-                <strong>Robust Background Shutdown:</strong> Exiting the desktop app from the system tray now automatically halts all background node and dev server instances gracefully.
-              </li>
-              <li>
-                <strong>Polished GitHub Authentication:</strong> Clean connect/disconnect action buttons replace the legacy checkbox control.
               </li>
             </ul>
           </div>

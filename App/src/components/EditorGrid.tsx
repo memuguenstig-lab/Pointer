@@ -5,7 +5,8 @@ import { getLanguageFromFileName } from '../utils/languageUtils';
 import { AIFileService } from '../services/AIFileService';
 import { FileSystemService } from '../services/FileSystemService';
 import { showToast } from '../services/ToastService';
-import { FileViewer, isImageFile, isBinaryFile, isPdfFile, isDatabaseFile, isWorkspaceFile, isSchemaFile, isMarkdownFile } from './FileViewer';
+import { FileViewer, isImageFile, isBinaryFile, isPdfFile, isDatabaseFile, isWorkspaceFile, isSchemaFile, isApiFile, isFlowFile, isMarkdownFile } from './FileViewer';
+import ErrorBoundary from './ErrorBoundary';
 import Modal from './Modal';
 import PreviewPane from './PreviewPane';
 import lmStudio from '../services/LMStudioService';
@@ -38,7 +39,7 @@ const EditorPane: React.FC<EditorPaneProps> = ({ fileId, file, onEditorReady, se
   const editor = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const contentRef = useRef<string>('');
   // Add state to track file type
-  const [fileType, setFileType] = useState<'text' | 'image' | 'binary' | 'pdf' | 'database' | 'workspace' | 'schema' | 'markdown'>('text');
+  const [fileType, setFileType] = useState<'text' | 'image' | 'binary' | 'pdf' | 'database' | 'workspace' | 'schema' | 'api' | 'flow' | 'markdown'>('text');
   const [markdownMode, setMarkdownMode] = useState<'preview' | 'edit'>('preview');
   const [showPromptInput, setShowPromptInput] = useState(false);
   const [prompt, setPrompt] = useState('');
@@ -110,6 +111,10 @@ const EditorPane: React.FC<EditorPaneProps> = ({ fileId, file, onEditorReady, se
         setFileType('workspace');
       } else if (isSchemaFile(file.name)) {
         setFileType('schema');
+      } else if (isApiFile(file.name)) {
+        setFileType('api');
+      } else if (isFlowFile(file.name)) {
+        setFileType('flow');
       } else if (isMarkdownFile(file.name)) {
         setFileType('markdown');
       } else if (isPdfFile(file.name)) {
@@ -2081,8 +2086,17 @@ DO NOT include the [CURSOR] marker in your response. Provide ONLY the completion
   };
 
   // Render based on file type
-  if (fileType === 'image' || fileType === 'binary' || fileType === 'pdf' || fileType === 'database' || fileType === 'workspace' || fileType === 'schema') {
-    return <FileViewer file={file} fileId={fileId} />;
+  if (fileType === 'image' || fileType === 'binary' || fileType === 'pdf' || fileType === 'database' || fileType === 'workspace' || fileType === 'schema' || fileType === 'api' || fileType === 'flow') {
+    return (
+      <ErrorBoundary fallback={(error) => (
+        <div style={{ padding: '20px', color: 'var(--error-color)', background: 'var(--bg-primary)', height: '100%', overflow: 'auto' }}>
+          <h3>⚠️ Error Loading File Preview</h3>
+          <p>{error.message}</p>
+        </div>
+      )}>
+        <FileViewer file={file} fileId={fileId} />
+      </ErrorBoundary>
+    );
   }
 
   if (fileType === 'markdown' && markdownMode === 'preview') {
@@ -2159,30 +2173,6 @@ DO NOT include the [CURSOR] marker in your response. Provide ONLY the completion
 
   // Load auto-save settings from user preferences
   // Auto-save is enabled by default with 1 second delay
-
-  // Update the file type detection
-  useEffect(() => {
-    if (file?.name) {
-      // Determine file type based on extension
-      if (isImageFile(file.name)) {
-        setFileType('image');
-      } else if (isWorkspaceFile(file.name)) {
-        setFileType('workspace');
-      } else if (isSchemaFile(file.name)) {
-        setFileType('schema');
-      } else if (isMarkdownFile(file.name)) {
-        setFileType('markdown');
-      } else if (isPdfFile(file.name)) {
-        setFileType('pdf');
-      } else if (isDatabaseFile(file.name)) {
-        setFileType('database');
-      } else if (isBinaryFile(file.name)) {
-        setFileType('binary');
-      } else {
-        setFileType('text');
-      }
-    }
-  }, [file?.name]);
 
   // Render the editor with save status indicator
   if (fileType === 'text' || (fileType === 'markdown' && markdownMode === 'edit')) {
@@ -2319,7 +2309,16 @@ DO NOT include the [CURSOR] marker in your response. Provide ONLY the completion
     );
   } else {
     // Render FileViewer for non-text files
-    return <FileViewer file={file} fileId={fileId} />;
+    return (
+      <ErrorBoundary fallback={(error) => (
+        <div style={{ padding: '20px', color: 'var(--error-color)', background: 'var(--bg-primary)', height: '100%', overflow: 'auto' }}>
+          <h3>⚠️ Error Loading File Preview</h3>
+          <p>{error.message}</p>
+        </div>
+      )}>
+        <FileViewer file={file} fileId={fileId} />
+      </ErrorBoundary>
+    );
   }
 };
 

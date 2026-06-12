@@ -10,6 +10,10 @@ interface Column {
   isFK: boolean;
   fkTableId?: string;
   fkColumnId?: string;
+  isNullable?: boolean;
+  defaultValue?: string;
+  isUnique?: boolean;
+  isAutoIncrement?: boolean;
 }
 
 interface Table {
@@ -24,24 +28,12 @@ interface SchemaData {
   tables: Table[];
 }
 
-const SUPPORTED_TYPES = [
-  'INTEGER',
-  'VARCHAR(255)',
-  'TEXT',
-  'BOOLEAN',
-  'TIMESTAMP',
-  'DATE',
-  'UUID',
-  'DECIMAL(10,2)',
-  'JSON'
-];
-
 export const SchemaDesigner: React.FC<{ file: FileSystemItem }> = ({ file }) => {
   const [data, setData] = useState<SchemaData>({ tables: [] });
   const [loading, setLoading] = useState(true);
+  const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
   const [draggedTableId, setDraggedTableId] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-  const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'sql' | 'prisma' | 'knex'>('sql');
   const [history, setHistory] = useState<SchemaData[]>([]);
 
@@ -56,8 +48,8 @@ export const SchemaDesigner: React.FC<{ file: FileSystemItem }> = ({ file }) => 
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
         const activeTag = document.activeElement?.tagName;
-        if (activeTag === 'INPUT' || activeTag === 'TEXTAREA' || activeTag === 'SELECT') return;
-
+        if (activeTag === 'INPUT' || activeTag === 'TEXTAREA') return;
+        
         e.preventDefault();
         setHistory(prev => {
           if (prev.length === 0) return prev;
@@ -80,14 +72,20 @@ export const SchemaDesigner: React.FC<{ file: FileSystemItem }> = ({ file }) => 
       try {
         setLoading(true);
         const content = await FileSystemService.readText(file.path);
-        if (content) {
-          const parsed = JSON.parse(content);
-          setData({
-            tables: parsed.tables || []
-          });
+        if (content && content.trim()) {
+          try {
+            const parsed = JSON.parse(content);
+            setData({
+              tables: Array.isArray(parsed?.tables) ? parsed.tables : []
+            });
+            return;
+          } catch (jsonErr) {
+            console.error('Failed to parse schema JSON:', jsonErr);
+          }
         }
+        setData({ tables: [] });
       } catch (e) {
-        console.error('Failed to parse schema file', e);
+        console.error('Failed to read schema file:', e);
         setData({ tables: [] });
       } finally {
         setLoading(false);
@@ -118,10 +116,7 @@ export const SchemaDesigner: React.FC<{ file: FileSystemItem }> = ({ file }) => 
   };
 
   const handleAddTable = () => {
-    const name = prompt('Enter table name:', 'new_table');
-    if (!name) return;
-
-    const formattedName = name.toLowerCase().replace(/[^a-z0-9_]/g, '');
+    const formattedName = `new_table_${data.tables.length + 1}`;
     const rect = canvasRef.current?.getBoundingClientRect();
     const x = rect ? rect.width / 2 - 120 : 100;
     const y = rect ? rect.height / 2 - 150 : 100;
@@ -132,19 +127,19 @@ export const SchemaDesigner: React.FC<{ file: FileSystemItem }> = ({ file }) => 
       x,
       y,
       columns: [
-        { id: `col_${Date.now()}_1`, name: 'id', type: 'INTEGER', isPK: true, isFK: false }
+        { id: `col_${Date.now()}_1`, name: 'id', type: 'INTEGER', isPK: true, isFK: false, isNullable: false, isAutoIncrement: true }
       ]
     };
 
-    updateSchemaData({
+    const updated = {
       ...data,
       tables: [...data.tables, newTable]
-    });
+    };
+    updateSchemaData(updated);
+    setSelectedTableId(newTable.id);
   };
 
   const handleDeleteTable = (tableId: string) => {
-    if (!confirm('Are you sure you want to delete this table?')) return;
-    
     // Clean up foreign keys pointing to this table
     const cleanedTables = data.tables
       .filter(t => t.id !== tableId)
@@ -176,7 +171,8 @@ export const SchemaDesigner: React.FC<{ file: FileSystemItem }> = ({ file }) => 
                 name: 'new_column',
                 type: 'VARCHAR(255)',
                 isPK: false,
-                isFK: false
+                isFK: false,
+                isNullable: true
               }
             ]
           };
@@ -194,17 +190,7 @@ export const SchemaDesigner: React.FC<{ file: FileSystemItem }> = ({ file }) => 
         if (t.id === tableId) {
           return {
             ...t,
-            columns: t.columns.map(c => {
-              if (c.id === colId) {
-                const updatedCol = { ...c, ...fields };
-                if (fields.isFK === false) {
-                  updatedCol.fkTableId = undefined;
-                  updatedCol.fkColumnId = undefined;
-                }
-                return updatedCol;
-              }
-              return c;
-            })
+            columns: t.columns.map(c => (c.id === colId ? { ...c, ...fields } : c))
           };
         }
         return t;
@@ -236,10 +222,13 @@ export const SchemaDesigner: React.FC<{ file: FileSystemItem }> = ({ file }) => 
     setSelectedTableId(tableId);
     setDraggedTableId(tableId);
     const table = data.tables.find(t => t.id === tableId);
-    if (table) {
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (table && rect) {
+      const mouseCanvasX = e.clientX - rect.left;
+      const mouseCanvasY = e.clientY - rect.top;
       setDragOffset({
-        x: e.clientX - table.x,
-        y: e.clientY - table.y
+        x: mouseCanvasX - table.x,
+        y: mouseCanvasY - table.y
       });
     }
   };
@@ -247,8 +236,10 @@ export const SchemaDesigner: React.FC<{ file: FileSystemItem }> = ({ file }) => 
   const handleCanvasMouseMove = (e: React.MouseEvent) => {
     if (draggedTableId && canvasRef.current) {
       const rect = canvasRef.current.getBoundingClientRect();
-      const x = Math.max(10, Math.min(rect.width - 250, e.clientX - dragOffset.x));
-      const y = Math.max(10, Math.min(rect.height - 300, e.clientY - dragOffset.y));
+      const canvasX = e.clientX - rect.left;
+      const canvasY = e.clientY - rect.top;
+      const x = canvasX - dragOffset.x;
+      const y = canvasY - dragOffset.y;
 
       setData(prev => ({
         ...prev,
@@ -259,51 +250,9 @@ export const SchemaDesigner: React.FC<{ file: FileSystemItem }> = ({ file }) => 
 
   const handleCanvasMouseUp = () => {
     if (draggedTableId) {
-      const draggedTable = data.tables.find(t => t.id === draggedTableId);
-      if (draggedTable) {
-        // Find in history/save
-        pushHistory(history[history.length - 1] || data); // preserve history correctly
-        saveSchema(data);
-      }
       setDraggedTableId(null);
+      saveSchema(data);
     }
-  };
-
-  // Helper to draw connection lines between FK column and PK column
-  const renderRelations = () => {
-    const lines: React.ReactNode[] = [];
-    data.tables.forEach(sourceTable => {
-      sourceTable.columns.forEach(col => {
-        if (col.isFK && col.fkTableId) {
-          const targetTable = data.tables.find(t => t.id === col.fkTableId);
-          if (targetTable) {
-            // Estimate connection points
-            // Draw path from source Table edge to target Table edge
-            const startX = sourceTable.x + 120;
-            const startY = sourceTable.y + 80;
-            const endX = targetTable.x + 120;
-            const endY = targetTable.y + 80;
-
-            const dx = Math.abs(endX - startX) * 0.5;
-            const pathData = `M ${startX} ${startY} C ${startX + (endX > startX ? dx : -dx)} ${startY}, ${endX + (endX > startX ? -dx : dx)} ${endY}, ${endX} ${endY}`;
-
-            lines.push(
-              <g key={`${sourceTable.id}_${col.id}_to_${targetTable.id}`}>
-                <path
-                  d={pathData}
-                  fill="none"
-                  stroke="var(--accent-color)"
-                  strokeWidth="3"
-                  style={{ opacity: 0.75, transition: 'stroke 0.2s' }}
-                />
-                <circle cx={endX} cy={endY} r="5" fill="var(--accent-color)" />
-              </g>
-            );
-          }
-        }
-      });
-    });
-    return lines;
   };
 
   // Code generation
@@ -314,6 +263,11 @@ export const SchemaDesigner: React.FC<{ file: FileSystemItem }> = ({ file }) => 
       const colLines = table.columns.map(col => {
         let line = `  ${col.name} ${col.type}`;
         if (col.isPK) line += ' PRIMARY KEY';
+        if (col.isAutoIncrement) line += ' AUTOINCREMENT';
+        if (col.isNullable === false) line += ' NOT NULL';
+        if (col.isUnique) line += ' UNIQUE';
+        if (col.defaultValue) line += ` DEFAULT ${col.defaultValue}`;
+
         if (col.isFK && col.fkTableId) {
           const targetTable = data.tables.find(t => t.id === col.fkTableId);
           const targetCol = targetTable?.columns.find(c => c.id === col.fkColumnId);
@@ -332,7 +286,6 @@ export const SchemaDesigner: React.FC<{ file: FileSystemItem }> = ({ file }) => 
   const generatePrisma = () => {
     let prisma = '// Generated Prisma Schema\n\n';
     data.tables.forEach(table => {
-      // Capitalize first letter of table name for model name
       const modelName = table.name.charAt(0).toUpperCase() + table.name.slice(1);
       prisma += `model ${modelName} {\n`;
       table.columns.forEach(col => {
@@ -342,10 +295,12 @@ export const SchemaDesigner: React.FC<{ file: FileSystemItem }> = ({ file }) => 
         else if (col.type.includes('TIMESTAMP') || col.type.includes('DATE')) type = 'DateTime';
         else if (col.type.includes('JSON')) type = 'Json';
 
-        let line = `  ${col.name} ${type}`;
+        const nullableStr = col.isNullable !== false ? '?' : '';
+        let line = `  ${col.name} ${type}${nullableStr}`;
         if (col.isPK) line += ' @id';
-        if (col.isPK && type === 'Int') line += ' @default(autoincrement())';
-        if (col.isPK && col.type === 'UUID') line += ' @default(uuid())';
+        if (col.isPK && col.isAutoIncrement) line += ' @default(autoincrement())';
+        if (col.isUnique) line += ' @unique';
+        if (col.defaultValue) line += ` @default(${col.defaultValue})`;
 
         if (col.isFK && col.fkTableId) {
           const targetTable = data.tables.find(t => t.id === col.fkTableId);
@@ -366,12 +321,12 @@ export const SchemaDesigner: React.FC<{ file: FileSystemItem }> = ({ file }) => 
     let knex = '// Generated Knex.js Migration\n\n';
     knex += 'exports.up = function(knex) {\n';
     knex += '  return knex.schema\n';
-    data.tables.forEach((table, idx) => {
+    data.tables.forEach(table => {
       knex += `    .createTable('${table.name}', table => {\n`;
       table.columns.forEach(col => {
         let line = '      ';
         if (col.isPK) {
-          if (col.type.includes('INTEGER')) {
+          if (col.isAutoIncrement) {
             line += `table.increments('${col.name}').primary();`;
           } else {
             line += `table.specificType('${col.name}', '${col.type}').primary();`;
@@ -384,18 +339,23 @@ export const SchemaDesigner: React.FC<{ file: FileSystemItem }> = ({ file }) => 
           }
         } else {
           if (col.type.includes('VARCHAR')) {
-            line += `table.string('${col.name}');`;
+            line += `table.string('${col.name}')`;
           } else if (col.type.includes('INTEGER')) {
-            line += `table.integer('${col.name}');`;
+            line += `table.integer('${col.name}')`;
           } else if (col.type.includes('TEXT')) {
-            line += `table.text('${col.name}');`;
+            line += `table.text('${col.name}')`;
           } else if (col.type.includes('BOOLEAN')) {
-            line += `table.boolean('${col.name}');`;
-          } else if (col.type.includes('TIMESTAMP')) {
-            line += `table.timestamp('${col.name}').defaultTo(knex.fn.now());`;
+            line += `table.boolean('${col.name}')`;
           } else {
-            line += `table.specificType('${col.name}', '${col.type}');`;
+            line += `table.specificType('${col.name}', '${col.type}')`;
           }
+
+          if (col.isNullable === false) line += '.notNullable()';
+          else line += '.nullable()';
+
+          if (col.isUnique) line += '.unique()';
+          if (col.defaultValue) line += `.defaultTo(${col.defaultValue})`;
+          line += ';';
         }
         knex += `${line}\n`;
       });
@@ -404,7 +364,6 @@ export const SchemaDesigner: React.FC<{ file: FileSystemItem }> = ({ file }) => 
     knex += '};\n\n';
     knex += 'exports.down = function(knex) {\n';
     knex += '  return knex.schema\n';
-    // Drop tables in reverse order to respect foreign key constraints
     [...data.tables].reverse().forEach(table => {
       knex += `    .dropTableIfExists('${table.name}')\n`;
     });
@@ -420,28 +379,14 @@ export const SchemaDesigner: React.FC<{ file: FileSystemItem }> = ({ file }) => 
     }
   };
 
-  if (!file) {
-    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: 'var(--text-secondary)' }}>No schema selected</div>;
-  }
-
   if (loading) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', color: 'var(--text-secondary)' }}>
-        Loading Schema Canvas...
-      </div>
-    );
+    return <div style={{ padding: 20, color: 'var(--text-secondary)' }}>Loading schema designer...</div>;
   }
 
   return (
-    <div style={{
-      display: 'flex',
-      height: '100%',
-      backgroundColor: 'var(--bg-primary)',
-      color: 'var(--text-primary)',
-      fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-    }}>
-      {/* Canvas Area */}
-      <div 
+    <div style={{ display: 'flex', height: '100%', background: 'var(--bg-primary)', overflow: 'hidden' }}>
+      {/* Visual Canvas Area */}
+      <div
         ref={canvasRef}
         onClick={handleCanvasClick}
         onMouseMove={handleCanvasMouseMove}
@@ -449,209 +394,234 @@ export const SchemaDesigner: React.FC<{ file: FileSystemItem }> = ({ file }) => 
         style={{
           flex: 1,
           position: 'relative',
-          overflow: 'hidden',
-          backgroundColor: '#0a0a0a',
-          backgroundImage: 'radial-gradient(rgba(255,255,255,0.05) 1px, transparent 0)',
-          backgroundSize: '24px 24px',
-          userSelect: 'none'
+          background: 'radial-gradient(circle, var(--border-primary) 1px, transparent 1px)',
+          backgroundSize: '20px 20px',
+          backgroundColor: 'var(--bg-primary)',
+          overflow: 'auto'
         }}
       >
-        {/* Relations SVG Overlay */}
+        {/* Connection Link paths for relationships */}
         <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 1 }}>
-          {renderRelations()}
+          <defs>
+            <marker id="schema-arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 2 L 8 5 L 0 8 z" fill="var(--text-secondary)" />
+            </marker>
+          </defs>
+          {data.tables.map(table => (
+            table.columns.map(col => {
+              if (col.isFK && col.fkTableId) {
+                const targetTable = data.tables.find(t => t.id === col.fkTableId);
+                if (targetTable) {
+                  // Connect center of source table to center of target table
+                  const startX = table.x + 110;
+                  const startY = table.y + 70;
+                  const endX = targetTable.x + 110;
+                  const endY = targetTable.y + 70;
+
+                  return (
+                    <line
+                      key={`${table.id}_${col.id}`}
+                      x1={startX}
+                      y1={startY}
+                      x2={endX}
+                      y2={endY}
+                      stroke="var(--accent-color)"
+                      strokeWidth="2"
+                      markerEnd="url(#schema-arrow)"
+                      opacity="0.65"
+                    />
+                  );
+                }
+              }
+              return null;
+            })
+          ))}
         </svg>
 
-        {/* Floating Tool Header */}
-        <div style={{
-          position: 'absolute',
-          top: 16,
-          left: 16,
-          zIndex: 10,
-          display: 'flex',
-          gap: 12,
-          alignItems: 'center',
-          backgroundColor: 'rgba(30, 30, 30, 0.85)',
-          padding: '8px 12px',
-          borderRadius: 8,
-          border: '1px solid var(--border-color)',
-          backdropFilter: 'blur(8px)'
-        }}>
-          <span style={{ fontSize: 13, fontWeight: 'bold' }}>DB Schema: {file.name}</span>
-          <button 
+        {/* Toolbar */}
+        <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 10 }}>
+          <button
             onClick={handleAddTable}
-            style={{
-              padding: '5px 12px',
-              backgroundColor: 'var(--accent-color)',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 4,
-              cursor: 'pointer',
-              fontSize: 12,
-              fontWeight: 'bold'
-            }}
+            style={{ padding: '6px 12px', background: 'var(--accent-color)', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer', fontWeight: 600, fontSize: 12 }}
           >
-            + Add Table
+            ➕ Add Table
           </button>
         </div>
 
-        {/* Drag-and-Drop Tables */}
-        {data.tables.map(table => (
-          <div
-            key={table.id}
-            onMouseDown={(e) => handleTableDragStart(e, table.id)}
-            style={{
-              position: 'absolute',
-              left: table.x,
-              top: table.y,
-              width: 250,
-              backgroundColor: 'var(--bg-secondary)',
-              border: selectedTableId === table.id ? '2px solid var(--accent-color)' : '1px solid var(--border-color)',
-              borderRadius: 8,
-              boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
-              zIndex: selectedTableId === table.id ? 5 : 2,
-              cursor: 'grab',
-              overflow: 'hidden'
-            }}
-          >
-            {/* Table Header */}
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: '8px 12px',
-              backgroundColor: 'rgba(255,255,255,0.05)',
-              borderBottom: '1px solid var(--border-color)'
-            }}>
-              <input
-                value={table.name}
-                onChange={(e) => {
-                  const newName = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
-                  updateSchemaData({
-                    ...data,
-                    tables: data.tables.map(t => t.id === table.id ? { ...t, name: newName } : t)
-                  });
-                }}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#fff',
-                  fontWeight: 'bold',
-                  fontSize: 13,
-                  width: '70%',
-                  outline: 'none'
-                }}
-              />
-              <button 
-                onClick={() => handleDeleteTable(table.id)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#f85149',
-                  cursor: 'pointer',
-                  fontSize: 12
-                }}
-              >
-                ✕
-              </button>
-            </div>
+        {/* Tables Cards */}
+        {data.tables.map(table => {
+          const isSelected = selectedTableId === table.id;
+          return (
+            <div
+              key={table.id}
+              onMouseDown={(e) => handleTableDragStart(e, table.id)}
+              style={{
+                position: 'absolute',
+                left: table.x,
+                top: table.y,
+                width: 220,
+                background: 'var(--bg-secondary)',
+                borderRadius: 6,
+                border: isSelected ? '2px solid var(--accent-color)' : '1px solid var(--border-color)',
+                boxShadow: '0 6px 16px rgba(0,0,0,0.3)',
+                zIndex: 2,
+                cursor: draggedTableId === table.id ? 'grabbing' : 'grab',
+                color: 'var(--text-primary)',
+                padding: '8px 12px',
+                fontSize: 12
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6, borderBottom: '1px solid var(--border-color)', paddingBottom: 4 }}>
+                <span style={{ fontWeight: 'bold', fontFamily: 'monospace' }}>{table.name}</span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleDeleteTable(table.id); }}
+                  style={{ border: 'none', background: 'none', color: '#ff4d4f', cursor: 'pointer', fontSize: 11 }}
+                >
+                  ✕
+                </button>
+              </div>
 
-            {/* Column List */}
-            <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {table.columns.map(col => (
-                <div key={col.id} style={{ display: 'flex', flexDirection: 'column', gap: 4, paddingBottom: 6, borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
-                  <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                    <input
-                      value={col.name}
-                      onChange={(e) => handleUpdateColumn(table.id, col.id, { name: e.target.value.replace(/[^a-zA-Z0-9_]/g, '') })}
-                      style={{
-                        flex: 1,
-                        fontSize: 11,
-                        padding: '2px 4px',
-                        borderRadius: 4,
-                        border: '1px solid var(--border-color)',
-                        backgroundColor: 'var(--bg-primary)',
-                        color: 'var(--text-primary)',
-                        outline: 'none'
-                      }}
-                    />
-                    <select
-                      value={col.type}
-                      onChange={(e) => handleUpdateColumn(table.id, col.id, { type: e.target.value })}
-                      style={{
-                        fontSize: 11,
-                        padding: '2px',
-                        borderRadius: 4,
-                        border: '1px solid var(--border-color)',
-                        backgroundColor: 'var(--bg-primary)',
-                        color: 'var(--text-primary)',
-                        outline: 'none'
-                      }}
-                    >
-                      {SUPPORTED_TYPES.map(type => (
-                        <option key={type} value={type}>{type}</option>
-                      ))}
-                    </select>
-                    <button
-                      onClick={() => handleDeleteColumn(table.id, col.id)}
-                      style={{
-                        border: 'none',
-                        background: 'none',
-                        color: '#ff4d4f',
-                        cursor: 'pointer',
-                        fontSize: 10
-                      }}
-                    >
-                      ✕
-                    </button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {table.columns.map(col => (
+                  <div key={col.id} style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'monospace', fontSize: 11, padding: '2px 0' }}>
+                    <span style={{ color: col.isPK ? '#e3b341' : col.isFK ? '#58a6ff' : 'inherit' }}>
+                      {col.isPK ? '🔑 ' : col.isFK ? '🔗 ' : ''}{col.name}
+                    </span>
+                    <span style={{ color: 'var(--text-secondary)' }}>{col.type}</span>
                   </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
 
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 10, color: 'var(--text-secondary)' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                      <input
-                        type="checkbox"
-                        checked={col.isPK}
-                        onChange={(e) => handleUpdateColumn(table.id, col.id, { isPK: e.target.checked })}
-                      />
-                      PK
-                    </label>
+      {/* Inspector / Config Sidebar */}
+      <div style={{ width: 320, borderLeft: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-secondary)', zIndex: 10 }}>
+        {selectedTableId && (() => {
+          const table = data.tables.find(t => t.id === selectedTableId);
+          if (!table) return null;
+          return (
+            <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 12, flex: 1, overflowY: 'auto' }}>
+              <h4 style={{ margin: 0, fontSize: 13, color: 'var(--text-primary)' }}>Table Properties</h4>
+              
+              <div>
+                <label style={{ display: 'block', fontSize: 10, color: 'var(--text-secondary)', marginBottom: 4 }}>Table Name</label>
+                <input
+                  type="text"
+                  value={table.name}
+                  onChange={(e) => {
+                    const formatted = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '');
+                    const updated = {
+                      ...data,
+                      tables: data.tables.map(t => t.id === table.id ? { ...t, name: formatted } : t)
+                    };
+                    updateSchemaData(updated);
+                  }}
+                  style={{ width: '100%', padding: '6px', fontSize: 12, background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', borderRadius: 4 }}
+                />
+              </div>
 
-                    <label style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+              <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <span style={{ fontSize: 11, fontWeight: 'bold' }}>Columns</span>
+                {table.columns.map(col => (
+                  <div key={col.id} style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: 8, background: 'var(--bg-primary)', borderRadius: 4, border: '1px solid var(--border-color)' }}>
+                    <div style={{ display: 'flex', gap: 4 }}>
                       <input
-                        type="checkbox"
-                        checked={col.isFK}
-                        onChange={(e) => handleUpdateColumn(table.id, col.id, { isFK: e.target.checked })}
+                        value={col.name}
+                        placeholder="col_name"
+                        onChange={(e) => handleUpdateColumn(table.id, col.id, { name: e.target.value })}
+                        style={{ flex: 1, fontSize: 11, padding: 3, background: 'var(--bg-secondary)', border: 'none', color: '#fff', borderRadius: 2 }}
                       />
-                      FK
-                    </label>
+                      <select
+                        value={col.type}
+                        onChange={(e) => handleUpdateColumn(table.id, col.id, { type: e.target.value })}
+                        style={{ fontSize: 11, padding: 3, background: 'var(--bg-secondary)', border: 'none', color: '#fff', borderRadius: 2 }}
+                      >
+                        <option>INTEGER</option>
+                        <option>VARCHAR(255)</option>
+                        <option>TEXT</option>
+                        <option>BOOLEAN</option>
+                        <option>TIMESTAMP</option>
+                        <option>UUID</option>
+                      </select>
+                      <button
+                        onClick={() => handleDeleteColumn(table.id, col.id)}
+                        style={{ border: 'none', background: 'none', color: '#ff4d4f', cursor: 'pointer', fontSize: 10 }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', fontSize: 9, color: 'var(--text-secondary)' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <input
+                          type="checkbox"
+                          checked={col.isPK}
+                          onChange={(e) => handleUpdateColumn(table.id, col.id, { isPK: e.target.checked })}
+                        />
+                        PK
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <input
+                          type="checkbox"
+                          checked={col.isFK}
+                          onChange={(e) => handleUpdateColumn(table.id, col.id, { isFK: e.target.checked })}
+                        />
+                        FK
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <input
+                          type="checkbox"
+                          checked={col.isNullable !== false}
+                          onChange={(e) => handleUpdateColumn(table.id, col.id, { isNullable: e.target.checked })}
+                        />
+                        Nullable
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <input
+                          type="checkbox"
+                          checked={!!col.isUnique}
+                          onChange={(e) => handleUpdateColumn(table.id, col.id, { isUnique: e.target.checked })}
+                        />
+                        Unique
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <input
+                          type="checkbox"
+                          checked={!!col.isAutoIncrement}
+                          onChange={(e) => handleUpdateColumn(table.id, col.id, { isAutoIncrement: e.target.checked })}
+                        />
+                        AutoInc
+                      </label>
+                    </div>
 
                     {col.isFK && (
-                      <div style={{ display: 'flex', gap: 2 }}>
+                      <div style={{ display: 'flex', gap: 2, marginTop: 2 }}>
                         <select
                           value={col.fkTableId || ''}
                           onChange={(e) => {
                             const val = e.target.value;
                             const targetTab = data.tables.find(t => t.id === val);
-                            const firstCol = targetTab?.columns[0];
                             handleUpdateColumn(table.id, col.id, { 
                               fkTableId: val, 
-                              fkColumnId: firstCol?.id 
+                              fkColumnId: targetTab?.columns[0]?.id 
                             });
                           }}
-                          style={{ fontSize: 9, padding: '1px', backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}
+                          style={{ fontSize: 9, padding: '1px', backgroundColor: 'var(--bg-secondary)', color: '#fff', border: 'none' }}
                         >
-                          <option value="">Table</option>
+                          <option value="">Ref Table</option>
                           {data.tables.filter(t => t.id !== table.id).map(t => (
                             <option key={t.id} value={t.id}>{t.name}</option>
                           ))}
                         </select>
-
                         {col.fkTableId && (
                           <select
                             value={col.fkColumnId || ''}
                             onChange={(e) => handleUpdateColumn(table.id, col.id, { fkColumnId: e.target.value })}
-                            style={{ fontSize: 9, padding: '1px', backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}
+                            style={{ fontSize: 9, padding: '1px', backgroundColor: 'var(--bg-secondary)', color: '#fff', border: 'none' }}
                           >
-                            <option value="">Col</option>
+                            <option value="">Ref Col</option>
                             {(data.tables.find(t => t.id === col.fkTableId)?.columns || []).map(c => (
                               <option key={c.id} value={c.id}>{c.name}</option>
                             ))}
@@ -659,81 +629,54 @@ export const SchemaDesigner: React.FC<{ file: FileSystemItem }> = ({ file }) => 
                         )}
                       </div>
                     )}
-                  </div>
-                </div>
-              ))}
 
+                    <input
+                      type="text"
+                      placeholder="Default Value"
+                      value={col.defaultValue || ''}
+                      onChange={(e) => handleUpdateColumn(table.id, col.id, { defaultValue: e.target.value })}
+                      style={{ fontSize: 10, padding: '2px 4px', marginTop: 2, background: 'var(--bg-secondary)', border: 'none', color: '#fff', borderRadius: 2 }}
+                    />
+                  </div>
+                ))}
+                <button
+                  onClick={() => handleAddColumn(table.id)}
+                  style={{ padding: '4px', backgroundColor: 'rgba(255,255,255,0.05)', color: '#fff', border: '1px dashed var(--border-color)', borderRadius: 4, cursor: 'pointer', fontSize: 11 }}
+                >
+                  + Add Column
+                </button>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Code Generation Tabs at the bottom */}
+        <div style={{ height: 260, borderTop: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)' }}>
+            {(['sql', 'prisma', 'knex'] as const).map(tab => (
               <button
-                onClick={() => handleAddColumn(table.id)}
+                key={tab}
+                onClick={() => setActiveTab(tab)}
                 style={{
-                  padding: '4px',
-                  backgroundColor: 'rgba(255,255,255,0.05)',
-                  color: 'var(--text-primary)',
-                  border: '1px dashed var(--border-color)',
-                  borderRadius: 4,
-                  cursor: 'pointer',
-                  fontSize: 11
+                  flex: 1,
+                  background: activeTab === tab ? 'var(--bg-primary)' : 'transparent',
+                  border: 'none',
+                  borderBottom: activeTab === tab ? '2px solid var(--accent-color)' : 'none',
+                  color: activeTab === tab ? 'var(--text-primary)' : 'var(--text-secondary)',
+                  padding: '6px 0',
+                  fontSize: 11,
+                  cursor: 'pointer'
                 }}
               >
-                + Add Column
+                {tab === 'sql' ? 'SQL DDL' : tab.toUpperCase()}
               </button>
-            </div>
+            ))}
           </div>
-        ))}
-      </div>
-
-      {/* Code Generation Panel */}
-      <div style={{
-        width: 380,
-        borderLeft: '1px solid var(--border-color)',
-        display: 'flex',
-        flexDirection: 'column',
-        backgroundColor: 'var(--bg-secondary)',
-        zIndex: 10
-      }}>
-        <div style={{
-          display: 'flex',
-          borderBottom: '1px solid var(--border-color)',
-          backgroundColor: 'rgba(255,255,255,0.02)'
-        }}>
-          {(['sql', 'prisma', 'knex'] as const).map(tab => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              style={{
-                flex: 1,
-                padding: '12px 6px',
-                background: activeTab === tab ? 'var(--bg-primary)' : 'none',
-                border: 'none',
-                color: activeTab === tab ? 'var(--accent-color)' : 'var(--text-secondary)',
-                borderBottom: activeTab === tab ? '2px solid var(--accent-color)' : 'none',
-                fontWeight: activeTab === tab ? 'bold' : 'normal',
-                cursor: 'pointer',
-                fontSize: 12,
-                textTransform: 'uppercase'
-              }}
-            >
-              {tab === 'sql' ? 'SQL DDL' : tab}
-            </button>
-          ))}
-        </div>
-
-        <div style={{ flex: 1, padding: 12, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
-          <pre style={{
-            flex: 1,
-            margin: 0,
-            padding: 12,
-            backgroundColor: '#050505',
-            color: '#a9b1d6',
-            borderRadius: 6,
-            overflow: 'auto',
-            fontSize: 11,
-            fontFamily: 'var(--font-mono)',
-            whiteSpace: 'pre-wrap',
-            border: '1px solid var(--border-color)'
-          }}>
-            {getCodeText()}
-          </pre>
+          <div style={{ flex: 1, background: '#0f1015', padding: 8, overflow: 'auto' }}>
+            <pre style={{ margin: 0, fontSize: 10, color: '#a6accd', fontFamily: 'monospace', whiteSpace: 'pre-wrap' }}>
+              {getCodeText()}
+            </pre>
+          </div>
         </div>
       </div>
     </div>

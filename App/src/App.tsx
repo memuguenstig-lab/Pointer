@@ -37,7 +37,7 @@ import CommandPalette from './components/CommandPalette';
 import SplitEditor, { EditorGroup } from './components/SplitEditor';
 import StatusBar from './components/StatusBar';
 import { InlineDiffService } from './services/InlineDiffService';
-import { isImageFile, isPdfFile, isDatabaseFile, isWorkspaceFile, isSchemaFile, isBinaryFile } from './components/FileViewer';
+import { isImageFile, isPdfFile, isDatabaseFile, isWorkspaceFile, isSchemaFile, isApiFile, isFlowFile, isBinaryFile } from './components/FileViewer';
 import { FileChangeEventService } from './services/FileChangeEventService';
 
 // Initialize language support
@@ -741,6 +741,8 @@ const App: React.FC = () => {
                          !isDatabaseFile(file.name) && 
                          !isWorkspaceFile(file.name) && 
                          !isSchemaFile(file.name) && 
+                         !isApiFile(file.name) && 
+                         !isFlowFile(file.name) && 
                          !isBinaryFile(file.name);
           if (isText && editor.current) {
             editor.current.setValue(content);
@@ -1000,6 +1002,8 @@ const App: React.FC = () => {
                                    !isDatabaseFile(result.items[currentId].name) && 
                                    !isWorkspaceFile(result.items[currentId].name) && 
                                    !isSchemaFile(result.items[currentId].name) && 
+                                   !isApiFile(result.items[currentId].name) && 
+                                   !isFlowFile(result.items[currentId].name) && 
                                    !isBinaryFile(result.items[currentId].name);
                     if (isText && editor.current) {
                       editor.current.setValue(content);
@@ -1734,6 +1738,8 @@ const App: React.FC = () => {
                                        !isDatabaseFile(result.items[currentId].name) && 
                                        !isWorkspaceFile(result.items[currentId].name) && 
                                        !isSchemaFile(result.items[currentId].name) && 
+                                       !isApiFile(result.items[currentId].name) && 
+                                       !isFlowFile(result.items[currentId].name) && 
                                        !isBinaryFile(result.items[currentId].name);
                         if (isText && editor.current) {
                           editor.current.setValue(content);

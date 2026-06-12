@@ -574,6 +574,8 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [hoveredFolder, setHoveredFolder] = useState<string | null>(null);
   const [loadingFolders, setLoadingFolders] = useState<Set<string>>(new Set());
+  const [renamingItem, setRenamingItem] = useState<FileSystemItem | null>(null);
+  const [renamingName, setRenamingName] = useState('');
   const [themeVersion, setThemeVersion] = useState<number>(0);
   const [contextMenu, setContextMenu] = useState<{
     isOpen: boolean;
@@ -707,10 +709,8 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
   }, [contextMenu.isOpen]);
 
   const handleRename = (item: FileSystemItem) => {
-    const newName = prompt('Enter new name:', item.name);
-    if (newName && newName !== item.name) {
-      onRenameItem(item, newName);
-    }
+    setRenamingItem(item);
+    setRenamingName(item.name);
   };
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
@@ -1047,6 +1047,81 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
       >
         {renderItem(rootId)}
       </div>
+
+      {/* Non-blocking custom rename dialog */}
+      {renamingItem && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+        }}>
+          <div style={{
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border-color)',
+            borderRadius: '6px',
+            padding: '16px',
+            width: '280px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+            boxShadow: '0 8px 24px rgba(0,0,0,0.5)'
+          }}>
+            <h4 style={{ margin: 0, fontSize: '13px', color: 'var(--text-primary)' }}>Rename Item</h4>
+            <input
+              type="text"
+              value={renamingName}
+              onChange={(e) => setRenamingName(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '6px',
+                fontSize: '12px',
+                background: 'var(--bg-primary)',
+                border: '1px solid var(--border-color)',
+                color: 'var(--text-primary)',
+                borderRadius: '4px',
+                outline: 'none'
+              }}
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  if (renamingName.trim() && renamingName.trim() !== renamingItem.name) {
+                    onRenameItem(renamingItem, renamingName.trim());
+                  }
+                  setRenamingItem(null);
+                } else if (e.key === 'Escape') {
+                  setRenamingItem(null);
+                }
+              }}
+            />
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setRenamingItem(null)}
+                style={{ padding: '4px 10px', fontSize: '11px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '4px', color: 'var(--text-primary)', cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (renamingName.trim() && renamingName.trim() !== renamingItem.name) {
+                    onRenameItem(renamingItem, renamingName.trim());
+                  }
+                  setRenamingItem(null);
+                }}
+                style={{ padding: '4px 10px', fontSize: '11px', background: 'var(--accent-color)', border: 'none', borderRadius: '4px', color: '#fff', cursor: 'pointer', fontWeight: 600 }}
+              >
+                Rename
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

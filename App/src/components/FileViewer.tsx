@@ -4,6 +4,8 @@ import DatabaseViewer from './DatabaseViewer';
 import { isMarkdownFile } from '../utils/previewUtils';
 import WorkspaceCanvasViewer from './WorkspaceCanvasViewer';
 import SchemaDesigner from './SchemaDesigner';
+import ApiPlayground from './ApiPlayground';
+import WorkflowDesigner from './WorkflowDesigner';
 
 // Determine if the file is a workspace visual canvas
 const isWorkspaceFile = (filename: string): boolean => {
@@ -15,6 +17,18 @@ const isWorkspaceFile = (filename: string): boolean => {
 const isSchemaFile = (filename: string): boolean => {
   const ext = filename.split('.').pop()?.toLowerCase() || '';
   return ext === 'schema';
+};
+
+// Determine if the file is an API Playground
+const isApiFile = (filename: string): boolean => {
+  const ext = filename.split('.').pop()?.toLowerCase() || '';
+  return ext === 'api';
+};
+
+// Determine if the file is a Workflow state machine designer
+const isFlowFile = (filename: string): boolean => {
+  const ext = filename.split('.').pop()?.toLowerCase() || '';
+  return ext === 'flow';
 };
 
 // Determine if the file is a binary type
@@ -179,6 +193,10 @@ const FileViewer: React.FC<FileViewerProps> = ({ file, fileId }) => {
     return <WorkspaceCanvasViewer file={file} />;
   } else if (isSchemaFile(file.name)) {
     return <SchemaDesigner file={file} />;
+  } else if (isApiFile(file.name)) {
+    return <ApiPlayground file={file} />;
+  } else if (isFlowFile(file.name)) {
+    return <WorkflowDesigner file={file} />;
   } else if (isBinaryFile(file.name)) {
     return <BinaryFileViewer file={file} />;
   }
@@ -187,4 +205,4 @@ const FileViewer: React.FC<FileViewerProps> = ({ file, fileId }) => {
   return null;
 };
 
-export { FileViewer, isImageFile, isBinaryFile, isPdfFile, isDatabaseFile, isWorkspaceFile, isSchemaFile, isMarkdownFile }; 
+export { FileViewer, isImageFile, isBinaryFile, isPdfFile, isDatabaseFile, isWorkspaceFile, isSchemaFile, isApiFile, isFlowFile, isMarkdownFile }; 

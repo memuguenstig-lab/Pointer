@@ -10,12 +10,11 @@ interface VisualWorkspaceSidebarProps {
 export const VisualWorkspaceSidebar: React.FC<VisualWorkspaceSidebarProps> = ({ onFileSelect, rootId = 'root', onFileCreated }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [workspaceName, setWorkspaceName] = useState('');
 
-  const handleCreateWorkspace = async () => {
-    const nameInput = prompt('Enter a name for your visual workspace:');
-    if (!nameInput) return;
-
-    const cleanName = nameInput.trim();
+  const handleCreateWorkspace = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanName = workspaceName.trim();
     if (!cleanName) return;
 
     const filename = cleanName.endsWith('.workspace') ? cleanName : `${cleanName}.workspace`;
@@ -46,6 +45,8 @@ export const VisualWorkspaceSidebar: React.FC<VisualWorkspaceSidebarProps> = ({ 
 
       await FileSystemService.saveFile(result.file.path, JSON.stringify(initialJson, null, 2));
 
+      setWorkspaceName('');
+
       if (onFileCreated) {
         onFileCreated(result.id, result.file);
       }
@@ -74,24 +75,42 @@ export const VisualWorkspaceSidebar: React.FC<VisualWorkspaceSidebarProps> = ({ 
         </div>
       )}
 
-      <button
-        disabled={loading}
-        onClick={handleCreateWorkspace}
-        style={{
-          padding: '8px 12px',
-          background: 'var(--accent-color)',
-          color: '#fff',
-          border: 'none',
-          borderRadius: '4px',
-          fontSize: '12px',
-          fontWeight: 600,
-          cursor: loading ? 'default' : 'pointer',
-          opacity: loading ? 0.7 : 1,
-          transition: 'opacity 0.15s'
-        }}
-      >
-        {loading ? 'Creating...' : 'Create Visual Workspace (.workspace)'}
-      </button>
+      <form onSubmit={handleCreateWorkspace} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <input
+          type="text"
+          placeholder="e.g. My Project Map"
+          value={workspaceName}
+          onChange={(e) => setWorkspaceName(e.target.value)}
+          disabled={loading}
+          style={{
+            padding: '8px 12px',
+            fontSize: '12px',
+            background: 'var(--bg-primary)',
+            border: '1px solid var(--border-color)',
+            color: 'var(--text-primary)',
+            borderRadius: '4px',
+            outline: 'none'
+          }}
+        />
+        <button
+          type="submit"
+          disabled={loading || !workspaceName.trim()}
+          style={{
+            padding: '8px 12px',
+            background: 'var(--accent-color)',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '4px',
+            fontSize: '12px',
+            fontWeight: 600,
+            cursor: (loading || !workspaceName.trim()) ? 'default' : 'pointer',
+            opacity: (loading || !workspaceName.trim()) ? 0.6 : 1,
+            transition: 'opacity 0.15s'
+          }}
+        >
+          {loading ? 'Creating...' : 'Create Visual Workspace (.workspace)'}
+        </button>
+      </form>
     </div>
   );
 };
