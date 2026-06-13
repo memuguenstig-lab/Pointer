@@ -1,0 +1,71 @@
+name: Build Verification
+
+on:
+  push:
+    branches: [ "**" ]
+  pull_request:
+    branches: [ "**" ]
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: App/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd App
+          npm install
+
+      - name: Build Desktop (Windows)
+        run: |
+          cd App
+          npm run build:desktop
+
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: App/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd App
+          npm install
+
+      - name: Build Mobile Assets
+        run: |
+          cd App
+          npm run build:mobile
+
+      - name: Sync Capacitor
+        run: |
+          cd App
+          npx cap sync android
+
+      - name: Build Android APK (Gradle)
+        run: |
+          cd App/android
+          chmod +x gradlew
+          ./gradlew assembleDebug

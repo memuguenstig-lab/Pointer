@@ -1,6 +1,6 @@
 # ShadowIDE - Modern Development Suite
 
-A comprehensive development suite consisting of a modern code editor, community Discord bots, and a web presence - all built with React, TypeScript, Python, and Next.js.
+A comprehensive development suite consisting of a modern code editor and a web presence. Supporting **Windows** and **Android (including Chromebooks)** out of the box, with **macOS** and **Linux** support coming soon.
 
 - **Website**: [shadowide.f1shy312.com](https://shadowide.f1shy312.com)
 - **Discord**: [Join our Discord](https://discord.gg/vhgc8THmNk)
