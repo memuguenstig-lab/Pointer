@@ -63,11 +63,17 @@
       justify-content: center;
     }
 
-    img {
-      max-width: 70%;
-      max-height: 70%;
-      /* CSS animation to create a slow pulse/fade that overlays the GIF speed perception */
+    img.logo {
+      max-width: 120px;
+      max-height: 120px;
+      margin-bottom: 8px;
       animation: slowPulse 2.4s ease-in-out infinite;
+    }
+
+    img.loading {
+      max-width: 40px;
+      max-height: 40px;
+      opacity: 0.7;
     }
 
     @keyframes slowPulse {
@@ -98,8 +104,9 @@
 <body>
   <button class="close-btn" onclick="window.close()" title="Close">✕</button>
   <div class="video-container">
-    <div class="gif-wrapper">
-      <img src="loading.gif" alt="Loading animation">
+    <div class="gif-wrapper" style="display: flex; flex-direction: column; align-items: center; gap: 16px;">
+      <img src="logo.png" alt="Shadow IDE Logo" class="logo">
+      <img src="loading.gif" alt="Loading animation" class="loading">
     </div>
   </div>
   <div class="message">Starting ShadowIDE...</div>
