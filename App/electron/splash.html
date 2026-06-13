@@ -17,22 +17,22 @@
       height: 100vh;
       background-color: #1e1e1e;
       overflow: hidden;
-      border-radius: 8px;
+      border-radius: 16px;
       user-select: none;
       -webkit-app-region: no-drag;
     }
 
     .close-btn {
       position: fixed;
-      top: 8px;
-      right: 8px;
-      width: 28px;
-      height: 28px;
-      background: transparent;
+      top: 10px;
+      right: 10px;
+      width: 20px;
+      height: 20px;
+      background: rgba(255, 255, 255, 0.08);
       border: none;
-      border-radius: 4px;
-      color: rgba(255, 255, 255, 0.5);
-      font-size: 16px;
+      border-radius: 50%;
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 10px;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -43,7 +43,7 @@
     }
 
     .close-btn:hover {
-      background: #e81123;
+      background: rgba(232, 17, 35, 0.9);
       color: #fff;
     }
 
@@ -55,42 +55,58 @@
       align-items: center;
     }
 
-    /* Slow down the GIF by overlaying a CSS animation on a canvas-like wrapper */
-    .gif-wrapper {
-      position: relative;
+    .logo-wrapper {
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
     }
 
     img.logo {
-      max-width: 120px;
-      max-height: 120px;
-      margin-bottom: 8px;
-      animation: slowPulse 2.4s ease-in-out infinite;
+      max-width: 80px;
+      max-height: 80px;
+      animation: floatAndPulse 2.4s ease-in-out infinite;
     }
 
-    img.loading {
-      max-width: 40px;
-      max-height: 40px;
-      opacity: 0.7;
+    @keyframes floatAndPulse {
+      0% {
+        transform: translateY(0) scale(0.96);
+        filter: drop-shadow(0 4px 8px rgba(92, 124, 250, 0.2));
+      }
+      50% {
+        transform: translateY(-6px) scale(1.02);
+        filter: drop-shadow(0 12px 16px rgba(92, 124, 250, 0.5));
+      }
+      100% {
+        transform: translateY(0) scale(0.96);
+        filter: drop-shadow(0 4px 8px rgba(92, 124, 250, 0.2));
+      }
     }
 
-    @keyframes slowPulse {
-      0%   { opacity: 0.75; transform: scale(0.97); }
-      50%  { opacity: 1;    transform: scale(1.00); }
-      100% { opacity: 0.75; transform: scale(0.97); }
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-top: 2px solid #5C7CFA;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-top: 12px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
 
     .message {
       position: fixed;
-      bottom: 24px;
+      bottom: 16px;
       left: 0;
       right: 0;
       text-align: center;
-      color: rgba(255, 255, 255, 0.45);
+      color: rgba(255, 255, 255, 0.4);
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      font-size: 12px;
+      font-size: 10px;
       -webkit-app-region: no-drag;
       animation: fadeIn 0.8s ease-in;
     }
@@ -104,9 +120,9 @@
 <body>
   <button class="close-btn" onclick="window.close()" title="Close">✕</button>
   <div class="video-container">
-    <div class="gif-wrapper" style="display: flex; flex-direction: column; align-items: center; gap: 16px;">
-      <img src="logo.png" alt="Shadow IDE Logo" class="logo">
-      <img src="loading.gif" alt="Loading animation" class="loading">
+    <div class="logo-wrapper">
+      <img src="logotransparent.png" alt="Shadow IDE Logo" class="logo">
+      <div class="spinner"></div>
     </div>
   </div>
   <div class="message">Starting ShadowIDE...</div>

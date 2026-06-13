@@ -279,8 +279,8 @@ function updateSplashMessage(message) {
 
 function createSplashScreen() {
   splashWindow = new BrowserWindow({
-    width: 400,
-    height: 400,
+    width: 250,
+    height: 250,
     transparent: true,
     frame: false,
     resizable: false,
