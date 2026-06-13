@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { WorkspaceIcon, SchemaIcon, ApiIcon, FlowIcon } from './FileIcons';
 
 const STORAGE_KEY = 'shadowide-onboarding-done';
 
@@ -171,14 +172,14 @@ const SpecialFilesStep = () => (
     </p>
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       {[
-        { icon: '🗺️', title: 'Visual Workspace (.workspace)', desc: 'A node-canvas notes board to layout tasks, connect notes, and pin images. Features mouse-following bend links and automatic YIQ color-contrast text readability.' },
-        { icon: '📐', title: 'Visual DB Schema Designer (.schema)', desc: 'Draw tables, specify column properties (Nullable, Unique, Auto-Increment, Defaults) visually. Drag tables easily and generate production SQL, Prisma, or Knex migrations.' },
-        { icon: '🔌', title: 'API Playground (.api)', desc: 'Visual playground (Postman-style) where you chain requests, automatically run them sequentially (passing headers/tokens to downstream targets), and view live responses.' },
-        { icon: '⚙️', title: 'Workflow / State Machine Designer (.flow)', desc: 'A visual state builder where you lay out states, transition triggers, and actions. Generates typescript state machine configurations (like XState) automatically.' },
+        { icon: <WorkspaceIcon />, title: 'Visual Workspace (.workspace)', desc: 'A node-canvas notes board to layout tasks, connect notes, and pin images. Features mouse-following bend links and automatic YIQ color-contrast text readability.' },
+        { icon: <SchemaIcon />, title: 'Visual DB Schema Designer (.schema)', desc: 'Draw tables, specify column properties (Nullable, Unique, Auto-Increment, Defaults) visually. Drag tables easily and generate production SQL, Prisma, or Knex migrations.' },
+        { icon: <ApiIcon />, title: 'API Playground (.api)', desc: 'Visual playground (Postman-style) where you chain requests, automatically run them sequentially (passing headers/tokens to downstream targets), and view live responses.' },
+        { icon: <FlowIcon />, title: 'Workflow / State Machine Designer (.flow)', desc: 'A visual state builder where you lay out states, transition triggers, and actions. Generates typescript state machine configurations (like XState) automatically.' },
         { icon: '🌐', title: 'Web Previewer (Globe icon)', desc: 'Side-by-side live browser for local servers (3000, 3001, etc.) with automatic hot-reload on save.' }
       ].map(f => (
-        <div key={f.title} style={{ display: 'flex', gap: 10, padding: '8px 12px', borderRadius: 6, background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
-          <span style={{ fontSize: 20, flexShrink: 0 }}>{f.icon}</span>
+        <div key={f.title} style={{ display: 'flex', gap: 10, padding: '8px 12px', borderRadius: 6, background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', alignItems: 'center' }}>
+          <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24 }}>{f.icon}</div>
           <div>
             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{f.title}</div>
             <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>{f.desc}</div>

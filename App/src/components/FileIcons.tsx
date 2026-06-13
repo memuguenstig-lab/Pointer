@@ -25,6 +25,42 @@ const iconColors = {
   default: '#8B8B8B'
 };
 
+export const WorkspaceIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
+    <rect x="1.5" y="1.5" width="13" height="13" rx="2.5" stroke="#5C7CFA" strokeWidth="1.5" />
+    <path d="M5.5 5.5L3.5 8L5.5 10.5" stroke="#5C7CFA" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M7 6.5L8 9.5L9 6.5" stroke="#5C7CFA" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M10.5 5.5L12.5 8L10.5 10.5" stroke="#5C7CFA" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+export const SchemaIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
+    <rect x="1.5" y="1.5" width="13" height="13" rx="2.5" stroke="#FF922B" strokeWidth="1.5" />
+    <path d="M5.5 5.5L3.5 8L5.5 10.5" stroke="#FF922B" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M8.5 6.5C8 6.5 7.5 6.8 7.5 7.2C7.5 7.8 8.5 7.7 8.5 8.3C8.5 8.7 8 9 7.5 9" stroke="#FF922B" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M10.5 5.5L12.5 8L10.5 10.5" stroke="#FF922B" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+export const ApiIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
+    <rect x="1.5" y="1.5" width="13" height="13" rx="2.5" stroke="#51CF66" strokeWidth="1.5" />
+    <path d="M5.5 5.5L3.5 8L5.5 10.5" stroke="#51CF66" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M7 9V7C7 6.5 8.5 6.5 8.5 7V9M7 8H8.5" stroke="#51CF66" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M10.5 5.5L12.5 8L10.5 10.5" stroke="#51CF66" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+export const FlowIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ flexShrink: 0 }}>
+    <rect x="1.5" y="1.5" width="13" height="13" rx="2.5" stroke="#CC5DE8" strokeWidth="1.5" />
+    <path d="M5.5 5.5L3.5 8L5.5 10.5" stroke="#CC5DE8" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M8.5 6.5H8C7.5 6.5 7.5 7 7.5 7.5V9.5M7 7.5H8.5" stroke="#CC5DE8" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M10.5 5.5L12.5 8L10.5 10.5" stroke="#CC5DE8" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
 export const getIconForFile = (filename: string) => {
   // Check if it's a database file first
   if (isDatabaseFile(filename)) {
@@ -34,6 +70,14 @@ export const getIconForFile = (filename: string) => {
   const extension = filename.split('.').pop()?.toLowerCase() || '';
 
   switch (extension) {
+    case 'workspace':
+      return <WorkspaceIcon />;
+    case 'schema':
+      return <SchemaIcon />;
+    case 'api':
+      return <ApiIcon />;
+    case 'flow':
+      return <FlowIcon />;
     case 'js':
       return <JavaScriptIcon />;
     case 'jsx':

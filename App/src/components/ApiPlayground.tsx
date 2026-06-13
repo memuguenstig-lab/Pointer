@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FileSystemItem } from '../types';
 import { FileSystemService } from '../services/FileSystemService';
+import { ApiIcon } from './FileIcons';
 
 interface ApiRequestNode {
   id: string;
@@ -400,7 +401,10 @@ export const ApiPlayground: React.FC<{ file: FileSystemItem }> = ({ file }) => {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--bg-primary)', overflow: 'hidden' }}>
       {/* Top Controls Toolbar */}
       <div style={{ padding: '8px 16px', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-color)', display: 'flex', gap: 12, alignItems: 'center', zIndex: 10 }}>
-        <h4 style={{ margin: 0, fontSize: 13, color: 'var(--text-primary)' }}>🔌 API Playground: {file.name}</h4>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <ApiIcon />
+          <h4 style={{ margin: 0, fontSize: 13, color: 'var(--text-primary)' }}>API Playground: {file.name}</h4>
+        </div>
         
         <button
           onClick={handleAddRequest}

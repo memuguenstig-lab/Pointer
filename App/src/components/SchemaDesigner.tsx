@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FileSystemItem } from '../types';
 import { FileSystemService } from '../services/FileSystemService';
+import { SchemaIcon } from './FileIcons';
 
 interface Column {
   id: string;
@@ -384,8 +385,27 @@ export const SchemaDesigner: React.FC<{ file: FileSystemItem }> = ({ file }) => 
   }
 
   return (
-    <div style={{ display: 'flex', height: '100%', background: 'var(--bg-primary)', overflow: 'hidden' }}>
-      {/* Visual Canvas Area */}
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--bg-primary)', overflow: 'hidden' }}>
+      {/* Top Controls Toolbar */}
+      <div style={{ padding: '8px 16px', height: 40, boxSizing: 'border-box', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-color)', display: 'flex', gap: 12, alignItems: 'center', zIndex: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <SchemaIcon />
+          <h4 style={{ margin: 0, fontSize: 13, color: 'var(--text-primary)' }}>Schema Designer: {file.name}</h4>
+        </div>
+        
+        <button
+          onClick={handleAddTable}
+          style={{ padding: '4px 10px', fontSize: 11, background: 'var(--accent-color)', border: 'none', borderRadius: 4, color: '#fff', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}
+        >
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+          Add Table
+        </button>
+      </div>
+
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        {/* Visual Canvas Area */}
       <div
         ref={canvasRef}
         onClick={handleCanvasClick}
@@ -438,15 +458,7 @@ export const SchemaDesigner: React.FC<{ file: FileSystemItem }> = ({ file }) => 
           ))}
         </svg>
 
-        {/* Toolbar */}
-        <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 10 }}>
-          <button
-            onClick={handleAddTable}
-            style={{ padding: '6px 12px', background: 'var(--accent-color)', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer', fontWeight: 600, fontSize: 12 }}
-          >
-            ➕ Add Table
-          </button>
-        </div>
+        {/* Canvas elements */}
 
         {/* Tables Cards */}
         {data.tables.map(table => {
@@ -680,6 +692,7 @@ export const SchemaDesigner: React.FC<{ file: FileSystemItem }> = ({ file }) => 
         </div>
       </div>
     </div>
+  </div>
   );
 };
 

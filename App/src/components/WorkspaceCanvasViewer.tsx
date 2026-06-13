@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FileSystemItem } from '../types';
 import { FileSystemService } from '../services/FileSystemService';
+import { WorkspaceIcon } from './FileIcons';
 
 interface Metric {
   label: string;
@@ -641,8 +642,11 @@ export const WorkspaceCanvasViewer: React.FC<{ file: FileSystemItem }> = ({ file
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--bg-primary)', position: 'relative', overflow: 'hidden' }}>
       {/* Top Controls Toolbar */}
-      <div style={{ padding: '8px 16px', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-color)', display: 'flex', gap: 12, alignItems: 'center', zIndex: 10 }}>
-        <h4 style={{ margin: 0, fontSize: 13, color: 'var(--text-primary)' }}>{file.name}</h4>
+      <div style={{ padding: '8px 16px', height: 40, boxSizing: 'border-box', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border-color)', display: 'flex', gap: 12, alignItems: 'center', zIndex: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <WorkspaceIcon />
+          <h4 style={{ margin: 0, fontSize: 13, color: 'var(--text-primary)' }}>Visual Workspace: {file.name}</h4>
+        </div>
         
         <div style={{ display: 'flex', background: 'rgba(0,0,0,0.2)', padding: 2, borderRadius: 6, border: '1px solid var(--border-color)' }}>
           <button
@@ -690,16 +694,22 @@ export const WorkspaceCanvasViewer: React.FC<{ file: FileSystemItem }> = ({ file
 
         <button
           onClick={openAddCardModal}
-          style={{ padding: '4px 10px', fontSize: 11, background: 'var(--accent-color)', border: 'none', borderRadius: 4, color: '#fff', cursor: 'pointer', fontWeight: 600, marginLeft: 'auto' }}
+          style={{ padding: '4px 10px', fontSize: 11, background: 'var(--accent-color)', border: 'none', borderRadius: 4, color: '#fff', cursor: 'pointer', fontWeight: 600, marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}
         >
-          ➕ Add Card
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+          Add
         </button>
 
         <button
           onClick={() => fileInputRef.current?.click()}
-          style={{ padding: '4px 10px', fontSize: 11, background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: 4, color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600 }}
+          style={{ padding: '4px 10px', fontSize: 11, background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: 4, color: 'var(--text-primary)', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}
         >
-          🖼️ Upload Photo
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8 12V3m0 0L4 7m4-4l4 4M2 14h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          Upload
         </button>
         <input
           type="file"

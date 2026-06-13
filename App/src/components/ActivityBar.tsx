@@ -132,15 +132,7 @@ const ActivityBar: React.FC<ActivityBarProps> = ({
           </svg>
         )}
 
-        {/* Visual Workspace */}
-        {btn('workspace', 'Visual Workspace',
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="1.5" />
-            <circle cx="8" cy="8" r="2" fill="currentColor" />
-            <path d="M20 15l-5-5L5 20" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            <circle cx="15" cy="15" r="2.5" stroke="currentColor" strokeWidth="1.5" />
-          </svg>
-        )}
+
 
         {/* Terminal */}
         {btn('terminal', 'Terminal (Ctrl+`)',

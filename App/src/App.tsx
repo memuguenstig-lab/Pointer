@@ -939,6 +939,18 @@ const App: React.FC = () => {
     }
   };
 
+  const handleCloseProject = () => {
+    FileSystemService.clearLoadedFolders();
+    setFileSystem({
+      items: {},
+      rootId: 'root',
+      currentFileId: null,
+      terminalOpen: false,
+    });
+    setOpenFiles([]);
+    localStorage.removeItem('lastDirectory');
+  };
+
   const handleOpenSpecificFolder = async (path: string) => {
     try {
       setIsLoading(true);
@@ -2033,6 +2045,9 @@ const App: React.FC = () => {
             onOpenFolder={handleOpenFolder}
             onOpenFile={handleOpenFile}
             onCloneRepository={handleCloneRepository}
+            onCloseProject={handleCloseProject}
+            recentProjects={RecentProjectsService.getRecentProjects()}
+            onOpenSpecificFolder={handleOpenSpecificFolder}
             onOpenSettings={() => setIsSettingsModalOpen(true)}
             onToggleSidebar={() => handleActivityViewChange(activeView ?? 'explorer')}
             onToggleAgent={() => setIsLLMChatVisible(v => !v)}

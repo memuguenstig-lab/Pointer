@@ -6,6 +6,9 @@ interface TitlebarProps {
   onOpenFolder?: () => void;
   onOpenFile?: () => void;
   onCloneRepository?: () => void;
+  onCloseProject?: () => void;
+  recentProjects?: any[];
+  onOpenSpecificFolder?: (path: string) => void;
   onOpenSettings?: () => void;
   onToggleSidebar?: () => void;
   onToggleAgent?: () => void;
@@ -56,6 +59,9 @@ const Titlebar: React.FC<TitlebarProps> = ({
   onOpenFolder, 
   onOpenFile,
   onCloneRepository,
+  onCloseProject,
+  recentProjects,
+  onOpenSpecificFolder,
   onOpenSettings,
   onToggleSidebar, 
   onToggleAgent,
@@ -72,6 +78,7 @@ const Titlebar: React.FC<TitlebarProps> = ({
   const [isMaximized, setIsMaximized] = useState(false);
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
   const [isFileMenuOpen, setIsFileMenuOpen] = useState(false);
+  const [isRecentSubmenuOpen, setIsRecentSubmenuOpen] = useState(false);
 
   useEffect(() => {
     const checkMaximized = async () => {
@@ -236,6 +243,84 @@ const Titlebar: React.FC<TitlebarProps> = ({
                   <path d="M15.698 7.287L8.712 0.302C8.51 0.1 8.255 0 7.986 0C7.717 0 7.463 0.099 7.26 0.302L5.809 1.753L7.644 3.588C7.954 3.491 8.308 3.552 8.552 3.795C8.798 4.041 8.858 4.398 8.757 4.709L10.524 6.476C10.835 6.375 11.193 6.434 11.438 6.681C11.775 7.018 11.775 7.564 11.438 7.901C11.101 8.238 10.555 8.238 10.218 7.901C9.958 7.641 9.904 7.253 10.033 6.929L8.382 5.278V10.795C8.465 10.837 8.546 10.891 8.614 10.959C8.951 11.296 8.951 11.842 8.614 12.179C8.277 12.516 7.73 12.516 7.394 12.179C7.057 11.842 7.057 11.296 7.394 10.959C7.478 10.875 7.576 10.814 7.678 10.776V5.215C7.576 5.177 7.478 5.118 7.394 5.032C7.131 4.769 7.08 4.376 7.213 4.05L5.406 2.244L0.302 7.347C0.099 7.551 0 7.805 0 8.074C0 8.343 0.099 8.597 0.302 8.801L7.288 15.786C7.491 15.988 7.745 16.088 8.014 16.088C8.283 16.088 8.537 15.989 8.74 15.786L15.698 8.827C15.9 8.624 16 8.37 16 8.101C16 7.832 15.901 7.578 15.698 7.374V7.287Z" fill="currentColor"/>
                 </svg>
                 <span>Clone Repository</span>
+              </button>
+
+              <div className="file-menu-divider"></div>
+
+              {recentProjects && recentProjects.length > 0 && (
+                <div 
+                  className="recent-projects-submenu-container" 
+                  style={{ position: 'relative' }}
+                  onMouseLeave={() => setIsRecentSubmenuOpen(false)}
+                >
+                  <button 
+                    className="file-menu-item"
+                    onMouseEnter={() => setIsRecentSubmenuOpen(true)}
+                    onClick={(e) => { e.stopPropagation(); setIsRecentSubmenuOpen(!isRecentSubmenuOpen); }}
+                    style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between' }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12.5 14.5a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 2.5 14.5v-13A1.5 1.5 0 0 1 4 0h4.5l4 4v10.5z" stroke="currentColor" strokeWidth="1.2"/>
+                      </svg>
+                      <span>Open Previous</span>
+                    </div>
+                    <svg width="6" height="10" viewBox="0 0 6 10" fill="none" style={{ opacity: 0.7 }}>
+                      <path d="M1.5 1.5L4.5 5L1.5 8.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </button>
+
+                  {isRecentSubmenuOpen && (
+                    <div 
+                      className="file-menu-dropdown" 
+                      style={{
+                        position: 'absolute',
+                        left: '100%',
+                        top: 0,
+                        zIndex: 1000,
+                        marginLeft: '4px',
+                        maxHeight: '260px',
+                        overflowY: 'auto',
+                        boxShadow: '0 8px 20px rgba(0,0,0,0.4)',
+                        backgroundColor: 'var(--bg-secondary)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: 4
+                      }}
+                    >
+                      {recentProjects.map((proj: any) => (
+                        <button
+                          key={proj.path}
+                          className="file-menu-item"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onOpenSpecificFolder?.(proj.path);
+                            setIsRecentSubmenuOpen(false);
+                            setIsFileMenuOpen(false);
+                          }}
+                          title={proj.path}
+                          style={{ whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}
+                        >
+                          <span style={{ fontSize: '11px' }}>{proj.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <button 
+                className="file-menu-item" 
+                onClick={() => {
+                  onCloseProject?.();
+                  setIsFileMenuOpen(false);
+                }}
+                style={{ color: 'var(--error-color)' }}
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M2 3.5A1.5 1.5 0 0 1 3.5 2h9A1.5 1.5 0 0 1 14 3.5v9a1.5 1.5 0 0 1-1.5 1.5h-7A1.5 1.5 0 0 1 2 12.5v-9z" stroke="currentColor" strokeWidth="1.2"/>
+                  <path d="M5.5 5.5l5 5m0-5l-5 5" stroke="currentColor" strokeWidth="1.2"/>
+                </svg>
+                <span>Close Project</span>
               </button>
             </div>
           )}
