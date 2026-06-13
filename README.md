@@ -30,19 +30,6 @@ A comprehensive development suite consisting of a modern code editor, community 
 
 **[→ Full Setup Guide](Website/README.md)**
 
----
-
-### 🤖 [**Discord Bots**](DiscordBot/README.md) - Community & Moderation Suite
-> Comprehensive Discord bot ecosystem with economy, moderation, and community features.
-
-**Features**: Economy system, moderation tools, giveaways, leveling, ticket system
-
-**Tech Stack**: Python + discord.py + SQLite
-
-**[→ Full Setup Guide](DiscordBot/README.md)**
-
----
-
 ## 🚀 Quick Start (All Components)
 
 ### Prerequisites
@@ -67,8 +54,6 @@ ShadowIDE/
 │   └── README.md  # → Detailed editor setup guide
 ├── Website/       # 🌐 Landing Page (Next.js)
 │   └── README.md  # → Website setup guide  
-├── DiscordBot/    # 🤖 Discord Bots (Python)
-│   └── README.md  # → Bot setup and commands guide
 └── README.md      # 📖 This overview file
 ```
 
