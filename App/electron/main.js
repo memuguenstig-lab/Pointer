@@ -284,6 +284,8 @@ function createSplashScreen() {
     transparent: true,
     frame: false,
     resizable: false,
+    movable: false,
+    center: true,
     icon: getIconPath(),
     skipTaskbar: true,
     webPreferences: {
